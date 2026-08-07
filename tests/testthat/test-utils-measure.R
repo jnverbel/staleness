@@ -11,20 +11,20 @@ test_that("ratio measures are identified", {
 })
 
 test_that("to_natural exponentiates only ratio measures", {
-  # verificado empiricamente con metadat::dat.bcg: beta = -0.7145323 es log(RR)
+  # Empirically verified with metadat::dat.bcg: beta = -0.7145323 is log(RR)
   expect_equal(to_natural(-0.7145323, "RR"), 0.4894209, tolerance = 1e-6)
   expect_equal(to_natural(-0.7145323, "MD"), -0.7145323)
 })
 
 test_that("effect_ratio works on the natural scale for ratio measures", {
-  # RR previo 0.50, RR nuevo 0.25 -> ratio 0.5, senal de rCMA
+  # Prior RR 0.50, new RR 0.25 -> ratio 0.5, signal of rCMA
   r <- effect_ratio(log(0.25), log(0.50), "RR", se_prev = 0.1)
   expect_equal(r$ratio, 0.5, tolerance = 1e-8)
   expect_equal(r$reason, "")
 })
 
 test_that("effect_ratio refuses to divide by a near-null difference effect", {
-  # MD previo 0.05 con se 0.10: indistinguible de cero, el ratio es inestable
+  # Prior MD 0.05 with se 0.10: indistinguishable from zero, the ratio is unstable
   r <- effect_ratio(0.40, 0.05, "MD", se_prev = 0.10)
   expect_true(is.na(r$ratio))
   expect_match(r$reason, "indistinguishable from zero")
