@@ -22,41 +22,58 @@ failsafe_n <- function(yi, vi, z_crit = 1.645) {
 #' cumulative pooled effect regressed on accumulated information; a review is
 #' stable when that slope does not differ significantly from zero.
 #'
-#' Per the primary source (Mullen, Muellerleile & Bryant 2001, as applied by
-#' Pattanittum et al. 2012), an out-of-date review is one that is BOTH
-#' sufficient and unstable: enough evidence has accumulated to be confident the
-#' effect is real, but the pooled estimate is still drifting, so its magnitude
-#' is not yet settled. Insufficient evidence alone is never grounds for
-#' "out of date" — see the design doc (section 4.4) for how this was confirmed
-#' against the primary source, which is the opposite combination from what a
-#' first reading of the secondary source suggests.
+#' The two indicators deliberately read from different bodies of evidence.
+#' Per the primary source that operationalises this method as a two-snapshot
+#' comparison (Pattanittum et al. 2012, Table 1), sufficiency — both the
+#' fail-safe N and the `k` in `5k + 10` — is computed on the meta-analysis
+#' **as previously published** (`prev`), while stability is computed on the
+#' cumulative series of the **updated** meta-analysis (`new_ma`), which is
+#' where new studies show up as drift or lack of it. Confirmed against a
+#' second, independent secondary source; the original method paper (Mullen,
+#' Muellerleile & Bryant 2001) was not reachable in full text, and does not
+#' itself define a two-snapshot variant to compare against — see the design
+#' doc (section 4.4) for the full trail of evidence.
+#'
+#' Per the same source, an out-of-date review is one that is BOTH sufficient
+#' and unstable: enough evidence had already accumulated, as of the prior
+#' review, to be confident the effect is real, but the pooled estimate
+#' (including what came after) is still drifting, so its magnitude is not yet
+#' settled. Insufficient evidence alone is never grounds for "out of date" —
+#' the opposite combination from what a first reading of the secondary source
+#' suggests, and also confirmed in the design doc.
 #'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.
-#' @param min_k Minimum number of studies. Below this the stability regression
-#'   is meaningless.
+#' @param min_k Minimum number of studies in `new_ma`. Below this the
+#'   stability regression is meaningless.
 #' @param alpha_slope Significance level for the stability slope test.
 #' @return A `staleness_verdict`.
 #' @export
 sufficiency <- function(prev, new_ma, min_k = 5, alpha_slope = 0.05) {
   yi <- as.numeric(new_ma$yi)
   vi <- as.numeric(new_ma$vi)
-  k  <- length(yi)
-  if (k < min_k) {
+  k_new <- length(yi)
+  if (k_new < min_k) {
     return(verdict_na("sufficiency",
-      paste0("needs at least ", min_k, " studies; found ", k)))
+      paste0("needs at least ", min_k, " studies; found ", k_new)))
   }
 
-  index <- failsafe_n(yi, vi) / (5 * k + 10)
+  # Sufficiency is read off the meta-analysis AS PREVIOUSLY PUBLISHED, not the
+  # updated one (see the roxygen note above and design doc section 4.4).
+  yi_prev <- as.numeric(prev$yi)
+  vi_prev <- as.numeric(prev$vi)
+  k_prev  <- length(yi_prev)
+  index <- failsafe_n(yi_prev, vi_prev) / (5 * k_prev + 10)
   sufficient <- index > 1
 
-  # cumulative fixed-effect estimate after each study, in input order
+  # Stability, by contrast, is read off the updated evidence: the cumulative
+  # fixed-effect estimate after each study, in input order.
   w      <- 1 / vi
   cum_wy <- cumsum(w * yi)
   cum_w  <- cumsum(w)
   cum_theta <- cum_wy / cum_w
 
-  idx <- seq_len(k)
+  idx <- seq_len(k_new)
   fit <- stats::lm(cum_theta[-1] ~ idx[-1])
   # A near-constant or near-perfectly-linear cumulative effect (identical
   # studies, or a very clean drift) triggers summary.lm()'s "essentially
@@ -73,5 +90,5 @@ sufficiency <- function(prev, new_ma, min_k = 5, alpha_slope = 0.05) {
   new_verdict("sufficiency", out, signal = index,
               detail = list(index = index, sufficient = sufficient,
                             stable = stable, slope = unname(stats::coef(fit)[2]),
-                            p_slope = p_slope, k = k))
+                            p_slope = p_slope, k = k_prev, k_new = k_new))
 }
