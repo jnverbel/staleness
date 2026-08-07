@@ -1,0 +1,1 @@
+importFrom(stats, coef, lm, pnorm, qnorm, rnorm, sd, var)
