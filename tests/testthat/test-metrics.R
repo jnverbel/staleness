@@ -78,12 +78,17 @@ test_that("lead_time reports how early a detector fired before the event", {
 
 test_that("calibration excludes NA-truth rows instead of propagating NA into the metrics", {
   bt <- fake_bt()
+  # rcma at cut 2000: was a true positive (out_of_date, truth TRUE); making
+  # its truth NA removes that row entirely, leaving one true positive (2001)
+  # and two true negatives (2002, 2003) rather than two and two.
   bt$results$truth_shift[bt$results$method == "rcma" & bt$results$cut == 2000] <- NA
   cal <- calibration(bt, truth = "shift")
   rcma_row <- cal[cal$method == "rcma", ]
   expect_equal(rcma_row$n, 3)
   expect_true(is.finite(rcma_row$sensitivity))
   expect_true(is.finite(rcma_row$specificity))
+  expect_equal(rcma_row$sensitivity, 1)  # the one remaining true event, caught
+  expect_equal(rcma_row$specificity, 1)  # the two remaining non-events, correct
 })
 
 test_that("lead_time excludes NA-truth rows, n_events reflects the exclusion", {
@@ -93,4 +98,5 @@ test_that("lead_time excludes NA-truth rows, n_events reflects the exclusion", {
   rcma_row <- lt[lt$method == "rcma", ]
   expect_equal(rcma_row$n_events, 1)  # only cut 2001 remains a true event
   expect_true(is.finite(rcma_row$median_lead))
+  expect_equal(rcma_row$median_lead, 0)  # fired at 2001, the event is at 2001
 })
