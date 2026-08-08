@@ -45,3 +45,46 @@ test_that("qualitative signals are carried but never inferred", {
   # with no declared qualitative signal the same data reads as current
   expect_equal(ottawa(prev, upd)$verdict, "current")
 })
+
+test_that("an unstable RRR ratio is flagged without altering the verdict", {
+  # The Ottawa effect criterion divides by 1 - RR_prev, which approaches zero
+  # exactly on the null reviews the method targets. The instability is a
+  # property of the published method and is NOT corrected here -- correcting
+  # it would mean implementing a different method, and the point of this
+  # package is to find out how the published ones behave.
+  #
+  # What the package must not do is hand back a ratio of -19 with no sign
+  # that it came from dividing by -0.005. Flagged, like CONTAMINATED_PAIRS
+  # flags a circular pair: visible in the result, not silently removed.
+  prev <- metafor::rma(yi = c(0.02, -0.01, 0.03, -0.02), vi = rep(0.05, 4),
+                       measure = "RR")
+  new  <- metafor::rma(yi = c(0.02, -0.01, 0.03, -0.02, -0.30, -0.25),
+                       vi = c(rep(0.05, 4), 0.04, 0.04), measure = "RR")
+  res <- ottawa(prev, new)
+
+  expect_true(res$detail$effect_unstable)
+  expect_true(abs(res$detail$rrr_prev) < 0.05)
+  # The verdict and the signal are untouched: fidelity to the method.
+  expect_equal(res$verdict, "out_of_date")
+  expect_true(is.finite(res$signal))
+
+  # A prior effect that is clearly away from no-effect is not flagged.
+  prev2 <- metafor::rma(yi = rep(log(0.50), 6), vi = rep(0.01, 6),
+                        measure = "RR")
+  new2  <- metafor::rma(yi = c(rep(log(0.50), 6), rep(log(0.80), 4)),
+                        vi = c(rep(0.01, 6), rep(0.01, 4)), measure = "RR")
+  expect_false(ottawa(prev2, new2)$detail$effect_unstable)
+})
+
+test_that("difference measures report the flag as FALSE, not missing", {
+  # On difference measures the effect half defers to the rcma rule, which has
+  # its own guard, so there is no RRR to be unstable. The field must still be
+  # present and answerable.
+  prev <- metafor::rma(yi = c(0.40, 0.35, 0.45), vi = rep(0.01, 3),
+                       measure = "MD")
+  new  <- metafor::rma(yi = c(0.40, 0.35, 0.45, 0.10), vi = rep(0.01, 4),
+                       measure = "MD")
+  res <- ottawa(prev, new)
+  expect_false(res$detail$effect_unstable)
+  expect_true(is.na(res$detail$rrr_prev))
+})

@@ -17,7 +17,11 @@ rrr_ratio(theta_new, theta_prev, measure, se_prev, min_z = 2)
 errors from zero for a difference ratio to be computed.}
 }
 \value{
-List with `ratio` (possibly `NA_real_`) and `reason`.
+List with `ratio` (possibly `NA_real_`), `reason`, `rrr_prev` (the
+  denominator `1 - RR_prev`, `NA` on difference measures) and `unstable`,
+  which is `TRUE` when the prior effect sits within `min_z` standard errors
+  of no effect and the ratio is therefore arbitrarily large. `unstable`
+  never changes the ratio: it reports it.
 }
 \description{
 The Ottawa method's "change in effect size of at least 50%" is **not**
@@ -36,8 +40,16 @@ reduction goes from 0.5% to 15%, a factor of 30.
 
 That sensitivity is also the criterion's weakness. `1 - RR` is tiny
 whenever the prior effect is near no-effect, so the ratio explodes on
-rounding alone, and the same guard the difference-measure branch uses
-applies here: a prior effect indistinguishable from no effect yields
-`NA_real_` rather than a large and meaningless number.
+rounding alone -- and near no-effect is precisely where the Ottawa method
+is meant to be applied.
+
+The difference-measure branch refuses such a case outright. This one does
+**not**, and the asymmetry is deliberate: every one of the eighty reviews
+in the method's published application was a null meta-analysis by inclusion
+criterion, so a guard that rejected them would answer a different question
+from the method's. The ratio is returned as the method defines it, with
+`rrr_prev` and `unstable` attached so the caller can see what it was
+divided by. Only `RR == 1` exactly, where the ratio is undefined rather
+than merely large, yields `NA_real_`.
 }
 \keyword{internal}

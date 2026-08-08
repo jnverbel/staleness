@@ -88,7 +88,18 @@ That is not an implementation artefact; it follows from the criterion.
 
 It also explains the published comparison. Ottawa flagged 34 of 80 reviews
 where recursive CMA and Barrowman each flagged 7 -- and all 80 were null
-meta-analyses by inclusion criterion.
+meta-analyses by inclusion criterion. Confirmed outside simulation on
+`metadat::dat.laopaiboon2015`, a null review where this detector's
+specificity falls to 0.14 while the other four hold at 1.00.
+
+**This is not corrected here, on purpose.** Correcting it would mean
+implementing a different method, and the reason this package exists is to
+find out how the published ones behave. What is corrected is the silence:
+`detail$effect_unstable` marks the verdicts where the denominator is near
+zero, and `detail$rrr_prev` reports the denominator itself, so nobody
+receives a ratio of -19 without being told it came from dividing by
+-0.005. Same principle as [CONTAMINATED_PAIRS]: flag the result, do not
+quietly remove or repair it.
 }
 
 \examples{

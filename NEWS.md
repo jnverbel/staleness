@@ -64,6 +64,15 @@ First public release.
   level of effects rather than of participants, because the package never sees
   2x2 tables — is now declared in `?simulation` instead of going unmentioned.
 
+* `ottawa()` now reports `detail$effect_unstable` and `detail$rrr_prev`. The
+  effect criterion divides by `1 - RR_prev`, which approaches zero on exactly
+  the null reviews the method targets, so the ratio can be arbitrarily large.
+  That behaviour is the published method's and is deliberately left alone —
+  repairing it would mean implementing something else — but a caller used to
+  receive a ratio of -19 with an empty `reason` and no indication that it came
+  from dividing by -0.005. Now the flag and the denominator travel with the
+  verdict, which is unchanged.
+
 ## Reproducibility
 
 * `inst/calibration/calibration.R` regenerates every calibration figure quoted

@@ -55,7 +55,18 @@
 #'
 #' It also explains the published comparison. Ottawa flagged 34 of 80 reviews
 #' where recursive CMA and Barrowman each flagged 7 -- and all 80 were null
-#' meta-analyses by inclusion criterion.
+#' meta-analyses by inclusion criterion. Confirmed outside simulation on
+#' `metadat::dat.laopaiboon2015`, a null review where this detector's
+#' specificity falls to 0.14 while the other four hold at 1.00.
+#'
+#' **This is not corrected here, on purpose.** Correcting it would mean
+#' implementing a different method, and the reason this package exists is to
+#' find out how the published ones behave. What is corrected is the silence:
+#' `detail$effect_unstable` marks the verdicts where the denominator is near
+#' zero, and `detail$rrr_prev` reports the denominator itself, so nobody
+#' receives a ratio of -19 without being told it came from dividing by
+#' -0.005. Same principle as [CONTAMINATED_PAIRS]: flag the result, do not
+#' quietly remove or repair it.
 #'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.
@@ -112,7 +123,14 @@ ottawa <- function(prev, new_ma, alpha = 0.04,
       signal_qualitative  = qual_signal,
       qualitative         = qualitative,
       p_prev              = prev$pval,
-      p_new               = new_ma$pval
+      p_new               = new_ma$pval,
+      # The effect criterion divides by 1 - RR_prev. When the prior effect is
+      # indistinguishable from no effect that denominator sits near zero and
+      # the ratio is arbitrarily large. The verdict is left exactly as the
+      # method dictates -- correcting it would be implementing a different
+      # method -- and the instability is reported alongside it instead.
+      rrr_prev            = r$rrr_prev,
+      effect_unstable     = isTRUE(r$unstable)
     )
   )
 }
