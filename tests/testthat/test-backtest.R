@@ -89,3 +89,52 @@ test_that("backtest degrades barrowman to not_applicable, without erroring, when
   expect_true(all(bt$results$verdict == "not_applicable"))
   expect_true(all(grepl("sample size not supplied", bt$results$reason)))
 })
+
+# --- window > horizon must censor too --------------------------------------
+#
+# Censoring depended only on `cut > max(dates) - horizon`, with nothing
+# checking that the evidence window fitted inside the data. On dat.bcg with
+# horizon = 3 and window = 5 -- the settings the backtesting vignette itself
+# uses -- cuts 1976 and 1977 were marked UNCENSORED while seeing only 2 and 1
+# new studies, because their five-year windows ran past 1980. They were then
+# scored as full observations alongside cuts that got a complete window. A
+# truncated window shows a detector less change than really happened, so those
+# cuts are biased toward "current", invisibly. Fixed by censoring on
+# max(horizon, window).
+
+test_that("cuts whose evidence window runs past the end of the data are censored", {
+  skip_if_not_installed("metadat")
+  s  <- make_bcg_stream()
+  bt <- backtest(s, methods = "rcma", horizon = 3, window = 5, seed = 1)
+  last_date <- max(s$date)                       # 1980
+
+  # The two cuts the review named. Under horizon alone they were uncensored.
+  affected <- bt$results[bt$results$cut %in% c(1976, 1977), ]
+  expect_equal(nrow(affected), 2)
+  expect_true(all(affected$censored))
+
+  # And they really do have a truncated window, which is the reason: their
+  # five-year window ends after the last study in the stream, so they see less
+  # new evidence than an earlier cut with the same nominal window.
+  for (cut in c(1976, 1977)) {
+    expect_gt(cut + 5, last_date)
+    expect_lt(sum(s$date > cut & s$date <= cut + 5),
+              sum(s$date > 1970 & s$date <= 1975))
+  }
+
+  # The general rule, not just those two cuts.
+  expect_true(all(bt$results$censored[bt$results$cut >  last_date - 5]))
+  expect_true(all(!bt$results$censored[bt$results$cut <= last_date - 5]))
+
+  # Every uncensored cut sees a full window's worth of future.
+  uncens <- unique(bt$results$cut[!bt$results$censored])
+  expect_true(all(uncens + 5 <= last_date))
+})
+
+test_that("window <= horizon leaves the censoring boundary at horizon", {
+  skip_if_not_installed("metadat")
+  s  <- make_bcg_stream()
+  bt <- backtest(s, methods = "rcma", horizon = 5, window = 3, seed = 1)
+  expect_true(all(bt$results$censored[bt$results$cut >  max(s$date) - 5]))
+  expect_true(all(!bt$results$censored[bt$results$cut <= max(s$date) - 5]))
+})

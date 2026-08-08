@@ -55,3 +55,24 @@ test_that("a snapshot with fewer than 2 studies is refused", {
   s <- make_bcg_stream()
   expect_error(snapshot_at(s, min(s$date) - 1), "at least 2")
 })
+
+# --- ni is validated for NA, like date -------------------------------------
+#
+# evidence_stream() checked `ni`'s length but not for missing values, two lines
+# after checking `date` for exactly that. A single NA survived into
+# backtest()'s sum(stream$ni[...]) -- sum() over an NA is NA -- and surfaced,
+# many frames later, as barrowman() stopping with "needs the sample size of
+# both the prior meta-analysis and the new studies". That message describes a
+# call that supplied no sample sizes at all, which is not what happened.
+
+test_that("evidence_stream refuses missing sample sizes, with a message that says so", {
+  ma <- metafor::rma(yi = rep(log(0.5), 6), vi = rep(0.02, 6), measure = "RR")
+  expect_error(
+    evidence_stream(ma, date = 2000:2005, ni = c(100, 100, NA, 100, 100, 100)),
+    "missing values"
+  )
+  # And the same stream with a complete `ni` is accepted, so the check is not
+  # rejecting the shape of the input.
+  expect_s3_class(evidence_stream(ma, date = 2000:2005, ni = rep(100, 6)),
+                  "staleness_stream")
+})

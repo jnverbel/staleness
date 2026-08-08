@@ -11,15 +11,24 @@
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param n_prev Numeric, total participants in the prior meta-analysis.
 #' @param n_new Numeric, participants contributed by the new studies.
+#' Omitting a sample size altogether is a malformed call and is an error.
+#' Supplying one that is present but not a usable number — `NA`, `NaN`,
+#' infinite — is a fact about the data, not about the call, so it yields
+#' `"not_applicable"` with the reason attached, the same treatment every other
+#' un-answerable case gets.
+#'
 #' @param alpha Significance level used to decide applicability.
 #' @param z_crit Critical value, 1.96 in the published method.
 #' @return A `staleness_verdict`.
 #' @export
 barrowman <- function(prev, n_prev, n_new, alpha = 0.05, z_crit = 1.96) {
-  if (is.null(n_prev) || is.null(n_new) ||
-      !is.finite(n_prev) || !is.finite(n_new)) {
+  if (is.null(n_prev) || is.null(n_new)) {
     stop("`barrowman()` needs the sample size of both the prior meta-analysis ",
          "and the new studies", call. = FALSE)
+  }
+  if (!is.finite(n_prev) || !is.finite(n_new)) {
+    return(verdict_na("barrowman",
+      "sample size is missing or not a finite number; the participant ratio cannot be computed"))
   }
   if (prev$pval < alpha) {
     return(verdict_na("barrowman",

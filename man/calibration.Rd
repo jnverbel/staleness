@@ -13,8 +13,9 @@ calibration(bt, truth = "shift")
 [available_truths()].}
 }
 \value{
-A data frame, one row per method, with columns `method`, `truth`,
-  `sensitivity`, `specificity`, `false_alarm`, `n` and `contaminated`.
+A data frame, one row per method in `bt$methods`, with columns
+  `method`, `truth`, `sensitivity`, `specificity`, `false_alarm`, `n` and
+  `contaminated`.
 }
 \description{
 Turns a backtest's raw results into sensitivity, specificity and false
@@ -42,4 +43,12 @@ computed, none of them counted as either a hit or a miss:
 construction. Rather than silently drop that pair or footnote it, every
 row this function returns carries a `contaminated` flag looked up from
 [CONTAMINATED_PAIRS], so no downstream reader can miss it.
+
+The rows are one per method **requested in the backtest** (`bt$methods`),
+not one per method that happened to survive the filter. A detector that was
+`not_applicable` at every cut — as `barrowman()` and `simulation()` are on
+any consistently significant series — gets a row with `n = 0` and `NA`
+metrics. "This detector never applied to this evidence" is itself a result
+about the detector, and belongs in the table as a row rather than as an
+absence the reader has to notice.
 }

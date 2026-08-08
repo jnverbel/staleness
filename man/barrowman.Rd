@@ -11,7 +11,12 @@ barrowman(prev, n_prev, n_new, alpha = 0.05, z_crit = 1.96)
 
 \item{n_prev}{Numeric, total participants in the prior meta-analysis.}
 
-\item{n_new}{Numeric, participants contributed by the new studies.}
+\item{n_new}{Numeric, participants contributed by the new studies.
+Omitting a sample size altogether is a malformed call and is an error.
+Supplying one that is present but not a usable number — `NA`, `NaN`,
+infinite — is a fact about the data, not about the call, so it yields
+`"not_applicable"` with the reason attached, the same treatment every other
+un-answerable case gets.}
 
 \item{alpha}{Significance level used to decide applicability.}
 

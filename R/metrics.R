@@ -1,3 +1,22 @@
+#' Rows of a backtest that may be scored against a truth definition
+#'
+#' The one filter shared by [calibration()] and [lead_time()]. Three kinds of
+#' row are dropped, none of them counted as either a hit or a miss: `censored`
+#' cuts, `not_applicable` verdicts, and rows whose truth column is `NA`
+#' because the standard error it divides by was degenerate.
+#'
+#' @param bt A `staleness_backtest`.
+#' @param truth One of [available_truths()].
+#' @return The eligible subset of `bt$results`.
+#' @keywords internal
+eligible_rows <- function(bt, truth) {
+  col <- paste0("truth_", truth)
+  res <- bt$results
+  res[!res$censored &
+      res$verdict != "not_applicable" &
+      !is.na(res[[col]]), ]
+}
+
 #' Calibration of the detectors against a truth definition
 #'
 #' Turns a backtest's raw results into sensitivity, specificity and false
@@ -25,20 +44,27 @@
 #' row this function returns carries a `contaminated` flag looked up from
 #' [CONTAMINATED_PAIRS], so no downstream reader can miss it.
 #'
+#' The rows are one per method **requested in the backtest** (`bt$methods`),
+#' not one per method that happened to survive the filter. A detector that was
+#' `not_applicable` at every cut — as `barrowman()` and `simulation()` are on
+#' any consistently significant series — gets a row with `n = 0` and `NA`
+#' metrics. "This detector never applied to this evidence" is itself a result
+#' about the detector, and belongs in the table as a row rather than as an
+#' absence the reader has to notice.
+#'
 #' @param bt A `staleness_backtest`, see [backtest()].
 #' @param truth One of `"shift"`, `"surprise"`, `"conclusion"`, see
 #'   [available_truths()].
-#' @return A data frame, one row per method, with columns `method`, `truth`,
-#'   `sensitivity`, `specificity`, `false_alarm`, `n` and `contaminated`.
+#' @return A data frame, one row per method in `bt$methods`, with columns
+#'   `method`, `truth`, `sensitivity`, `specificity`, `false_alarm`, `n` and
+#'   `contaminated`.
 #' @export
 calibration <- function(bt, truth = "shift") {
   truth <- match.arg(truth, available_truths())
   col <- paste0("truth_", truth)
-  res <- bt$results[!bt$results$censored &
-                    bt$results$verdict != "not_applicable" &
-                    !is.na(bt$results[[col]]), ]
+  res <- eligible_rows(bt, truth)
 
-  out <- lapply(unique(res$method), function(m) {
+  out <- lapply(bt$methods, function(m) {
     d  <- res[res$method == m, ]
     hit <- d$verdict == "out_of_date"
     ev  <- d[[col]]
@@ -80,31 +106,35 @@ calibration <- function(bt, truth = "shift") {
 #' period the evidence had already moved, not that it failed to catch
 #' anything.
 #'
-#' The same three exclusions as [calibration()] apply before events are
-#' located: censored cuts, `not_applicable` verdicts, and rows whose truth
-#' column is `NA` are dropped first, so a degenerate standard error can
-#' neither manufacture nor hide an event.
+#' The same three exclusions as [calibration()] apply, through the same
+#' internal filter: censored cuts, `not_applicable` verdicts, and rows whose
+#' truth column is `NA` are dropped before either the events or the firings
+#' are located. Both sides of the comparison are read from that already
+#' filtered frame, so a degenerate standard error removes an event and the
+#' verdict that would have been scored against it together, rather than
+#' leaving one without the other.
 #'
 #' A method with no true event under `truth` in the uncensored window gets
 #' `n_events = 0` and `median_lead = NA`: there is nothing to lead. A method
 #' that never fired `out_of_date` at or before any of its true events also
 #' gets `median_lead = NA`, with `n_events` still reporting how many events
-#' it missed (visible in detail via `calibration()`'s sensitivity).
+#' it missed (visible in detail via `calibration()`'s sensitivity). As in
+#' [calibration()], every method in `bt$methods` gets a row, including one
+#' that was `not_applicable` at every cut and therefore has no eligible rows
+#' at all.
 #'
 #' @param bt A `staleness_backtest`, see [backtest()].
 #' @param truth One of `"shift"`, `"surprise"`, `"conclusion"`, see
 #'   [available_truths()].
-#' @return A data frame, one row per method, with columns `method`,
-#'   `median_lead` and `n_events`.
+#' @return A data frame, one row per method in `bt$methods`, with columns
+#'   `method`, `median_lead` and `n_events`.
 #' @export
 lead_time <- function(bt, truth = "shift") {
   truth <- match.arg(truth, available_truths())
   col <- paste0("truth_", truth)
-  res <- bt$results[!bt$results$censored &
-                    bt$results$verdict != "not_applicable" &
-                    !is.na(bt$results[[col]]), ]
+  res <- eligible_rows(bt, truth)
 
-  out <- lapply(unique(res$method), function(m) {
+  out <- lapply(bt$methods, function(m) {
     d <- res[res$method == m, ]
     d <- d[order(d$cut), ]
     events <- d$cut[d[[col]]]

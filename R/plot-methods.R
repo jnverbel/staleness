@@ -10,7 +10,13 @@
 #' @export
 plot.staleness_backtest <- function(x, truth = "shift", ...) {
   cal <- calibration(x, truth = truth)
-  if (is.null(cal) || nrow(cal) == 0) {
+  # calibration() now returns a row for every requested method, including ones
+  # with no eligible rows and therefore NA metrics (see ?calibration). A run
+  # where *every* method is in that state has nothing to draw, and must say so
+  # rather than hand an all-NA matrix to barplot() and produce an empty pair of
+  # axes that looks like a result.
+  if (is.null(cal) || nrow(cal) == 0 ||
+      all(is.na(cal$sensitivity) & is.na(cal$specificity))) {
     stop("nothing to plot for truth = \"", truth, "\": every row was ",
          "not_applicable, censored, or had an undeterminable truth value",
          call. = FALSE)

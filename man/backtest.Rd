@@ -21,10 +21,11 @@ backtest(
 
 \item{methods}{Detector names, see [available_methods()].}
 
-\item{horizon}{Units of future required for a cut to be evaluated. Cuts with
-less future are marked censored and excluded from metrics.}
+\item{horizon}{Units of future required for a cut's truth to be evaluated.}
 
-\item{window}{Length of the window of new evidence assessed at each cut.}
+\item{window}{Length of the window of new evidence assessed at each cut.
+Cuts with fewer than `max(horizon, window)` units of future are marked
+censored and excluded from metrics — see the note on censoring above.}
 
 \item{min_k}{Minimum studies required in a snapshot.}
 
@@ -66,9 +67,19 @@ stream has no `ni`, both are passed as `NULL` and `barrowman()` degrades to
 `not_applicable` through [check_currency()]'s own handling, rather than
 erroring.
 
-Cuts with fewer than `horizon` units of future in the stream cannot be
-fairly evaluated: they are kept in `results` (marked `censored = TRUE`) so
-that a caller can see them, but must be excluded from any accuracy metric
-computed later. A backtest needs at least 3 uncensored cuts to say anything
-useful about a detector's calibration and is refused otherwise.
+Cuts too close to the end of the stream cannot be fairly evaluated: they
+are kept in `results` (marked `censored = TRUE`) so that a caller can see
+them, but must be excluded from any accuracy metric computed later. "Too
+close" means within `max(horizon, window)` of the last study date, not just
+within `horizon`. Both bounds have to hold, and for different reasons: a
+cut needs `horizon` units of future for its truth to have had time to
+materialise, *and* it needs `window` units of future for the detector to be
+handed the same amount of new evidence every other uncensored cut was
+handed. Censoring on `horizon` alone would let a run with
+`window > horizon` score late cuts as full observations while their
+evidence window ran off the end of the data — a truncated window shows a
+detector less change than really happened, biasing exactly those cuts
+toward `current`, invisibly. A backtest needs at least 3 uncensored cuts to
+say anything useful about a detector's calibration and is refused
+otherwise.
 }

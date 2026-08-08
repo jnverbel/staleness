@@ -13,8 +13,8 @@ lead_time(bt, truth = "shift")
 [available_truths()].}
 }
 \value{
-A data frame, one row per method, with columns `method`,
-  `median_lead` and `n_events`.
+A data frame, one row per method in `bt$methods`, with columns
+  `method`, `median_lead` and `n_events`.
 }
 \description{
 The metric that decides practical usefulness. A detector that only fires
@@ -37,14 +37,20 @@ detector, in the middle of its caught events, only ever fired in the same
 period the evidence had already moved, not that it failed to catch
 anything.
 
-The same three exclusions as [calibration()] apply before events are
-located: censored cuts, `not_applicable` verdicts, and rows whose truth
-column is `NA` are dropped first, so a degenerate standard error can
-neither manufacture nor hide an event.
+The same three exclusions as [calibration()] apply, through the same
+internal filter: censored cuts, `not_applicable` verdicts, and rows whose
+truth column is `NA` are dropped before either the events or the firings
+are located. Both sides of the comparison are read from that already
+filtered frame, so a degenerate standard error removes an event and the
+verdict that would have been scored against it together, rather than
+leaving one without the other.
 
 A method with no true event under `truth` in the uncensored window gets
 `n_events = 0` and `median_lead = NA`: there is nothing to lead. A method
 that never fired `out_of_date` at or before any of its true events also
 gets `median_lead = NA`, with `n_events` still reporting how many events
-it missed (visible in detail via `calibration()`'s sensitivity).
+it missed (visible in detail via `calibration()`'s sensitivity). As in
+[calibration()], every method in `bt$methods` gets a row, including one
+that was `not_applicable` at every cut and therefore has no eligible rows
+at all.
 }

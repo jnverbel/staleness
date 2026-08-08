@@ -20,18 +20,29 @@
 #' `not_applicable` through [check_currency()]'s own handling, rather than
 #' erroring.
 #'
-#' Cuts with fewer than `horizon` units of future in the stream cannot be
-#' fairly evaluated: they are kept in `results` (marked `censored = TRUE`) so
-#' that a caller can see them, but must be excluded from any accuracy metric
-#' computed later. A backtest needs at least 3 uncensored cuts to say anything
-#' useful about a detector's calibration and is refused otherwise.
+#' Cuts too close to the end of the stream cannot be fairly evaluated: they
+#' are kept in `results` (marked `censored = TRUE`) so that a caller can see
+#' them, but must be excluded from any accuracy metric computed later. "Too
+#' close" means within `max(horizon, window)` of the last study date, not just
+#' within `horizon`. Both bounds have to hold, and for different reasons: a
+#' cut needs `horizon` units of future for its truth to have had time to
+#' materialise, *and* it needs `window` units of future for the detector to be
+#' handed the same amount of new evidence every other uncensored cut was
+#' handed. Censoring on `horizon` alone would let a run with
+#' `window > horizon` score late cuts as full observations while their
+#' evidence window ran off the end of the data — a truncated window shows a
+#' detector less change than really happened, biasing exactly those cuts
+#' toward `current`, invisibly. A backtest needs at least 3 uncensored cuts to
+#' say anything useful about a detector's calibration and is refused
+#' otherwise.
 #'
 #' @param stream A `staleness_stream` from [evidence_stream()].
 #' @param cuts `"yearly"`, or a numeric vector of explicit cut points.
 #' @param methods Detector names, see [available_methods()].
-#' @param horizon Units of future required for a cut to be evaluated. Cuts with
-#'   less future are marked censored and excluded from metrics.
+#' @param horizon Units of future required for a cut's truth to be evaluated.
 #' @param window Length of the window of new evidence assessed at each cut.
+#'   Cuts with fewer than `max(horizon, window)` units of future are marked
+#'   censored and excluded from metrics — see the note on censoring above.
 #' @param min_k Minimum studies required in a snapshot.
 #' @param seed Integer seed for [simulation()].
 #' @return An object of class `staleness_backtest` with elements `results` (a
@@ -63,7 +74,11 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
   }, logical(1))
   cuts <- cuts[usable]
 
-  last_uncensored <- max(dates) - horizon
+  # A cut is uncensored only if BOTH its truth horizon and its evidence window
+  # fit inside the data. Censoring on `horizon` alone silently truncates the
+  # new-evidence window of late cuts whenever `window > horizon`, then scores
+  # them as if they had seen a full window.
+  last_uncensored <- max(dates) - max(horizon, window)
   if (sum(cuts <= last_uncensored) < 3) {
     stop("backtesting needs at least 3 uncensored cuts; found ",
          sum(cuts <= last_uncensored), call. = FALSE)

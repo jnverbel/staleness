@@ -57,10 +57,10 @@ test_that("plotting a backtest restores the caller's graphics parameters", {
 test_that("plotting a backtest with no eligible rows fails with a clear message", {
   # Every row is ineligible for calibration(), by one of its three exclusion
   # rules: not_applicable, censored, or an undeterminable (NA) truth value.
-  # calibration() then returns NULL (do.call(rbind, list()) on zero groups),
-  # which must not reach graphics::barplot() as-is -- that produces the
-  # opaque "'height' must be a vector or a matrix" error instead of saying
-  # what actually went wrong.
+  # calibration() now returns one row per requested method with NA metrics
+  # rather than NULL (see ?calibration), so the all-NA matrix must not reach
+  # graphics::barplot() either: it would draw an empty pair of axes that looks
+  # like a result. Either way the caller is told what actually went wrong.
   bt <- structure(
     list(
       results = data.frame(
@@ -85,4 +85,34 @@ test_that("plotting a backtest with no eligible rows fails with a clear message"
     plot(bt, truth = "shift"),
     "nothing to plot for truth = \"shift\""
   )
+})
+
+test_that("a method with no eligible rows is drawn as a gap, not dropped or fatal", {
+  # calibration() emits an NA row for a never-applicable detector; barplot()
+  # must tolerate it (an empty slot in the chart) rather than error, so that a
+  # backtest where four detectors answered and one never did still plots.
+  bt <- structure(
+    list(
+      results = data.frame(
+        cut     = c(2000, 2001, 2000, 2001),
+        method  = rep(c("rcma", "barrowman"), each = 2),
+        verdict = c("out_of_date", "current", "not_applicable", "not_applicable"),
+        signal  = NA_real_,
+        reason  = "",
+        truth_shift      = c(TRUE, FALSE, TRUE, FALSE),
+        truth_surprise   = rep(FALSE, 4),
+        truth_conclusion = rep(TRUE, 4),
+        censored = rep(FALSE, 4),
+        stringsAsFactors = FALSE
+      ),
+      methods = c("rcma", "barrowman"), horizon = 5, window = 3,
+      n_cuts = 2, n_censored = 0
+    ),
+    class = "staleness_backtest"
+  )
+
+  f <- tempfile(fileext = ".png")
+  grDevices::png(f)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  expect_no_error(plot(bt, truth = "shift"))
 })

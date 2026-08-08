@@ -172,3 +172,70 @@ test_that("lead_time excludes NA-truth rows, n_events reflects the exclusion", {
   expect_true(is.finite(rcma_row$median_lead))
   expect_equal(rcma_row$median_lead, 0)  # fired at 2001, the event is at 2001
 })
+
+# --- Every requested method gets a row, even one that never applied ---------
+#
+# calibration() and lead_time() iterated unique(res$method) -- the POST-filter
+# set -- while promising "one row per method". A detector that was
+# not_applicable at every cut simply vanished from the table. On the shipped
+# BCG backtest that dropped 2 of the 5 detectors from summary(bt), and the
+# backtesting vignette had to explain their absence in prose. "This detector
+# never applied to this evidence" is itself a result about the detector: it
+# belongs in the table as a row with n = 0, not as an absence the reader has to
+# notice. Both functions now iterate bt$methods, which the backtest object
+# already carries.
+
+na_everywhere_bt <- function() {
+  res <- data.frame(
+    cut     = c(2000, 2001, 2002, 2000, 2001, 2002),
+    method  = rep(c("rcma", "barrowman"), each = 3),
+    verdict = c("out_of_date", "current", "current",
+                "not_applicable", "not_applicable", "not_applicable"),
+    signal  = NA_real_,
+    reason  = "",
+    truth_shift      = c(TRUE, FALSE, FALSE, TRUE, FALSE, FALSE),
+    truth_surprise   = FALSE,
+    truth_conclusion = FALSE,
+    censored = FALSE,
+    stringsAsFactors = FALSE
+  )
+  structure(list(results = res, methods = c("rcma", "barrowman"),
+                 horizon = 5, window = 3, n_cuts = 3, n_censored = 0),
+            class = "staleness_backtest")
+}
+
+test_that("calibration keeps a row for a method that was never applicable", {
+  cal <- calibration(na_everywhere_bt(), truth = "shift")
+  expect_setequal(cal$method, c("rcma", "barrowman"))
+  b <- cal[cal$method == "barrowman", ]
+  expect_equal(nrow(b), 1)
+  expect_equal(b$n, 0)
+  expect_true(is.na(b$sensitivity))
+  expect_true(is.na(b$specificity))
+  expect_true(is.na(b$false_alarm))
+  # The method that did answer is unaffected.
+  expect_equal(cal$sensitivity[cal$method == "rcma"], 1)
+})
+
+test_that("lead_time keeps a row for a method that was never applicable", {
+  lt <- lead_time(na_everywhere_bt(), truth = "shift")
+  expect_setequal(lt$method, c("rcma", "barrowman"))
+  b <- lt[lt$method == "barrowman", ]
+  expect_equal(b$n_events, 0)
+  expect_true(is.na(b$median_lead))
+})
+
+test_that("summary() reports all five methods across all three truths", {
+  bt <- na_everywhere_bt()
+  s <- summary(bt)
+  expect_equal(nrow(s), 2 * length(available_truths()))
+  for (t in available_truths()) {
+    expect_setequal(s$method[s$truth == t], bt$methods)
+  }
+})
+
+test_that("rows come out in the order the backtest requested the methods", {
+  bt <- na_everywhere_bt()
+  expect_equal(calibration(bt, "shift")$method, bt$methods)
+  expect_equal(lead_time(bt, "shift")$method, bt$methods)
+})

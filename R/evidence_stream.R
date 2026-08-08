@@ -28,6 +28,14 @@ evidence_stream <- function(ma, date, ni = NULL) {
     stop("`ni` has length ", length(ni), " but the meta-analysis has ", k,
          " studies", call. = FALSE)
   }
+  # Caught here, next to the identical check on `date`, because a single NA
+  # survives all the way to sum(ni) inside backtest() and reappears there as
+  # barrowman() complaining that no sample sizes were supplied at all -- a
+  # message describing something that did not happen.
+  if (!is.null(ni) && anyNA(ni)) {
+    stop("`ni` has missing values; sample sizes are never imputed",
+         call. = FALSE)
+  }
 
   ord <- order(date, seq_along(date))  # stable: ties keep input order
   structure(
