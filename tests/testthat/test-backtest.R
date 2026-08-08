@@ -138,3 +138,51 @@ test_that("window <= horizon leaves the censoring boundary at horizon", {
   expect_true(all(bt$results$censored[bt$results$cut >  max(s$date) - 5]))
   expect_true(all(!bt$results$censored[bt$results$cut <= max(s$date) - 5]))
 })
+
+test_that("backtest validates its arguments instead of failing obscurely", {
+  st <- evidence_stream(
+    suppressWarnings(metafor::rma(yi = seq(-1, 1, length.out = 12),
+                                  vi = rep(0.05, 12), measure = "RR")),
+    date = 2000:2011, ni = rep(100, 12))
+
+  # A negative horizon means "look backwards to see the future". It used to be
+  # accepted and produced a censoring rule that cannot be interpreted.
+  expect_error(backtest(st, cuts = 2003:2008, horizon = -5), "horizon")
+  expect_error(backtest(st, cuts = 2003:2008, window = 0), "window")
+  expect_error(backtest(st, cuts = 2003:2008, window = -3), "window")
+
+  # snapshot_at() needs two studies, so a lower min_k is a promise the engine
+  # cannot keep.
+  expect_error(backtest(st, cuts = 2003:2008, min_k = 1), "min_k")
+
+  # These used to surface as internal R errors -- "missing value where
+  # TRUE/FALSE needed" and "replacement has 1 row, data has 0" -- which say
+  # nothing about what the caller did wrong.
+  expect_error(backtest(st, cuts = c(2003, NA, 2006, 2007)), "cuts")
+  expect_error(backtest(st, cuts = 2003:2008, methods = character(0)),
+               "methods")
+})
+
+test_that("duplicate cuts are collapsed, not counted twice", {
+  # A repeated cut is the same point in time, and letting it through inflated
+  # the denominator of every metric: n went from 3 to 5 with one cut repeated
+  # three times, silently.
+  st <- evidence_stream(
+    suppressWarnings(metafor::rma(yi = seq(-1, 1, length.out = 12),
+                                  vi = rep(0.05, 12), measure = "RR")),
+    date = 2000:2011, ni = rep(100, 12))
+
+  once <- backtest(st, cuts = c(2003, 2005, 2007), horizon = 2, window = 2,
+                   seed = 1)
+  thrice <- backtest(st, cuts = c(2003, 2003, 2003, 2005, 2007), horizon = 2,
+                     window = 2, seed = 1)
+
+  expect_equal(thrice$n_cuts, once$n_cuts)
+  expect_equal(nrow(thrice$results), nrow(once$results))
+  expect_equal(calibration(thrice, "shift")$n, calibration(once, "shift")$n)
+
+  # Unsorted input is sorted, so results always read forwards in time.
+  shuffled <- backtest(st, cuts = c(2007, 2003, 2005), horizon = 2,
+                       window = 2, seed = 1)
+  expect_equal(unique(shuffled$results$cut), c(2003, 2005, 2007))
+})

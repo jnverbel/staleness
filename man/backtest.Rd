@@ -17,7 +17,9 @@ backtest(
 \arguments{
 \item{stream}{A `staleness_stream` from [evidence_stream()].}
 
-\item{cuts}{`"yearly"`, or a numeric vector of explicit cut points.}
+\item{cuts}{`"yearly"`, or a numeric vector of explicit cut points. Sorted
+and de-duplicated: a repeated cut is the same point in time, and counting
+it twice would inflate the denominator of every metric.}
 
 \item{methods}{Detector names, see [available_methods()].}
 
@@ -27,7 +29,8 @@ backtest(
 Cuts with fewer than `max(horizon, window)` units of future are marked
 censored and excluded from metrics — see the note on censoring above.}
 
-\item{min_k}{Minimum studies required in a snapshot.}
+\item{min_k}{Minimum studies required in a snapshot. At least 2, since a
+meta-analysis cannot be fitted from fewer.}
 
 \item{seed}{Integer seed for [simulation()].}
 }

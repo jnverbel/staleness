@@ -86,6 +86,16 @@ First public release.
   follow the subsetting each snapshot does. Both were previously accepted and
   quietly flattened into a plain pooled analysis.
 
+* `backtest()` validates its arguments. A negative `horizon`, a zero or
+  negative `window`, a `min_k` below 2, `cuts` containing `NA` and an empty
+  `methods` were all accepted or failed with internal R messages such as
+  "missing value where TRUE/FALSE needed". Each now says what is wrong.
+
+* `cuts` are sorted and de-duplicated. A repeated cut used to enter the
+  results once per repetition, so passing the same cut three times raised `n`
+  from 3 to 5 in `calibration()` — the denominator of every rate, inflated
+  without a warning.
+
 ## Reproducibility
 
 * `inst/calibration/calibration.R` regenerates every calibration figure quoted

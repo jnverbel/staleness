@@ -37,13 +37,16 @@
 #' otherwise.
 #'
 #' @param stream A `staleness_stream` from [evidence_stream()].
-#' @param cuts `"yearly"`, or a numeric vector of explicit cut points.
+#' @param cuts `"yearly"`, or a numeric vector of explicit cut points. Sorted
+#'   and de-duplicated: a repeated cut is the same point in time, and counting
+#'   it twice would inflate the denominator of every metric.
 #' @param methods Detector names, see [available_methods()].
 #' @param horizon Units of future required for a cut's truth to be evaluated.
 #' @param window Length of the window of new evidence assessed at each cut.
 #'   Cuts with fewer than `max(horizon, window)` units of future are marked
 #'   censored and excluded from metrics — see the note on censoring above.
-#' @param min_k Minimum studies required in a snapshot.
+#' @param min_k Minimum studies required in a snapshot. At least 2, since a
+#'   meta-analysis cannot be fitted from fewer.
 #' @param seed Integer seed for [simulation()].
 #' @return An object of class `staleness_backtest` with elements `results` (a
 #'   data.frame with columns `cut`, `method`, `verdict`, `signal`, `reason`,
@@ -88,10 +91,41 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
   if (!inherits(stream, "staleness_stream")) {
     stop("`stream` must come from evidence_stream()", call. = FALSE)
   }
+  # Checked here rather than left to surface as an internal R error further
+  # down. A caller who passes cuts containing NA used to get "missing value
+  # where TRUE/FALSE needed", which says nothing about what they did wrong.
+  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) ||
+      horizon < 0) {
+    stop("`horizon` must be a single, finite, non-negative number; a negative ",
+         "horizon would ask the truth to be evaluated before the cut",
+         call. = FALSE)
+  }
+  if (!is.numeric(window) || length(window) != 1L || !is.finite(window) ||
+      window <= 0) {
+    stop("`window` must be a single, finite, positive number: a cut with no ",
+         "window has no new evidence to assess", call. = FALSE)
+  }
+  if (!is.numeric(min_k) || length(min_k) != 1L || !is.finite(min_k) ||
+      min_k < 2) {
+    stop("`min_k` must be at least 2: a snapshot cannot be fitted from fewer ",
+         "than two studies", call. = FALSE)
+  }
+  if (!length(methods)) {
+    stop("`methods` is empty; name at least one of: ",
+         paste(available_methods(), collapse = ", "), call. = FALSE)
+  }
+
   dates <- as.numeric(stream$date)
   if (identical(cuts, "yearly")) {
     cuts <- seq(min(dates), max(dates), by = 1)
   }
+  if (!is.numeric(cuts) || !length(cuts) || anyNA(cuts)) {
+    stop("`cuts` must be \"yearly\" or a numeric vector with no missing values",
+         call. = FALSE)
+  }
+  # A repeated cut is the same point in time. Left in, it entered the results
+  # once per repetition and inflated the denominator of every metric.
+  cuts <- sort(unique(cuts))
 
   # a cut is usable when the snapshot has enough studies AND new evidence exists
   usable <- vapply(cuts, function(cut) {
