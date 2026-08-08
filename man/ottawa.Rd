@@ -56,6 +56,16 @@ Appendix S3: all ten fire under it, none fires under the ratio of the
 effects themselves. A reader who takes Shojania's sentence to mean the ratio
 of effects would get a materially different detector, and should know the
 choice was made deliberately and on evidence.
+
+A second, independent source settles it the same way. Kuhnisch et al.
+(2013), applying the method and citing Shojania for it, state signal B2 as
+"a change in relative effect size of at least 50\%" and work two examples:
+RR 2.10 to 1.51, and RR 2.61 to 1.66, both declared to meet the criterion.
+Neither meets it on the ratio of the effects (0.719 and 0.636, inside the
+band) nor as a percentage change in the estimate (28\% and 36\%, under the
+50\% bar). Both meet it on the ratio of risk reductions (0.464 and 0.410,
+i.e. changes of 54\% and 59\%). Two papers, four worked examples, one
+reading.
 }
 
 \section{The effect criterion is on risk REDUCTIONS, and is unstable}{

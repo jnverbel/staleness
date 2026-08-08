@@ -229,3 +229,28 @@ test_that("simulation follows the published procedure, step for step", {
   expect_equal(simulation(prev, new, B = 2000, seed = 1,
                           power_threshold = at$signal)$verdict, "current")
 })
+
+test_that("a second source's worked examples pick the same reading", {
+  # Kuhnisch et al. (2013, PMC3881834) apply the Ottawa method citing Shojania
+  # and work two examples, both declared to meet the 50% criterion. Only one
+  # reading of "relative effect size" makes both statements true.
+  ex <- data.frame(prev = c(2.10, 2.61), new = c(1.51, 1.66))
+  fires <- function(x) x <= 0.5 || x >= 1.5
+
+  ratio_of_effects <- ex$new / ex$prev             # 0.719, 0.636
+  pct_change       <- abs(ex$new - ex$prev) / ex$prev  # 0.281, 0.364
+  ratio_of_rrr     <- (1 - ex$new) / (1 - ex$prev) # 0.464, 0.410
+
+  expect_false(any(vapply(ratio_of_effects, fires, logical(1))))
+  expect_false(any(pct_change > 0.5))
+  expect_true(all(vapply(ratio_of_rrr, fires, logical(1))))
+
+  # And the detector agrees with the source on both.
+  for (i in 1:2) {
+    prev <- metafor::rma(yi = rep(log(ex$prev[i]), 2), vi = c(0.001, 0.001),
+                         measure = "RR")
+    new  <- metafor::rma(yi = rep(log(ex$new[i]), 2), vi = c(0.001, 0.001),
+                         measure = "RR")
+    expect_true(ottawa(prev, new)$detail$signal_effect)
+  }
+})
