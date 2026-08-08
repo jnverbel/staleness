@@ -136,3 +136,67 @@ test_that("the ratio of risk ratios would have missed all ten", {
   }, logical(1))
   expect_equal(sum(fired_on_rr), 0)
 })
+
+# --- The remaining three detectors, against the same published appendix ----
+
+test_that("sufficiency's benchmark is 5k + 10 on the PRIOR review, as published", {
+  # Appendix S3, Table S4 publishes Nfs, the benchmark and the failsafe ratio
+  # for the ten reviews with the largest indicator. The benchmark is 5k + 10
+  # computed on the number of studies in the PREVIOUS meta-analysis, which is
+  # independent confirmation of the argument order this package had to correct
+  # during development: sufficiency reads `prev`, stability reads `new_ma`.
+  s4 <- data.frame(
+    review  = c("Boulvain 2008", "Kelly 2009", "Alfirevic 2006", "Abalos 2007",
+                "Alfirevic 2009", "Kenyon 2010", "Boulvain 2005",
+                "Alfirevic 2010", "Haas 2008", "French 2001"),
+    k_prev  = c(24, 22, 22, 20, 21, 16, 15, 15, 14, 13),
+    nfs     = c(23.7, 21.7, 21.3, 20.0, 19.7, 15.8, 15.0, 14.4, 13.9, 12.9),
+    bench   = c(130, 120, 120, 110, 115, 90, 85, 85, 80, 75),
+    ratio   = c(0.18, 0.18, 0.18, 0.18, 0.17, 0.18, 0.18, 0.17, 0.17, 0.17)
+  )
+  expect_equal(5 * s4$k_prev + 10, s4$bench)
+  expect_equal(s4$nfs / s4$bench, s4$ratio, tolerance = 0.02)
+
+  # Every one of them is well below 1, i.e. insufficient -- which is why the
+  # published study flagged none of its eighty reviews by this method, and why
+  # `sufficient && !stable` is the correct reading of the rule rather than its
+  # inverse.
+  expect_true(all(s4$ratio < 1))
+
+  # Our index is built the same way.
+  prev <- metafor::rma(yi = rep(log(0.9), 24), vi = rep(0.05, 24))
+  new  <- metafor::rma(yi = rep(log(0.9), 30), vi = rep(0.05, 30))
+  res  <- sufficiency(prev, new)
+  expect_equal(res$detail$k, 24)
+  expect_equal(res$detail$index,
+               failsafe_n(as.numeric(prev$yi), as.numeric(prev$vi)) / (5 * 24 + 10))
+})
+
+test_that("barrowman's participant ratio matches the published quotient", {
+  # Table S5 publishes n_actual, n_expected and the ratio for ten reviews.
+  s5 <- data.frame(
+    n_act = c(1734, 126, 377, 4725, 494, 6241, 300, 116, 85, 375),
+    n_exp = c(50, 12, 52, 863, 249, 3173, 185, 143, 119, 681),
+    ratio = c(34.92, 10.22, 7.25, 5.48, 1.98, 1.97, 1.62, 0.81, 0.71, 0.55)
+  )
+  expect_equal(s5$n_act / s5$n_exp, s5$ratio, tolerance = 0.03)
+  # Seven of the ten exceed 1 and were published as out-of-date; three did not.
+  expect_equal(sum(s5$ratio > 1), 7)
+
+  # Our q is that same quotient, with n_expected from the published formula
+  # n = (Z_crit^2 * N) / Z^2.
+  prev <- metafor::rma(yi = c(0.10, -0.05, 0.08, -0.02), vi = rep(0.05, 4),
+                       measure = "MD")
+  n_req <- (1.96^2 * 400) / prev$zval^2
+  expect_equal(barrowman(prev, n_prev = 400, n_new = 2 * n_req)$signal, 2,
+               tolerance = 1e-8)
+})
+
+test_that("simulation's 80% threshold is what left the published cohort empty", {
+  # Table S7: the ten reviews with the highest simulated power top out at
+  # 63.4%, below the method's 80% threshold -- which is why the study reports
+  # zero out-of-date reviews by this method. Our default threshold is the same.
+  powers <- c(63.4, 62.0, 60.7, 60.3, 49.5, 44.7, 37.9, 29.0, 27.5, 27.0) / 100
+  expect_true(all(powers < 0.80))
+  expect_equal(formals(simulation)$power_threshold, 0.80)
+})
