@@ -53,3 +53,36 @@ test_that("plotting a backtest restores the caller's graphics parameters", {
 
   expect_identical(before, after)
 })
+
+test_that("plotting a backtest with no eligible rows fails with a clear message", {
+  # Every row is ineligible for calibration(), by one of its three exclusion
+  # rules: not_applicable, censored, or an undeterminable (NA) truth value.
+  # calibration() then returns NULL (do.call(rbind, list()) on zero groups),
+  # which must not reach graphics::barplot() as-is -- that produces the
+  # opaque "'height' must be a vector or a matrix" error instead of saying
+  # what actually went wrong.
+  bt <- structure(
+    list(
+      results = data.frame(
+        cut     = c(2000, 2001, 2002),
+        method  = c("rcma", "ottawa", "sufficiency"),
+        verdict = c("not_applicable", "current", "current"),
+        signal  = NA_real_,
+        reason  = c("insufficient studies", "", ""),
+        truth_shift      = c(TRUE, NA, TRUE),
+        truth_surprise   = c(FALSE, FALSE, FALSE),
+        truth_conclusion = c(TRUE, TRUE, TRUE),
+        censored = c(FALSE, FALSE, TRUE),
+        stringsAsFactors = FALSE
+      ),
+      methods = c("rcma", "ottawa", "sufficiency"), horizon = 5, window = 3,
+      n_cuts = 3, n_censored = 1
+    ),
+    class = "staleness_backtest"
+  )
+
+  expect_error(
+    plot(bt, truth = "shift"),
+    "nothing to plot for truth = \"shift\""
+  )
+})

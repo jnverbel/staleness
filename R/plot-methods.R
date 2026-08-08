@@ -10,6 +10,11 @@
 #' @export
 plot.staleness_backtest <- function(x, truth = "shift", ...) {
   cal <- calibration(x, truth = truth)
+  if (is.null(cal) || nrow(cal) == 0) {
+    stop("nothing to plot for truth = \"", truth, "\": every row was ",
+         "not_applicable, censored, or had an undeterminable truth value",
+         call. = FALSE)
+  }
   vals <- rbind(sensitivity = cal$sensitivity, specificity = cal$specificity)
   colnames(vals) <- cal$method
 
