@@ -11,6 +11,13 @@ VALID_VERDICTS <- c("out_of_date", "current", "not_applicable")
 #' @keywords internal
 new_verdict <- function(method, verdict, signal = NA_real_, reason = "",
                         detail = list()) {
+  # Checked here rather than left to print.staleness_verdict, where nzchar()
+  # on a vector dies with "the condition has length > 1" -- an error about an
+  # if(), raised far from the call that caused it, naming nothing the caller
+  # can act on.
+  if (!is.character(reason) || length(reason) != 1L || is.na(reason)) {
+    stop("`reason` must be a single, non-NA string (a scalar)", call. = FALSE)
+  }
   if (!verdict %in% VALID_VERDICTS) {
     stop("`verdict` must be one of: ", paste(VALID_VERDICTS, collapse = ", "),
          call. = FALSE)

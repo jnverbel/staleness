@@ -398,3 +398,30 @@ test_that("scale pivotality is about yi and vi TOGETHER, not vi alone", {
   expect_equal(stability_shift_z(yi, rep(4, 3)), base / 2)
   expect_false(isTRUE(all.equal(stability_shift_z(yi, rep(4, 3)), base)))
 })
+
+test_that("failsafe_n on empty input is undefined, not zero", {
+  # (sum(z)^2)/z_crit^2 - length(z) evaluates to 0 on empty input, and 0 is a
+  # meaningful fail-safe N: it flows into index = 0/(5*0+10) = 0 and reports
+  # sufficient = FALSE. A quiet, wrong "not sufficient" beats no answer only
+  # if you never look.
+  expect_true(is.na(failsafe_n(numeric(0), numeric(0))))
+  expect_false(is.na(failsafe_n(c(0.5, 0.4), c(0.05, 0.05))))
+})
+
+test_that("min_k gates the updated evidence only, and that is load-bearing", {
+  # The two halves read different objects: sufficiency from `prev`, stability
+  # from `new_ma`. min_k guards the stability permutation, which needs enough
+  # studies to have a null at all, so it is checked against new_ma. Nothing
+  # guards `prev`, which means a two-study prior review can drive the
+  # sufficiency half. Pinned so the asymmetry stays a documented decision.
+  prev2 <- metafor::rma(yi = c(0.5, 0.4), vi = c(0.05, 0.05))
+  new8  <- metafor::rma(yi = rep(0.5, 8), vi = rep(0.05, 8))
+  res <- sufficiency(prev2, new8)
+  expect_equal(res$detail$k, 2)       # the prior review really is that small
+  expect_false(is.na(res$detail$index))
+  expect_equal(res$verdict, "current")
+
+  # And the gate does fire on the updated side.
+  new3 <- metafor::rma(yi = rep(0.5, 3), vi = rep(0.05, 3))
+  expect_equal(sufficiency(prev2, new3)$verdict, "not_applicable")
+})

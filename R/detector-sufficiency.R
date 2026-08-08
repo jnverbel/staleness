@@ -10,6 +10,11 @@
 #' @return The fail-safe N.
 #' @keywords internal
 failsafe_n <- function(yi, vi, z_crit = 1.645) {
+  # Empty input would otherwise evaluate to exactly 0, and 0 is a meaningful
+  # fail-safe N: it flows on into index = 0 / (5 * 0 + 10) and reports
+  # `sufficient = FALSE`. "No studies" and "not enough unpublished nulls to
+  # matter" are different facts, and only one of them is an answer.
+  if (!length(yi)) return(NA_real_)
   z <- yi / sqrt(vi)
   (sum(z)^2) / (z_crit^2) - length(z)
 }
@@ -388,7 +393,16 @@ stability_shift_at <- function(yi, vi) {
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.
 #' @param min_k Minimum number of studies in `new_ma`. Below this the
-#'   stability test is meaningless.
+#'   stability test is meaningless: an order-permutation null needs enough
+#'   orderings to have a distribution.
+#'
+#'   It gates the **updated** evidence only. The two halves of this method
+#'   read different objects — sufficiency from `prev`, stability from
+#'   `new_ma` — so nothing here constrains the size of `prev`, and a
+#'   two-study prior review can drive the sufficiency half on its own. That
+#'   is deliberate rather than overlooked: the fail-safe N is defined for any
+#'   number of studies, and the source sets no floor. Read `detail$k` if the
+#'   size of the prior review matters to you; it is reported for that reason.
 #' @param alpha_stability Cutoff for the stability permutation p-value: the
 #'   review is unstable when `p_stability < alpha_stability`.
 #' @param n_perm Number of order permutations used to build the null

@@ -37,6 +37,16 @@ time t?". Independence matters: defining truth with the same rule a detector
 uses makes that detector correct by construction, which would turn any
 calibration result into an artefact.
 }
+\section{An estimate of exactly zero}{
+
+`truth_conclusion()` compares `sign(theta_t)` with `sign(theta_final)`, and
+`sign(0)` is `0`, which differs from both `+1` and `-1`. An estimate
+sitting exactly on the null therefore reads as a sign change against any
+non-zero one. That is the intended reading — moving from "no effect at
+all" to a definite direction is a change in the practical conclusion — and
+on real data an exactly-zero pooled estimate is measure-zero in any case.
+}
+
 \examples{
 # Truth is measured against the FINAL body of evidence, which is why it
 # can only ever be computed in hindsight -- and why no detector is

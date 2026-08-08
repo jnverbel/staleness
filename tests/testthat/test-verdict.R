@@ -39,3 +39,16 @@ test_that("print method returns invisible and formats verdict correctly", {
   out_na <- capture.output(print(v_na))
   expect_false(any(grepl("signal", out_na)))
 })
+
+test_that("a non-scalar reason is refused where it is built, not where it prints", {
+  # nzchar() on a length-2 vector makes print.staleness_verdict die with
+  # "the condition has length > 1" -- an error about an if(), raised far from
+  # the call that caused it, naming nothing the caller can act on.
+  expect_error(new_verdict("rcma", "current", reason = c("a", "b")), "scalar")
+  expect_error(new_verdict("rcma", "current", reason = character(0)), "scalar")
+  expect_error(new_verdict("rcma", "current", reason = NA), "scalar")
+  # The legitimate cases still work, and still print.
+  expect_s3_class(new_verdict("rcma", "current"), "staleness_verdict")
+  expect_output(print(new_verdict("rcma", "current", reason = "because")),
+                "because")
+})

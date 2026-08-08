@@ -26,3 +26,15 @@ test_that("shift and surprise are not the same test", {
   expect_true(truth_shift(0.0, 0.5, se_final = 0.10))
   expect_false(truth_surprise(0.0, se_t = 0.40, theta_final = 0.5))
 })
+
+test_that("an effect of exactly zero counts as a sign change, deliberately", {
+  # sign(0) is 0, so it differs from both +1 and -1 and truth_conclusion()
+  # reads a flip. Pinned here so the behaviour is a decision rather than an
+  # accident of sign(): an estimate sitting exactly on the null moving to a
+  # definite direction IS a change in the practical conclusion, and an exact
+  # zero is measure-zero on real data anyway.
+  expect_true(truth_conclusion(0, 0.9, -0.5, 0.01))
+  expect_true(truth_conclusion(-0.5, 0.01, 0, 0.9))
+  # Two zeros do not flip: sign(0) == sign(0).
+  expect_false(truth_conclusion(0, 0.9, 0, 0.9))
+})
