@@ -104,6 +104,68 @@ test_that("unchanging evidence signals no more often than chance: strong-effect 
   expect_lte(sum(v[, "sufficiency"] == "out_of_date"), 8)
 })
 
+# --- The invariant under a REALISTIC variance schedule ---------------------
+#
+# no_change_run() above gives every study the same variance, and that is what
+# let the second sufficiency defect ship. A permutation test over study order
+# is exact only if the studies are exchangeable, and in a real evidence stream
+# they are not: trials get larger over time, so the variance schedule is
+# informative about position even when nothing about the effect is changing.
+# Under that schedule the cumulative series wanders early -- when only small
+# trials have accumulated -- and then settles as the large ones arrive, which
+# looks exactly like drift. Permuting orders puts the large trials early half
+# the time, so the null is flat and the real series looks extreme against it.
+#
+# Measured on the slope statistic that shipped before: 83/300 = 28% false
+# alarms with variance falling over time, and 101/300 = 34% on a step schedule
+# of twenty small trials followed by ten large ones. Five to seven times
+# nominal, on evidence with no drift in it whatsoever. The fix was to make the
+# statistic pivotal so it carries no imprint of the schedule (see
+# ?sufficiency); this is the test that holds it to that.
+
+# Counts how often the STABILITY half fires, not how often the verdict does:
+# a verdict-level count would be diluted by the occasional sample whose `prev`
+# came out insufficient, which says nothing about the property under test.
+hetero_false_alarms <- function(vi, n = 200, effect = log(0.5), seed0 = 9000) {
+  k <- length(vi); k_prev <- 20
+  unstable <- 0L
+  for (i in seq_len(n)) {
+    set.seed(seed0 + i)
+    yi <- rnorm(k, effect, sqrt(vi))     # no drift: one mean throughout
+    prev <- metafor::rma(yi = yi[seq_len(k_prev)], vi = vi[seq_len(k_prev)],
+                         measure = "RR", method = "FE")
+    upd  <- metafor::rma(yi = yi, vi = vi, measure = "RR", method = "FE")
+    unstable <- unstable + !sufficiency(prev, upd)$detail$stable
+  }
+  unstable
+}
+
+test_that("time-correlated heteroscedasticity does not manufacture false alarms", {
+  # 200 samples, no drift, variance falling steadily over time: early small
+  # trials, later large ones. At the nominal 5% the expected count is 10 and
+  # the upper 99.9% binomial bound is 20; the shipped slope statistic produced
+  # about 56 here, so the bound has teeth.
+  expect_lte(hetero_false_alarms(seq(0.16, 0.01, length.out = 30)), 20)
+})
+
+test_that("a step change in study size does not manufacture false alarms", {
+  # The harder version of the same shape, and the one the slope statistic was
+  # worst on (34%): twenty small trials, then ten large ones, no drift.
+  expect_lte(hetero_false_alarms(c(rep(0.25, 20), rep(0.005, 10))), 20)
+})
+
+test_that("the reverse schedule does not destroy the test either", {
+  # Variance *rising* over time is the mirror image, and under the slope
+  # statistic it was worse than a false alarm: the rate fell to 0/200, i.e. the
+  # test had no power left at all in that regime -- a detector that can never
+  # fire trivially passes an upper bound. So this one is bounded on BOTH sides.
+  # At a true 5% rate the chance of seeing zero firings in 200 samples is
+  # 3.5e-5, so the lower bound is safe and it is the half with the teeth here.
+  fired <- hetero_false_alarms(seq(0.01, 0.16, length.out = 30))
+  expect_lte(fired, 20)
+  expect_gte(fired, 1)
+})
+
 test_that("sufficiency does not fire on a cumulative series that is only rounding noise", {
   # 12 byte-identical studies. The cumulative effect spans 2.2e-16 -- pure
   # floating-point noise around a constant -- and the old OLS test fitted that
@@ -116,7 +178,7 @@ test_that("sufficiency does not fire on a cumulative series that is only roundin
   expect_true(v$detail$sufficient)       # sufficiency is not the thing failing
   expect_true(v$detail$stable)
   expect_equal(v$detail$slope, 0)
-  expect_equal(v$detail$p_slope, 1)
+  expect_equal(v$detail$p_stability, 1)
   expect_equal(v$verdict, "current")
 })
 

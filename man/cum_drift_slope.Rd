@@ -2,22 +2,38 @@
 % Please edit documentation in R/detector-sufficiency.R
 \name{cum_drift_slope}
 \alias{cum_drift_slope}
-\title{Slope of a cumulative series against study index}
+\title{Slope of a cumulative series against accumulated information}
 \usage{
-cum_drift_slope(cum_theta)
+cum_drift_slope(cum_theta, info)
 }
 \arguments{
 \item{cum_theta}{Numeric vector, as returned by [cumulative_effect()].}
+
+\item{info}{Numeric vector of the same length, the accumulated information
+`cumsum(1 / vi)` in the same order.}
 }
 \value{
 The ordinary-least-squares slope, or `NA_real_` if the series is
   too short to have one.
 }
 \description{
+The x-axis is accumulated Fisher information, `cumsum(1 / vi)`, which is
+what the primary source means by *"versus information increment"*
+(Pattanittum et al. 2012, Table 1) and what trial-sequential-analysis
+methods use. An earlier implementation regressed on the study index
+`1, 2, 3, ...` instead; the two coincide only when every study carries the
+same variance.
+}
+\details{
 The first element of a cumulative series is just the first study, carrying
 no information about accumulation, so it is dropped before the slope is
 taken. Computed in closed form rather than through [stats::lm()]: the same
-number, but cheap enough to repeat a thousand times inside a permutation
-loop.
+number, but cheap.
+
+This slope is **reported** in `detail$slope` for fidelity to the published
+rule, so that anyone who wants to apply `|slope| > 0` literally can read it
+straight off the verdict. It is not what decides stability — see
+[stability_shift_z()] and the roxygen block of [sufficiency()] for why a
+slope over a cumulative series turned out to be an unusable instrument.
 }
 \keyword{internal}

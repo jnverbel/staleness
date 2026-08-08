@@ -8,7 +8,7 @@ sufficiency(
   prev,
   new_ma,
   min_k = 5,
-  alpha_slope = 0.05,
+  alpha_stability = 0.05,
   n_perm = 999,
   seed = 20260807
 )
@@ -19,28 +19,31 @@ sufficiency(
 \item{new_ma}{An `rma.uni` object refitted with the new evidence included.}
 
 \item{min_k}{Minimum number of studies in `new_ma`. Below this the
-stability regression is meaningless.}
+stability test is meaningless.}
 
-\item{alpha_slope}{Cutoff for the stability permutation p-value: the review
-is unstable when `p_slope < alpha_slope`.}
+\item{alpha_stability}{Cutoff for the stability permutation p-value: the
+review is unstable when `p_stability < alpha_stability`.}
 
 \item{n_perm}{Number of order permutations used to build the null
-distribution of the slope.}
+distribution of the stability statistic.}
 
 \item{seed}{Integer seed for the permutation draw. Fixed by default so
 verdicts are reproducible; the caller's own random stream is saved and
 restored around the draw, so calling this detector never changes it.}
 }
 \value{
-A `staleness_verdict`.
+A `staleness_verdict`. Its `detail` carries `index`, `sufficient`,
+  `stable`, `slope` (the published slope, reported only), `z_shift` and
+  `split` (the statistic actually tested and where it peaked),
+  `p_stability`, `k` (of `prev`) and `k_new` (of `new_ma`).
 }
 \description{
 Sufficiency is the fail-safe N scaled by `5k + 10`; a review is sufficient
 when this index exceeds 1, Rosenthal's own rule of thumb for a pooled effect
-being robust to unpublished null studies. Stability is the slope of the
-cumulative pooled effect regressed on study index; a review is stable when
-that slope is no larger than the same studies would produce in a random
-order.
+being robust to unpublished null studies. Stability asks whether the
+cumulative pooled effect has stopped moving; a review is stable when the
+largest standardised movement left in its cumulative series is no larger
+than the same studies would produce in a random order.
 }
 \details{
 The two indicators deliberately read from different bodies of evidence.
@@ -65,36 +68,121 @@ suggests, and also confirmed in the design doc.
 }
 \section{How stability is tested, and why not as published}{
 
-The source states the instability criterion as an *"absolute slope of the
-linear regression >0"*. Taken literally that rule is degenerate: on
-continuous data the slope of a cumulative series is never exactly zero, so
-every review with `index > 1` would be flagged out of date and the
-indicator would carry no information. Some significance rule has to stand
-in for it.
+This is the largest declared departure in the package, and it is a
+departure from the *statistic*, not only from the decision rule. It was
+arrived at by measurement, over three implementations; the numbers below
+are all reproducible from `vignette("methods")`.
 
-The obvious substitute — the t-test on the slope reported by
-[stats::lm()] — is invalid here, and measurably so. A cumulative mean is
+**What the source says.** Pattanittum et al. (2012, Table 1) states the
+instability criterion as an *"absolute slope of the linear regression
+\[fitted across the cumulative treatment effects versus information
+increment\] >0"*. Taken literally the rule is degenerate: on continuous
+data that slope is never exactly zero, so every review with `index > 1`
+would be flagged and the indicator would carry no information. Some
+significance rule has to stand in for it.
+
+**Attempt 1, the OLS t-test: invalid.** A cumulative mean is
 near-perfectly autocorrelated by construction and converges on the pooled
-effect by the law of large numbers, so an OLS test on it detects
-*convergence* and reports *instability*: over 300 samples of genuinely
-unchanging evidence (20 prior plus 10 new studies from one distribution) it
-returned `out_of_date` 209 times, where `rcma()` and `ottawa()` returned it
-none.
+effect by the law of large numbers, so the `lm()` t-test detects
+*convergence* and reports *instability*. Over 300 samples of genuinely
+unchanging evidence (20 prior plus 10 new studies from one distribution)
+it returned `out_of_date` 209 times, where `rcma()` and `ottawa()`
+returned it none.
 
-This package therefore substitutes a **permutation test over study order**.
-The observed slope is compared against the slopes obtained by reshuffling
-the same studies `n_perm` times and recomputing the cumulative series each
-time; `p_slope` is the two-sided proportion of permuted slopes at least as
-large in absolute value, using the `(1 + count) / (n_perm + 1)` estimator
-so that the p-value is never zero. This assumes nothing about the
-independence of a series that is autocorrelated by design, and asks the
-scientifically meaningful question directly: is the drift in the cumulative
-effect larger than what *these same studies* would produce in a random
-order? Under evidence that is not changing, study order is exchangeable and
-the test is exact, so the no-change invariant holds by construction rather
-than by luck. The same 300-sample experiment run against this
-implementation returns `out_of_date` 12 times — the nominal 5% rate, within
-sampling error, instead of 70%. See `vignette("methods")` for the
-declaration of this adaptation.
+**Attempt 2, permuting study order but keeping the slope: calibrated on
+average, blind where it matters.** Comparing the observed slope against
+the slopes of the same studies reshuffled brought the false-alarm rate on
+that experiment to 16/300, nominal. But the slope of a cumulative series
+is dominated by its first few points, where little information has
+accumulated and the series swings hardest, so the permutation null is
+wide and a *late* change cannot clear it. Measured: with 20 prior studies
+at RR 0.5 and 10 new ones at RR 0.30, power was **1 in 200** — and it fell
+to 0 as the new studies got further away, because a larger shift makes the
+permuted series swing harder too. On a 20-study series that sits at RR 0.5
+and then drops to RR 0.05, it fired when the drop came after study
+2, 5, 8 or 10 and was silent when it came after study 12, 15 or 18. Worse,
+the permutation null itself is not valid when study variances change
+systematically over calendar time: with early small trials and later large
+ones and *no drift at all*, it fired on 83/300 samples (28%), and on a
+schedule of 20 small trials followed by 10 large ones, on 127/300 (42%).
+Study order is exchangeable under no change only if the variances are
+exchangeable too, and in a real evidence stream they are not.
+
+Fitting the regression against accumulated information rather than the
+study index — which is what the source's *"versus information increment"*
+actually specifies, and what [cum_drift_slope()] now reports — is a real
+fidelity fix but **not** a fix for any of this. When variances are equal,
+`cumsum(1 / vi)` is an affine function of the study index, so every slope
+is rescaled by the same constant and the permutation p-value is *identical
+to the last bit*. It was measured: E1, E2 and E3 above were unchanged, and
+the 28% false-alarm rate moved only to 25%.
+
+**What runs instead.** The statistic is replaced with the largest
+standardised movement the cumulative series has left in it
+([stability_shift_z()]): for each split point `m`, the fixed-effect pooled
+estimate of the first `m` studies is compared with the pooled estimate of
+the rest, divided by the standard error of that difference, and the
+statistic is the maximum absolute value over `m`. This still asks the
+method's own question — *has the pooled estimate stopped moving?* — and it
+is monotone in the same quantity the published slope is a proxy for, since
+the movement remaining in the cumulative curve after step `m` is exactly
+`(1 - I_m / I_k)` times the difference it standardises. What it adds is
+that it is **pivotal**: under no drift each `Z_m` is standard normal
+whatever the variances are, so the statistic carries no imprint of the
+variance schedule, and the permutation null over study order becomes valid
+again. The permutation machinery is otherwise unchanged — `n_perm` draws,
+the two-sided `(1 + count) / (n_perm + 1)` estimator so the p-value is
+never zero, a fixed seed, the caller's random stream preserved, and a
+cumulative series that is constant to floating-point rounding
+short-circuited as maximally stable before anything is computed.
+
+Measured against the same four experiments: false alarms 15/300 (5.0%);
+power against 10 new studies at RR 0.40/0.30/0.15/0.02, 200/200 at every
+level; the shift-position scan fires at all seven positions including
+12, 15 and 18; and the heteroscedastic no-drift false-alarm rate is 16/300
+(5.3%) with variance falling over time, 20/300 (6.7%) with it rising, and
+19/300 (6.3%) on the 20-small-then-10-large schedule that produced 42%
+before.
+Calibration stays between 4.0% and 6.7% across nine variance and
+heterogeneity regimes; the one exception is `k = 5`, where only four split
+points and 120 distinct orderings exist and the test is conservative
+(1.0%) rather than anti-conservative.
+
+`detail$slope` still reports the literal published quantity — the
+least-squares slope of the cumulative effects against accumulated
+information — so a reader who wants the source's own rule can apply it.
+It no longer decides anything.
+}
+
+\section{Known limits of the stability test}{
+
+Three, all measured, none of them hidden.
+
+**It is conservative at `k = 5`.** With four split points and only 120
+distinct orderings, the permutation null is coarse: the false-alarm rate on
+unchanging evidence is 1.0% rather than 5%, so the detector has little
+power at the very bottom of its permitted range. It under-fires rather than
+over-fires, which is the safe direction, but a `current` verdict from a
+five-study update is weak evidence of stability.
+
+**A single strongly discordant study, arriving first or last, can carry
+the statistic.** The statistic is a maximum over split points, and the
+split that isolates one study is one of them. A study 20 standard errors
+away from the rest, sitting at either end of the series, reaches a
+permutation p-value of roughly `2 / k` on its own — not significant at
+`k = 20` (p = 0.12), significant from about `k = 35` (p = 0.045 at
+`k = 40`). This is arguably the right answer, since such a study does move
+the pooled estimate and the ordering really is extreme among all
+orderings, but it means an `out_of_date` verdict on a long series can rest
+on one outlier rather than on a trend. `detail$split` says which reading
+applies: a split at `k - 1` is one study, a split in the middle is a body
+of them.
+
+**Power falls away under strong between-study heterogeneity.** Against 20
+prior studies at RR 0.5 and 10 new ones at RR 0.30, power is 200/200 at
+`tau = 0` and `tau = 0.10`, 199/200 at `tau = 0.20`, and 160/200 at
+`tau = 0.35`. The permutation null is built from the same heterogeneous
+studies, so calibration holds throughout — it is power, not the false-alarm
+rate, that degrades.
 }
 
