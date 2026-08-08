@@ -73,6 +73,19 @@ First public release.
   from dividing by -0.005. Now the flag and the denominator travel with the
   verdict, which is unchanged.
 
+* `evidence_stream()` now carries `test`, `weighted` and a user-fixed `tau2`
+  into every snapshot, alongside `method`. Previously only `method` survived,
+  so a model fitted with `test = "knha"` was scored with the default z test --
+  a p-value differing by a factor of 178 on `metadat::dat.bcg`, in a detector
+  that decides on p-values. Snapshots now match a direct refit exactly for
+  each of those options.
+
+* `evidence_stream()` refuses, with an explanation, models it cannot honour:
+  meta-regressions, whose `beta` is a vector of coefficients rather than a
+  pooled effect, and models with custom per-study `weights`, which cannot
+  follow the subsetting each snapshot does. Both were previously accepted and
+  quietly flattened into a plain pooled analysis.
+
 ## Reproducibility
 
 * `inst/calibration/calibration.R` regenerates every calibration figure quoted

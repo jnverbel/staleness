@@ -33,6 +33,23 @@ The only part of the package that knows about time. Detectors receive
 snapshots, never dates, which is what allows [backtest()] to reuse them
 unmodified.
 }
+\section{What the stream carries from the model, and what it refuses}{
+
+Every snapshot is refitted from `yi` and `vi`, so anything the caller set
+that changes the estimator has to travel with the stream or the snapshots
+answer under a model nobody fitted. Carried: `method`, `test` (the
+Knapp-Hartung adjustment moves p-values by orders of magnitude, and
+[ottawa()] decides on p-values), `weighted`, and a `tau2` the caller fixed.
+Verified against a direct refit for each.
+
+Refused, with an explanation rather than a silent drop: models with
+moderators, whose `beta` is a vector of coefficients rather than a pooled
+effect; models with custom per-study `weights`, which cannot follow a
+subset in any defensible way; and fits that are not `rma.uni`.
+
+Not carried, because no detector reads them: `level`, `digits`, `slab`.
+}
+
 \examples{
 library(metafor)
 # The BCG vaccine trials, in the order metafor stores them: log risk

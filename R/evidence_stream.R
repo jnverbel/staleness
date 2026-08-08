@@ -4,6 +4,21 @@
 #' snapshots, never dates, which is what allows [backtest()] to reuse them
 #' unmodified.
 #'
+#' @section What the stream carries from the model, and what it refuses:
+#' Every snapshot is refitted from `yi` and `vi`, so anything the caller set
+#' that changes the estimator has to travel with the stream or the snapshots
+#' answer under a model nobody fitted. Carried: `method`, `test` (the
+#' Knapp-Hartung adjustment moves p-values by orders of magnitude, and
+#' [ottawa()] decides on p-values), `weighted`, and a `tau2` the caller fixed.
+#' Verified against a direct refit for each.
+#'
+#' Refused, with an explanation rather than a silent drop: models with
+#' moderators, whose `beta` is a vector of coefficients rather than a pooled
+#' effect; models with custom per-study `weights`, which cannot follow a
+#' subset in any defensible way; and fits that are not `rma.uni`.
+#'
+#' Not carried, because no detector reads them: `level`, `digits`, `slab`.
+#'
 #' @param ma An `rma.uni` object from `metafor`. Other fits (`rma.mh`,
 #'   `rma.peto`) are refused with an explanatory error: every snapshot is
 #'   refitted with [metafor::rma()], so accepting them would return
@@ -57,6 +72,22 @@ evidence_stream <- function(ma, date, ni = NULL) {
     }
     stop("`ma` must be an rma.uni object from metafor", call. = FALSE)
   }
+  # A meta-regression's `beta` is a vector of coefficients, not a pooled
+  # effect, and every snapshot below is refitted without moderators. Accepting
+  # one would return a plain pooled analysis wearing the caller's model label.
+  if (!is.null(ma$formula.mods) || NROW(ma$beta) > 1L) {
+    stop("`ma` includes moderators. Snapshots are refitted without them, so ",
+         "the backtest would answer a different question from the model you ",
+         "fitted. Supply a model with no `mods` argument.", call. = FALSE)
+  }
+  # Per-study weights cannot follow a subset in any defensible way: dropping
+  # studies changes what the supplied vector means. Refused rather than
+  # silently ignored.
+  if (!is.null(ma$weights)) {
+    stop("`ma` was fitted with custom `weights`, which cannot be carried ",
+         "through the subsetting each snapshot does. Fit without them, or ",
+         "build the stream from `yi` and `vi` directly.", call. = FALSE)
+  }
   k <- ma$k
   if (length(date) != k) {
     stop("`date` has length ", length(date), " but the meta-analysis has ",
@@ -93,6 +124,15 @@ evidence_stream <- function(ma, date, ni = NULL) {
       date    = date[ord],
       measure = ma$measure,
       method  = ma$method,
+      # Carried so every snapshot is tested the way the caller asked. The
+      # Knapp-Hartung adjustment moves p-values by orders of magnitude, and
+      # ottawa() decides on p-values.
+      test    = if (is.null(ma$test)) "z" else ma$test,
+      # weighted = FALSE and a user-fixed tau2 both change beta, se and pval.
+      # Anything that moves the estimator has to travel with the stream, or
+      # the snapshots answer under a model the caller never fitted.
+      weighted = if (is.null(ma$weighted)) TRUE else isTRUE(ma$weighted),
+      tau2_fix = if (isTRUE(ma$tau2.fix)) ma$tau2 else NULL,
       k       = k
     ),
     class = "staleness_stream"
@@ -132,7 +172,10 @@ snapshot_at <- function(stream, cut) {
          " at cut ", format(cut), call. = FALSE)
   }
   metafor::rma(yi = stream$yi[keep], vi = stream$vi[keep],
-               measure = stream$measure, method = stream$method)
+               measure  = stream$measure, method = stream$method,
+               test     = if (is.null(stream$test)) "z" else stream$test,
+               weighted = if (is.null(stream$weighted)) TRUE else stream$weighted,
+               tau2     = stream$tau2_fix)
 }
 
 #' Studies published in a half-open time window

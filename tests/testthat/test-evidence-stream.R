@@ -111,3 +111,62 @@ test_that("an NA in metafor's own ni does not block the whole stream", {
   expect_equal(res$verdict, "not_applicable")
   expect_match(res$reason, "finite")
 })
+
+test_that("a meta-regression is refused rather than silently flattened", {
+  # rma(mods = ~ x) fits a meta-regression: beta is a vector of coefficients,
+  # not a pooled effect. Every snapshot here is refitted WITHOUT moderators,
+  # so accepting one would hand back a plain pooled analysis under the label
+  # of the model the caller supplied. Different question, same-looking answer.
+  es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
+                        di = cneg, data = metadat::dat.bcg)
+  mr <- metafor::rma(yi, vi, mods = ~ ablat, data = es)
+  expect_gt(length(mr$beta), 1)
+  expect_error(evidence_stream(mr, date = es$year), "moderator")
+})
+
+test_that("the test statistic the caller chose survives into every snapshot", {
+  # test = "knha" changes the p-value by orders of magnitude, and ottawa()
+  # decides on p-values. Refitting snapshots with the default z test would
+  # score the caller's evidence under a test they did not ask for.
+  es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
+                        di = cneg, data = metadat::dat.bcg)
+  kn <- metafor::rma(yi, vi, data = es, test = "knha")
+  st <- evidence_stream(kn, date = es$year)
+  expect_equal(st$test, "knha")
+
+  snap <- snapshot_at(st, 1975)
+  expect_equal(snap$test, "knha")
+
+  direct <- metafor::rma(yi, vi, data = es[es$year <= 1975, ], test = "knha")
+  expect_equal(snap$pval, direct$pval, tolerance = 1e-10)
+
+  # And the default is untouched for callers who never asked for anything.
+  plain <- evidence_stream(metafor::rma(yi, vi, data = es), date = es$year)
+  expect_equal(snapshot_at(plain, 1975)$test, "z")
+})
+
+test_that("options that change the estimator survive into the snapshots", {
+  # method and test were not the only ones. weighted = FALSE and a fixed tau2
+  # both change beta, se and pval, and a snapshot refitted without them scores
+  # the caller's evidence under a model they did not fit.
+  es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
+                        di = cneg, data = metadat::dat.bcg)
+  keep <- es$year <= 1975
+
+  unw <- metafor::rma(yi, vi, data = es, weighted = FALSE)
+  s1  <- snapshot_at(evidence_stream(unw, date = es$year), 1975)
+  d1  <- metafor::rma(yi, vi, data = es[keep, ], weighted = FALSE)
+  expect_false(s1$weighted)
+  expect_equal(as.numeric(s1$beta), as.numeric(d1$beta), tolerance = 1e-10)
+
+  fx <- metafor::rma(yi, vi, data = es, tau2 = 0.1)
+  s2 <- snapshot_at(evidence_stream(fx, date = es$year), 1975)
+  d2 <- metafor::rma(yi, vi, data = es[keep, ], tau2 = 0.1)
+  expect_equal(s2$tau2, 0.1)
+  expect_equal(as.numeric(s2$beta), as.numeric(d2$beta), tolerance = 1e-10)
+
+  # Custom per-study weights cannot be carried through a subset sensibly, so
+  # they are refused rather than dropped.
+  wt <- metafor::rma(yi, vi, data = es, weights = rep(1, nrow(es)))
+  expect_error(evidence_stream(wt, date = es$year), "weights")
+})
