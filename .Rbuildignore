@@ -1,4 +1,5 @@
 ^\.superpowers$
+^\.github$
 ^docs$
 ^\.gitignore$
 ^\.DS_Store$
