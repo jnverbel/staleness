@@ -42,8 +42,35 @@ reach significance. Signals when that power crosses the threshold.
 \details{
 In the published comparison this method flagged none of 80 reviews. It is
 either extremely conservative or misspecified; the backtesting engine exists
-to find out which.
+to find out which. The highest simulated power in that cohort was 63.4\%,
+against a threshold of 80\%.
 }
+\section{How faithfully this follows the published procedure}{
+
+The method is set out step by step in Pattanittum et al. (2012), Appendix
+S1, and this implementation follows it: the new study's effect is drawn from
+a **t** distribution with the prior meta-analysis's pooled effect and
+variance; **one** study is simulated, carrying the combined precision of the
+recent studies rather than one study per recent study; the updated pooled
+effect is tested at 5\%; the draw is repeated `B` times; and power **strictly
+above** the threshold is the signal, as the source's "Power >80\%" reads. The
+degrees of freedom are the one parameter the source leaves implicit; they
+are taken as the prior study count minus one.
+
+One deviation is unavoidable and is declared rather than hidden. The source
+simulates at the level of **participants** — binomial draws for dichotomous
+outcomes, normal draws for continuous ones, from event rates and means
+recovered per arm — and then computes an effect from them. This package
+never sees participant-level data. It works from `yi` and `vi`, so it
+simulates the effect directly, with variance `vi_new + tau^2`. For a study
+of any reasonable size the two coincide closely, since the effect estimate
+is asymptotically normal about the same mean with the same variance; they
+can differ for very small or very sparse studies, where the participant-level
+distribution is skewed and the effect-level one is not. An implementation
+that wanted the source's exact procedure would need the 2x2 tables, which is
+a different package from this one.
+}
+
 \examples{
 library(metafor)
 # Like barrowman(), this one applies only to an inconclusive prior review.

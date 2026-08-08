@@ -9,14 +9,43 @@
 #' `qualitative` and reported separately. An algorithm that claimed to judge
 #' "substantial harm" on its own would be overselling what the data support.
 #'
-#' @section Relationship to `rcma()`:
-#' The effect-change half of this method is [rcma()]'s entire rule: the same
-#' `effect_ratio()`, the same 0.5 / 1.5 thresholds. At default parameters
-#' `rcma() == "out_of_date"` therefore **implies** `ottawa() == "out_of_date"`
-#' by construction, so the two detectors cannot disagree in that direction and
-#' their agreement is not an empirical quantity. Faithful to the published
-#' methods; declared so that nobody reads a structural identity as a finding.
-#' See [rcma()] for the measured demonstration.
+#' @section Which reading of "50\% change" this implements, and why:
+#' The original description (Shojania et al. 2007) states the quantitative
+#' signals as "changes in statistical significance or relative changes in
+#' effect magnitude of at least 50\%". That phrasing does not say *of what*,
+#' and the full text is behind a subscription, so it could not be consulted
+#' here. Declared rather than glossed over.
+#'
+#' The only published application of the method resolves it explicitly, and on
+#' data that can be checked: Pattanittum et al. (2012), Table 1, computes the
+#' change on relative risk **reductions** for ratio measures, and defers to the
+#' rCMA rule for mean differences. This package follows that reading, because
+#' it is the one that reproduces the ten worked reviews in that study's
+#' Appendix S3: all ten fire under it, none fires under the ratio of the
+#' effects themselves. A reader who takes Shojania's sentence to mean the ratio
+#' of effects would get a materially different detector, and should know the
+#' choice was made deliberately and on evidence.
+#'
+#' @section The effect criterion is on risk REDUCTIONS, and is unstable:
+#' For ratio measures the comparison is
+#' `(1 - RR_new) / (1 - RR_prev)`, not the ratio of the effects. For mean
+#' differences it defers to [rcma()], so **there** the two coincide -- but on
+#' ratio measures they do not, and an `rcma` firing is not a subset of the
+#' `ottawa` firings. Earlier versions of this documentation declared such a
+#' containment; it was an artefact of implementing both criteria with the same
+#' internal function.
+#'
+#' The consequence is worth stating plainly, because it is unflattering and
+#' measurable. `1 - RR_prev` goes to zero as the prior effect approaches no
+#' effect, so the ratio explodes exactly where the Ottawa method is meant to be
+#' used -- on meta-analyses whose result is not yet significant. Measured on
+#' evidence containing **no change at all**: the effect signal fires on 64\% of
+#' samples under a null effect, and on 0\% once the effect is real and precise.
+#' That is not an implementation artefact; it follows from the criterion.
+#'
+#' It also explains the published comparison. Ottawa flagged 34 of 80 reviews
+#' where recursive CMA and Barrowman each flagged 7 -- and all 80 were null
+#' meta-analyses by inclusion criterion.
 #'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.

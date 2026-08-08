@@ -200,3 +200,32 @@ test_that("simulation's 80% threshold is what left the published cohort empty", 
   expect_true(all(powers < 0.80))
   expect_equal(formals(simulation)$power_threshold, 0.80)
 })
+
+test_that("simulation follows the published procedure, step for step", {
+  # Pattanittum et al. (2012), Appendix S1, sets out the simulation-based
+  # power method: (a) draw the new study's effect from a t-distribution with
+  # the parameters of the previous meta-analysis; the new study carries the
+  # combined size of the recent studies; (b-d) re-pool and test at 5%;
+  # (e) repeat 10,000 times, and power ABOVE 80% means out-of-date.
+  expect_equal(formals(simulation)$B, 10000)
+  expect_equal(formals(simulation)$alpha, 0.05)
+  expect_equal(formals(simulation)$power_threshold, 0.80)
+
+  prev <- metafor::rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+                       vi = c(0.16, 0.20, 0.18, 0.15, 0.22))
+  new  <- list(yi = c(-0.45, -0.38, -0.52, -0.29, -0.41),
+               vi = c(0.05, 0.04, 0.06, 0.05, 0.04), k = 5)
+  res <- simulation(prev, new, B = 2000, seed = 1)
+
+  # One simulated study, carrying the summed precision of the recent ones.
+  expect_equal(res$detail$k_simulated, 1)
+  expect_equal(res$detail$vi_new, 1 / sum(1 / new$vi), tolerance = 1e-12)
+  expect_equal(res$detail$df, length(prev$yi) - 1)
+
+  # The threshold is strict: power exactly at the threshold is not a signal.
+  expect_equal(simulation(prev, new, B = 100, seed = 1,
+                          power_threshold = 0)$verdict, "out_of_date")
+  at <- simulation(prev, new, B = 2000, seed = 1)
+  expect_equal(simulation(prev, new, B = 2000, seed = 1,
+                          power_threshold = at$signal)$verdict, "current")
+})

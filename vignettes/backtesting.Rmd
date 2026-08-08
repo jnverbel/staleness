@@ -105,15 +105,17 @@ reading this table can mistake it for an independent result. `rcma` and
 `sufficiency`, scored against the same truth, are not marked, because
 neither shares `conclusion`'s specific logic.
 
-There is a second, structural dependency that no column can carry, because it
-holds between two *detectors* rather than between a detector and a truth:
-`rcma()`'s entire rule is one of `ottawa()`'s three signals, with the same
-thresholds. `rcma` firing therefore implies `ottawa` firing, always, and the
-two can never disagree in that direction. Both remain in the table — that is
-what the published methods do — but a reader recomputing the inter-method
-agreement question this vignette opens with should know that one of the ten
-detector pairs is arithmetic rather than evidence. It is stated in `?rcma`,
-`?ottawa`, and in `vignette("methods", package = "staleness")`.
+A relationship between two *detectors* deserves the same care, and earlier
+versions of this vignette got one wrong. `rcma()` and `ottawa()` look like the
+same effect rule at the same thresholds, and on mean differences they are. On
+ratio measures they are not: `ottawa()` compares relative risk *reductions*,
+`(1 - RR_new) / (1 - RR_prev)`, which is what its published application
+specifies. Of the ten reviews with the largest Ottawa indicator in that study,
+all ten fire under that definition and none fires under the ratio of the
+effects. So neither detector's firings are a subset of the other's, and the
+containment this vignette used to declare was an artefact of implementing both
+criteria with one function. See `?ottawa` and
+`vignette("methods", package = "staleness")` for the measured comparison.
 
 ## 5. A backtest, executed
 

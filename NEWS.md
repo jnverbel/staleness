@@ -55,6 +55,15 @@ First public release.
   effect versus 0% under a real one. Measured, pinned by a test, and
   documented in `?ottawa` and `vignette("methods")` rather than smoothed over.
 
+* `simulation()` now follows the published procedure step for step
+  (Pattanittum et al. 2012, Appendix S1): the effect of the new study is drawn
+  from a **t** distribution rather than a normal one; **one** study is
+  simulated carrying the combined precision of the recent studies, rather than
+  one per recent study; and the threshold is strict, matching the source's
+  "Power >80%". The one deviation that cannot be removed — simulating at the
+  level of effects rather than of participants, because the package never sees
+  2x2 tables — is now declared in `?simulation` instead of going unmentioned.
+
 ## Reproducibility
 
 * `inst/calibration/calibration.R` regenerates every calibration figure quoted

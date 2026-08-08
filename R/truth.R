@@ -5,6 +5,18 @@
 #' uses makes that detector correct by construction, which would turn any
 #' calibration result into an artefact.
 #'
+#' These three definitions are this package's own, and no published source
+#' offers a ready-made ground truth to borrow. The closest is Shojania et al.
+#' (2007), whose survival analysis counts a review as needing an update on
+#' "changes in statistical significance or relative changes in effect magnitude
+#' of at least 50\%", plus qualitative signals a program cannot infer.
+#' [truth_conclusion()] is the definition closest to that quantitative half.
+#' [truth_shift()] and [truth_surprise()] deliberately go elsewhere: they never
+#' look at a significance threshold or an effect-size ratio, which is what
+#' keeps them free of every detector's own logic. Treat them as three
+#' operational choices, stated so they can be argued with, rather than as a
+#' standard.
+#'
 #' @param theta_t Pooled effect at the cut point.
 #' @param se_t Standard error at the cut point.
 #' @param theta_final Pooled effect using all evidence.
