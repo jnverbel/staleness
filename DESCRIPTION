@@ -16,7 +16,7 @@ Encoding: UTF-8
 Language: en-GB
 Depends: R (>= 4.2)
 Imports: metafor, stats, graphics
-Suggests: metadat, testthat (>= 3.0.0), knitr, rmarkdown, grDevices
+Suggests: metadat, testthat (>= 3.0.0), knitr, rmarkdown, grDevices, withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0

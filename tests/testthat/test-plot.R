@@ -81,6 +81,10 @@ test_that("plotting a backtest with no eligible rows fails with a clear message"
     class = "staleness_backtest"
   )
 
+  # A null device, so a plot() that got as far as drawing cannot leave an
+  # Rplots.pdf behind in the test directory.
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
   expect_error(
     plot(bt, truth = "shift"),
     "nothing to plot for truth = \"shift\""
