@@ -34,3 +34,30 @@ An object of class `staleness_check`.
 Applies the selected detectors to a prior meta-analysis and the evidence
 published since.
 }
+\examples{
+library(metafor)
+bcg <- data.frame(
+  yi   = c(-0.89, -1.59, -1.35, -1.44, -0.22, -0.79, -1.62,
+            0.01, -0.47, -1.37, -0.34,  0.45, -0.02),
+  vi   = c(0.326, 0.195, 0.415, 0.020, 0.051, 0.007, 0.223,
+           0.004, 0.056, 0.073, 0.012, 0.533, 0.071),
+  year = c(1948, 1949, 1960, 1977, 1973, 1953, 1973,
+           1980, 1968, 1961, 1974, 1969, 1976),
+  ni   = c(262, 609, 451, 26465, 10877, 2992, 3174,
+           176782, 14776, 3381, 77972, 4839, 34767)
+)
+stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
+                          date = bcg$year, ni = bcg$ni)
+prev <- snapshot_at(stream, 1970)
+new  <- window_between(stream, 1970, 1980)
+
+# `new` is the new evidence on its own, never the updated model: this
+# function refits it internally. Handing it a fitted rma is an error, not
+# a quietly doubled dataset.
+check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
+
+# barrowman() needs the participant counts, and says so when they are absent.
+check_currency(prev, new, methods = "barrowman")
+check_currency(prev, new, methods = "barrowman",
+               n_prev = sum(bcg$ni[bcg$year <= 1970]), n_new = sum(new$ni))
+}

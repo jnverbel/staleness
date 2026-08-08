@@ -35,3 +35,20 @@ When it does not apply the verdict is `"not_applicable"`, never `"current"`:
 treating inapplicability as evidence of currency would bias any calibration
 study in this detector's favour.
 }
+\examples{
+library(metafor)
+# This detector only speaks when the prior review was inconclusive, so the
+# example needs a prior that genuinely failed to reach significance.
+prev <- rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+            vi = c(0.16, 0.20, 0.18, 0.15, 0.22), measure = "RR")
+prev$pval > 0.05
+
+# 2265 new participants against 555 before: enough to matter.
+barrowman(prev, n_prev = 555, n_new = 2265)
+
+# On a prior that was already significant it declines to answer. That is
+# deliberately not "current": scoring inapplicability as a correct call
+# would flatter this detector in any calibration.
+decided <- rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4), measure = "RR")
+barrowman(decided, n_prev = 555, n_new = 2265)
+}

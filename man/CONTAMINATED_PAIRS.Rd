@@ -20,3 +20,12 @@ circular comparison available to anyone who actually wants it — "does
 different one from "does `ottawa` predict the future" — and filtering on
 `contaminated` takes one line for anyone who does not.
 }
+\examples{
+CONTAMINATED_PAIRS
+
+# Flagged, not dropped: the circular pair is still computed, and the
+# warning travels next to the number rather than as a missing row.
+# Filtering it out is one line for anyone who wants that instead.
+pair <- CONTAMINATED_PAIRS[1, ]
+paste(pair$method, "scored against truth_", pair$truth, sep = "")
+}

@@ -44,3 +44,20 @@ In the published comparison this method flagged none of 80 reviews. It is
 either extremely conservative or misspecified; the backtesting engine exists
 to find out which.
 }
+\examples{
+library(metafor)
+# Like barrowman(), this one applies only to an inconclusive prior review.
+prev <- rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+            vi = c(0.16, 0.20, 0.18, 0.15, 0.22), measure = "RR")
+new <- list(yi = c(-0.45, -0.38, -0.52, -0.29, -0.41),
+            vi = c(0.05, 0.04, 0.06, 0.05, 0.04), k = 5)
+
+# The signal is simulated power, so it needs a seed to be reproducible.
+simulation(prev, new, B = 2000, seed = 1)
+
+# The caller's random stream is restored afterwards: running the detector
+# does not move anyone else's simulation along.
+set.seed(42); before <- runif(1)
+set.seed(42); invisible(simulation(prev, new, B = 500, seed = 1))
+identical(before, runif(1))
+}

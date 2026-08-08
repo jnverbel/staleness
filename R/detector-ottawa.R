@@ -26,6 +26,20 @@
 #' @param qualitative Character vector of qualitative signals declared by the
 #'   analyst. Any non-empty entry triggers a signal.
 #' @return A `staleness_verdict`.
+#' @examples
+#' library(metafor)
+#' prev <- rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4), measure = "RR")
+#' updated <- rma(yi = c(rep(log(0.50), 4), rep(log(1.10), 4)),
+#'                vi = c(rep(0.05, 4), rep(0.02, 4)), measure = "RR")
+#' ottawa(prev, updated)
+#'
+#' # The four qualitative signals are never inferred from the data. The
+#' # analyst declares them, and any non-empty entry is enough on its own:
+#' # here the effect has barely moved, yet the verdict changes.
+#' mild <- rma(yi = c(rep(log(0.50), 4), rep(log(0.90), 3)),
+#'             vi = c(rep(0.05, 4), rep(0.02, 3)), measure = "RR")
+#' ottawa(prev, mild)
+#' ottawa(prev, mild, qualitative = "a superior therapy has been licensed")
 #' @export
 ottawa <- function(prev, new_ma, alpha = 0.04,
                    sig_change = c("gain", "any"),

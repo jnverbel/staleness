@@ -50,3 +50,18 @@ methods; declared so that nobody reads a structural identity as a finding.
 See [rcma()] for the measured demonstration.
 }
 
+\examples{
+library(metafor)
+prev <- rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4), measure = "RR")
+updated <- rma(yi = c(rep(log(0.50), 4), rep(log(1.10), 4)),
+               vi = c(rep(0.05, 4), rep(0.02, 4)), measure = "RR")
+ottawa(prev, updated)
+
+# The four qualitative signals are never inferred from the data. The
+# analyst declares them, and any non-empty entry is enough on its own:
+# here the effect has barely moved, yet the verdict changes.
+mild <- rma(yi = c(rep(log(0.50), 4), rep(log(0.90), 3)),
+            vi = c(rep(0.05, 4), rep(0.02, 3)), measure = "RR")
+ottawa(prev, mild)
+ottawa(prev, mild, qualitative = "a superior therapy has been licensed")
+}

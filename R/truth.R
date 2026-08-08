@@ -12,6 +12,23 @@
 #' @param p_t,p_final Two-sided p-values at the cut point and at the end.
 #' @param threshold Number of standard errors for `truth_shift`.
 #' @param alpha Significance level for `truth_conclusion`.
+#' @examples
+#' # Truth is measured against the FINAL body of evidence, which is why it
+#' # can only ever be computed in hindsight -- and why no detector is
+#' # allowed to see it.
+#' theta_1970 <- -0.30; theta_final <- -0.75; se_final <- 0.12
+#'
+#' # Did the pooled effect end up more than 1.96 final SEs away?
+#' truth_shift(theta_1970, theta_final, se_final)
+#'
+#' # Was that move a surprise given how precise the 1970 review thought it was?
+#' truth_surprise(theta_1970, se_t = 0.30, theta_final)
+#'
+#' # Did the conclusion itself change -- sign or significance?
+#' truth_conclusion(theta_t = -0.30, p_t = 0.21,
+#'                  theta_final = -0.75, p_final = 0.001)
+#'
+#' available_truths()
 #' @name truth
 NULL
 
@@ -53,6 +70,14 @@ available_truths <- function() c("shift", "surprise", "conclusion")
 #' different one from "does `ottawa` predict the future" — and filtering on
 #' `contaminated` takes one line for anyone who does not.
 #'
+#' @examples
+#' CONTAMINATED_PAIRS
+#'
+#' # Flagged, not dropped: the circular pair is still computed, and the
+#' # warning travels next to the number rather than as a missing row.
+#' # Filtering it out is one line for anyone who wants that instead.
+#' pair <- CONTAMINATED_PAIRS[1, ]
+#' paste(pair$method, "scored against truth_", pair$truth, sep = "")
 #' @export
 CONTAMINATED_PAIRS <- data.frame(
   method = "ottawa",

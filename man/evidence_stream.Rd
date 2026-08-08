@@ -23,3 +23,23 @@ The only part of the package that knows about time. Detectors receive
 snapshots, never dates, which is what allows [backtest()] to reuse them
 unmodified.
 }
+\examples{
+library(metafor)
+# The BCG vaccine trials, in the order metafor stores them: log risk
+# ratios, their variances, the publication year and the total enrolled.
+bcg <- data.frame(
+  yi   = c(-0.89, -1.59, -1.35, -1.44, -0.22, -0.79, -1.62,
+            0.01, -0.47, -1.37, -0.34,  0.45, -0.02),
+  vi   = c(0.326, 0.195, 0.415, 0.020, 0.051, 0.007, 0.223,
+           0.004, 0.056, 0.073, 0.012, 0.533, 0.071),
+  year = c(1948, 1949, 1960, 1977, 1973, 1953, 1973,
+           1980, 1968, 1961, 1974, 1969, 1976),
+  ni   = c(262, 609, 451, 26465, 10877, 2992, 3174,
+           176782, 14776, 3381, 77972, 4839, 34767)
+)
+ma <- rma(yi, vi, data = bcg, measure = "RR")
+
+# The stream sorts by date; the meta-analysis itself is order-blind.
+stream <- evidence_stream(ma, date = bcg$year, ni = bcg$ni)
+stream
+}

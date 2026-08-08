@@ -20,6 +20,22 @@
 #' @param alpha Significance level used to decide applicability.
 #' @param z_crit Critical value, 1.96 in the published method.
 #' @return A `staleness_verdict`.
+#' @examples
+#' library(metafor)
+#' # This detector only speaks when the prior review was inconclusive, so the
+#' # example needs a prior that genuinely failed to reach significance.
+#' prev <- rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+#'             vi = c(0.16, 0.20, 0.18, 0.15, 0.22), measure = "RR")
+#' prev$pval > 0.05
+#'
+#' # 2265 new participants against 555 before: enough to matter.
+#' barrowman(prev, n_prev = 555, n_new = 2265)
+#'
+#' # On a prior that was already significant it declines to answer. That is
+#' # deliberately not "current": scoring inapplicability as a correct call
+#' # would flatter this detector in any calibration.
+#' decided <- rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4), measure = "RR")
+#' barrowman(decided, n_prev = 555, n_new = 2265)
 #' @export
 barrowman <- function(prev, n_prev, n_new, alpha = 0.05, z_crit = 1.96) {
   if (is.null(n_prev) || is.null(n_new)) {

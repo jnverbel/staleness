@@ -12,3 +12,10 @@ A character vector of detector names.
 \description{
 Names of the available detectors
 }
+\examples{
+available_methods()
+
+# The names accepted by check_currency() and backtest().
+identical(available_methods(), c("rcma", "ottawa", "barrowman",
+                                 "sufficiency", "simulation"))
+}

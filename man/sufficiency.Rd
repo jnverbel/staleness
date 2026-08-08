@@ -249,3 +249,22 @@ studies, so calibration holds throughout — it is power, not the false-alarm
 rate, that degrades.
 }
 
+\examples{
+library(metafor)
+# Sufficiency is judged on the PRIOR review, stability on the UPDATED one.
+# The two arguments are not interchangeable.
+prev <- rma(yi = rep(log(0.50), 6), vi = rep(0.02, 6), measure = "RR")
+
+# Six more studies telling the same story: sufficient and stable.
+steady <- rma(yi = rep(log(0.50), 12), vi = rep(0.02, 12), measure = "RR")
+sufficiency(prev, steady)
+
+# Now the later studies break away from the earlier ones. The statistic is
+# the largest standardised split in the cumulative series, so a late shift
+# is exactly what it is built to catch.
+shifted <- rma(yi = c(rep(log(0.50), 6), rep(log(1.30), 6)),
+               vi = rep(0.02, 12), measure = "RR")
+res <- sufficiency(prev, shifted)
+res
+res$detail[c("sufficient", "stable", "p_stability", "split")]
+}

@@ -41,3 +41,22 @@ reasoning gave rise to [CONTAMINATED_PAIRS] for detector-truth pairs;
 detector-to-detector containment deserves the same visibility.
 }
 
+\examples{
+library(metafor)
+# A published review of four trials, all agreeing on a halving of risk.
+prev <- rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4), measure = "RR")
+
+# Four newer trials find no benefit, and the pooled effect moves 53\%.
+updated <- rma(yi = c(rep(log(0.50), 4), rep(log(1.10), 4)),
+               vi = c(rep(0.05, 4), rep(0.02, 4)), measure = "RR")
+rcma(prev, updated)
+
+# Containment in ottawa() is arithmetic, not an empirical agreement:
+# whenever rcma fires, ottawa fires on the very same ratio.
+c(rcma = rcma(prev, updated)$verdict, ottawa = ottawa(prev, updated)$verdict)
+
+# A smaller shift stays below the 1.5 threshold and reads as current.
+mild <- rma(yi = c(rep(log(0.50), 4), rep(log(0.90), 3)),
+            vi = c(rep(0.05, 4), rep(0.02, 3)), measure = "RR")
+rcma(prev, mild)
+}

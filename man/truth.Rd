@@ -37,3 +37,21 @@ time t?". Independence matters: defining truth with the same rule a detector
 uses makes that detector correct by construction, which would turn any
 calibration result into an artefact.
 }
+\examples{
+# Truth is measured against the FINAL body of evidence, which is why it
+# can only ever be computed in hindsight -- and why no detector is
+# allowed to see it.
+theta_1970 <- -0.30; theta_final <- -0.75; se_final <- 0.12
+
+# Did the pooled effect end up more than 1.96 final SEs away?
+truth_shift(theta_1970, theta_final, se_final)
+
+# Was that move a surprise given how precise the 1970 review thought it was?
+truth_surprise(theta_1970, se_t = 0.30, theta_final)
+
+# Did the conclusion itself change -- sign or significance?
+truth_conclusion(theta_t = -0.30, p_t = 0.21,
+                 theta_final = -0.75, p_final = 0.001)
+
+available_truths()
+}

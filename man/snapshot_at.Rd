@@ -17,3 +17,24 @@ An `rma.uni` object.
 \description{
 Refit the meta-analysis as it stood at a point in time
 }
+\examples{
+library(metafor)
+bcg <- data.frame(
+  yi   = c(-0.89, -1.59, -1.35, -1.44, -0.22, -0.79, -1.62,
+            0.01, -0.47, -1.37, -0.34,  0.45, -0.02),
+  vi   = c(0.326, 0.195, 0.415, 0.020, 0.051, 0.007, 0.223,
+           0.004, 0.056, 0.073, 0.012, 0.533, 0.071),
+  year = c(1948, 1949, 1960, 1977, 1973, 1953, 1973,
+           1980, 1968, 1961, 1974, 1969, 1976)
+)
+stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
+                          date = bcg$year)
+
+# The review as it stood in 1970: 7 of the 13 trials had been published.
+prev <- snapshot_at(stream, 1970)
+prev$k
+
+# Refitting is what keeps a backtest honest -- the 1970 snapshot knows
+# nothing about the six trials that came later, tau^2 included.
+c(tau2_1970 = prev$tau2, tau2_all = snapshot_at(stream, 1980)$tau2)
+}

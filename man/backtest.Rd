@@ -83,3 +83,29 @@ toward `current`, invisibly. A backtest needs at least 3 uncensored cuts to
 say anything useful about a detector's calibration and is refused
 otherwise.
 }
+\examples{
+library(metafor)
+bcg <- data.frame(
+  yi   = c(-0.89, -1.59, -1.35, -1.44, -0.22, -0.79, -1.62,
+            0.01, -0.47, -1.37, -0.34,  0.45, -0.02),
+  vi   = c(0.326, 0.195, 0.415, 0.020, 0.051, 0.007, 0.223,
+           0.004, 0.056, 0.073, 0.012, 0.533, 0.071),
+  year = c(1948, 1949, 1960, 1977, 1973, 1953, 1973,
+           1980, 1968, 1961, 1974, 1969, 1976),
+  ni   = c(262, 609, 451, 26465, 10877, 2992, 3174,
+           176782, 14776, 3381, 77972, 4839, 34767)
+)
+stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
+                          date = bcg$year, ni = bcg$ni)
+
+bt <- backtest(stream, cuts = "yearly")
+bt
+
+# Every cut refits from scratch, so no detector ever sees the future.
+# Cuts without `max(horizon, window)` units of future left are censored
+# rather than scored against a truth that cannot be known yet.
+c(cuts = bt$n_cuts, censored = bt$n_censored)
+
+# One row per cut per method. `not_applicable` is recorded, not dropped.
+head(bt$results[, c("cut", "method", "verdict", "censored")])
+}
