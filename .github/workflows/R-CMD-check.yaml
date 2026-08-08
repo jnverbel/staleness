@@ -27,8 +27,8 @@ jobs:
           - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,  r: 'release'}
           # Ubuntu runners bill at 1x, so reaching back a few releases is
-          # cheap. DESCRIPTION promises R >= 4.1; these are what actually
-          # gets verified.
+          # cheap. oldrel-4 is R 4.2.3, which is exactly the minimum
+          # DESCRIPTION declares — the promise and the evidence match.
           - {os: ubuntu-latest,  r: 'oldrel-1'}
           - {os: ubuntu-latest,  r: 'oldrel-2'}
           - {os: ubuntu-latest,  r: 'oldrel-3'}

@@ -11,7 +11,7 @@ Description: Applies the five published statistical methods for detecting whethe
     literature. The package performs no literature searching and no screening.
 License: MIT + file LICENSE
 Encoding: UTF-8
-Depends: R (>= 4.1)
+Depends: R (>= 4.2)
 Imports: metafor, stats, graphics
 Suggests: metadat, testthat (>= 3.0.0), knitr, rmarkdown, grDevices
 VignetteBuilder: knitr
