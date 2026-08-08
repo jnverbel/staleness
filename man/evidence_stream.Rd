@@ -7,7 +7,14 @@
 evidence_stream(ma, date, ni = NULL)
 }
 \arguments{
-\item{ma}{An `rma.uni` object from `metafor`.}
+\item{ma}{An `rma.uni` object from `metafor`. Other fits (`rma.mh`,
+`rma.peto`) are refused with an explanatory error: every snapshot is
+refitted with [metafor::rma()], so accepting them would return
+inverse-variance estimates under a Mantel-Haenszel label, and refitting
+with Mantel-Haenszel is impossible from `yi` and `vi` alone. This matters
+in practice -- the founding example of the field, Lau et al. (1992), is a
+Mantel-Haenszel analysis of binary data, and reproducing its published
+odds ratio to the digit requires `rma.mh()`.}
 
 \item{date}{Numeric or Date vector, one entry per study, same order as the
 data used to fit `ma`. Missing values are an error; they are never imputed.}

@@ -254,3 +254,105 @@ test_that("a second source's worked examples pick the same reading", {
     expect_true(ottawa(prev, new)$detail$signal_effect)
   }
 })
+
+# --- The historical case, end to end -------------------------------------
+#
+# Lau et al. (1992), NEJM 327:248-254, introduced cumulative meta-analysis on
+# 33 streptokinase trials and reported two things precisely enough to test
+# against: a statistically significant mortality reduction was reached in 1973
+# after eight trials (OR 0.74, 95% CI 0.59 to 0.92), and the 25 later trials
+# "had little or no effect on the odds ratio". The dataset is public, as
+# metadat::dat.lau1992, so the whole pipeline can be run against a documented
+# historical fact rather than against itself.
+
+test_that("the package reproduces Lau's 1973 cut point", {
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.lau1992)
+  # Mantel-Haenszel, which is what Lau used, and what reproduces all three
+  # published figures exactly. Inverse-variance fixed effects gives 0.744
+  # (0.595, 0.929) -- the same conclusion, but it rounds to a different
+  # interval, which is why the estimator has to match to claim reproduction.
+  mh73 <- metafor::rma.mh(measure = "OR", ai = ai, n1i = n1i, ci = ci,
+                          n2i = n2i,
+                          data = metadat::dat.lau1992[
+                            metadat::dat.lau1992$year <= 1973, ])
+  expect_equal(mh73$k, 8)
+  expect_equal(round(exp(as.numeric(mh73$beta)), 2), 0.74)
+  expect_equal(round(exp(mh73$ci.lb), 2), 0.59)
+  expect_equal(round(exp(mh73$ci.ub), 2), 0.92)
+
+  # The package's own pipeline reaches the same conclusion on the same cut.
+  fit73 <- metafor::rma(yi, vi, data = es[es$year <= 1973, ], method = "FE")
+  expect_equal(fit73$k, 8)
+  expect_lt(fit73$pval, 0.05)
+
+  # And the cut before it is not yet significant, so 1973 really is the year.
+  fit71 <- metafor::rma(yi, vi, data = es[es$year <= 1971, ], method = "FE")
+  expect_gt(fit71$pval, 0.05)
+})
+
+test_that("the backtest puts the turning point in 1973 and stays quiet after", {
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.lau1992)
+  ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
+  st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
+  bt <- backtest(st, cuts = "yearly", horizon = 3, window = 5, min_k = 3,
+                 seed = 42)
+  r <- bt$results[!bt$results$censored, ]
+
+  # The conclusion still had to change from every cut before 1973, and from
+  # none after it.
+  tc <- unique(r[, c("cut", "truth_conclusion")])
+  expect_true(all(tc$truth_conclusion[tc$cut < 1973]))
+  expect_false(any(tc$truth_conclusion[tc$cut >= 1973]))
+
+  # rcma watches the size of the effect, and Lau reports the effect did not
+  # move after 1973. It must not fire.
+  rc <- r[r$method == "rcma", ]
+  expect_equal(sum(rc$verdict == "out_of_date"), 0)
+
+  # ottawa watches significance, and fires on exactly the cuts before 1973.
+  ot <- r[r$method == "ottawa", ]
+  expect_setequal(ot$cut[ot$verdict == "out_of_date"], c(1969, 1970, 1971, 1972))
+
+  # It warns ahead of the event rather than alongside it.
+  lt <- lead_time(bt, "conclusion")
+  expect_gt(lt$median_lead[lt$method == "ottawa"], 0)
+
+  # And the circular pair is flagged without being asked.
+  cal <- calibration(bt, "conclusion")
+  expect_true(cal$contaminated[cal$method == "ottawa"])
+})
+
+test_that("the estimator choice moves the answer by years, not decimals", {
+  # Worth pinning: Lau's 1973 conclusion depends on fixed effects. Under REML
+  # the same evidence is not significant until 1979. staleness inherits the
+  # method from the rma it is handed, so this is the analyst's decision, and a
+  # substantive one.
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.lau1992)
+  first_sig <- function(method) {
+    for (y in sort(unique(es$year))) {
+      d <- es[es$year <= y, ]
+      if (nrow(d) < 3) next
+      f <- suppressWarnings(metafor::rma(yi, vi, data = d, method = method))
+      if (f$pval < 0.05) return(y)
+    }
+    NA_integer_
+  }
+  expect_equal(first_sig("FE"), 1973)
+  expect_gt(first_sig("REML"), 1973)
+})
+
+test_that("a Mantel-Haenszel fit is refused with a usable explanation", {
+  skip_if_not_installed("metadat")
+  mh <- metafor::rma.mh(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.lau1992)
+  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year),
+               "rma.mh")
+  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year),
+               "inverse-variance")
+})

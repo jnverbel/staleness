@@ -4,7 +4,14 @@
 #' snapshots, never dates, which is what allows [backtest()] to reuse them
 #' unmodified.
 #'
-#' @param ma An `rma.uni` object from `metafor`.
+#' @param ma An `rma.uni` object from `metafor`. Other fits (`rma.mh`,
+#'   `rma.peto`) are refused with an explanatory error: every snapshot is
+#'   refitted with [metafor::rma()], so accepting them would return
+#'   inverse-variance estimates under a Mantel-Haenszel label, and refitting
+#'   with Mantel-Haenszel is impossible from `yi` and `vi` alone. This matters
+#'   in practice -- the founding example of the field, Lau et al. (1992), is a
+#'   Mantel-Haenszel analysis of binary data, and reproducing its published
+#'   odds ratio to the digit requires `rma.mh()`.
 #' @param date Numeric or Date vector, one entry per study, same order as the
 #'   data used to fit `ma`. Missing values are an error; they are never imputed.
 #' @param ni Optional numeric vector of sample sizes per study, needed by
@@ -32,6 +39,19 @@
 #' @export
 evidence_stream <- function(ma, date, ni = NULL) {
   if (!inherits(ma, "rma.uni")) {
+    # Other metafor fits -- rma.mh, rma.peto -- carry every field read here,
+    # but snapshot_at() refits each cut with rma.uni, and silently returning
+    # inverse-variance snapshots for a Mantel-Haenszel input would be a
+    # different analysis wearing the caller's label. Refitting with MH is not
+    # possible either: it needs the 2x2 counts, and a stream holds only yi and
+    # vi. So the limitation is real, and stated instead of papered over.
+    if (inherits(ma, "rma")) {
+      stop("`ma` is a ", class(ma)[1], " fit; this package refits every ",
+           "snapshot with `rma()`, so it only accepts `rma.uni`. Convert the ",
+           "data first -- `escalc()` then `rma()` -- and note that the pooled ",
+           "estimates will be inverse-variance, not ", class(ma)[1], ".",
+           call. = FALSE)
+    }
     stop("`ma` must be an rma.uni object from metafor", call. = FALSE)
   }
   k <- ma$k
