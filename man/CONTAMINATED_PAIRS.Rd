@@ -8,6 +8,15 @@ CONTAMINATED_PAIRS
 }
 \description{
 `ottawa` signals on a change of significance, which is exactly what
-`truth_conclusion` measures. Any metric computed for that pair is
-circular and is excluded from the main ranking.
+`truth_conclusion` measures. Any metric computed for that pair is circular.
+}
+\details{
+Such pairs are **flagged, not dropped**: [calibration()] returns a
+`contaminated` column on every row, looked up from this table and sitting
+next to the numbers it warns about. Dropping a row makes a reader notice an
+absence; flagging it puts the warning in front of them. It also leaves the
+circular comparison available to anyone who actually wants it — "does
+`ottawa` reproduce its own rule correctly" is a legitimate question, just a
+different one from "does `ottawa` predict the future" — and filtering on
+`contaminated` takes one line for anyone who does not.
 }

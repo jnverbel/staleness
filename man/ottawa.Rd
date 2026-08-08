@@ -39,3 +39,14 @@ function does not infer them. They are supplied by the analyst through
 `qualitative` and reported separately. An algorithm that claimed to judge
 "substantial harm" on its own would be overselling what the data support.
 }
+\section{Relationship to `rcma()`}{
+
+The effect-change half of this method is [rcma()]'s entire rule: the same
+`effect_ratio()`, the same 0.5 / 1.5 thresholds. At default parameters
+`rcma() == "out_of_date"` therefore **implies** `ottawa() == "out_of_date"`
+by construction, so the two detectors cannot disagree in that direction and
+their agreement is not an empirical quantity. Faithful to the published
+methods; declared so that nobody reads a structural identity as a finding.
+See [rcma()] for the measured demonstration.
+}
+

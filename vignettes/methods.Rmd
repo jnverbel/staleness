@@ -93,6 +93,30 @@ judge "substantial harm" from effect sizes alone would be a much bigger
 promise than the data can support, and would spend the credibility of the
 whole package to make it.
 
+**Declared: `ottawa` contains `rcma` verbatim.** The effect-change half of
+the Ottawa method *is* `rcma()`'s entire rule — the same ratio, computed by
+the same internal function, against the same 0.5 and 1.5 thresholds. At
+default parameters, therefore:
+
+```
+rcma(prev, new_ma) == "out_of_date"   implies   ottawa(prev, new_ma) == "out_of_date"
+```
+
+always, by construction. Verified over 400 random prior/updated pairs:
+`rcma` fired 63 times, `ottawa` fired 116 times, and every one of `rcma`'s 63
+was among `ottawa`'s — zero disjoint firings, as the algebra requires.
+
+This is faithful to the published methods and is not a defect in either: the
+Ottawa method genuinely adopts the rCMA effect-change criterion and adds a
+significance criterion and four qualitative ones on top of it. It is declared
+here for the same reason `CONTAMINATED_PAIRS` exists. This package goes to
+some trouble to make sure nobody mistakes a structural identity between a
+detector and a truth definition for an empirical finding; a structural
+dependency between two *detectors* deserves the same treatment. The headline
+question this package exists to re-ask — the five methods agreed at
+Kappa = 0.14 on 80 reviews — involves ten detector pairs, and one of them is
+deterministic. Anyone recomputing that agreement should be counting nine.
+
 ## `barrowman()`: the participant-ratio method
 
 ```
@@ -142,8 +166,10 @@ studies it would take to erase a significant pooled effect. A review is
 *sufficient* when the index exceeds 1 — Rosenthal's own rule of thumb for a
 result being robust to unpublished null findings. It is *stable* when the
 slope of the cumulative pooled effect, plotted study by study in publication
-order, does not differ significantly from zero: the estimate has stopped
-moving as evidence accrued.
+order, is no larger than the same studies would produce in a random order:
+the estimate has stopped moving as evidence accrued. That last clause is a
+declared departure from the published rule, and the next-but-one subsection
+sets out exactly what was changed and why.
 
 The method is due to Mullen, Muellerleile and Bryant's treatment of
 cumulative meta-analysis indicators (*Personality and Social Psychology
@@ -189,6 +215,64 @@ the **updated** meta-analysis, because that is where drift from new studies
 would actually show up. See section 4.4 of the package's design document for
 the full paper trail behind this, including the case that would silently
 give the wrong verdict if both halves were read from the same snapshot.
+
+### Declared adaptation: how stability is actually tested
+
+Every other adaptation in this package is documented at length — `rcma()`'s
+`not_applicable` rule for difference measures, `ottawa()`'s refusal to infer
+qualitative signals, the prev/updated split above, the inverted direction of
+the out-of-date criterion. This one is the last of them, and it matters most,
+because the backtesting results will be read as findings about the published
+method.
+
+**What the source says.** Pattanittum et al. (2012, Table 1), reproducing
+Mullen et al.'s rule, states the out-of-date criterion as *"failsafe ratio >1
+and absolute slope of the linear regression >0"*.
+
+**Why it cannot be implemented as written.** On continuous data the
+least-squares slope of a cumulative series is never exactly zero. Taken
+literally, `|slope| > 0` is true of essentially every real meta-analysis, so
+the stability indicator would carry no information at all and the method
+would reduce to "sufficient ⇒ out of date". Some rule for deciding when a
+slope is *large enough* has to stand in for it.
+
+**What was tried first, and why it was wrong.** The obvious substitute is the
+t-test on the slope that `lm()` reports, treating `|slope| > 0` as "slope
+significantly different from zero". That test is invalid here, and
+measurably so. A cumulative weighted mean is near-perfectly autocorrelated by
+construction, and it converges on the pooled effect by the law of large
+numbers whether or not anything is changing, so the OLS null distribution
+does not apply: the test detects *convergence* and reports *instability*.
+Measured over 300 samples of evidence that genuinely does not change — 20
+prior studies and 10 new ones drawn from one distribution — it returned
+`out_of_date` **209 times**. `rcma()` and `ottawa()` returned it zero times
+on the same 300 samples. At the degenerate limit it was worse: twelve
+byte-identical studies give a cumulative series spanning 2.2e-16, and the fit
+obligingly returned a slope of -7.4e-17 with p = 0.014, i.e. "out of date".
+
+**What runs instead.** A **permutation test over study order**. The observed
+slope is compared with the slopes obtained by reshuffling the same studies
+999 times and recomputing the cumulative series each time; `p_slope` is the
+two-sided proportion of permuted slopes at least as large in absolute value,
+and `alpha_slope` (default 0.05) is the cutoff. A cumulative series that is
+constant to within floating-point rounding is short-circuited as maximally
+stable before anything is fitted.
+
+Three reasons this is the right substitute. It assumes nothing about the
+independence of a series that is autocorrelated by design. It asks the
+scientifically meaningful question directly — *is the drift in the cumulative
+effect larger than what these same studies would produce in a random
+order?* — which is a sharper reading of "the estimate has stopped moving"
+than the source's own wording. And because study order is exchangeable when
+evidence is not changing, the test is exact under that null, so the
+package's stated invariant (statistically identical new evidence raises no
+signal) holds by construction rather than by luck. On the same 300-sample
+experiment the permutation version returns `out_of_date` **12 times** — the
+nominal 5%, within sampling error, instead of 70%.
+
+The `slope` itself is still reported in `detail`, unchanged and on its
+original scale, so anyone who wants to apply the literal published rule can
+read it straight off the verdict.
 
 **What is wrong with it, independent of any of the above.** Rosenthal's
 fail-safe N has been discredited as a measure of publication bias since

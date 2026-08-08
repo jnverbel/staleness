@@ -12,8 +12,8 @@ Description: Applies the five published statistical methods for detecting whethe
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.1)
-Imports: metafor, stats, graphics, grDevices
-Suggests: metadat, testthat (>= 3.0.0), knitr, rmarkdown
+Imports: metafor, stats, graphics
+Suggests: metadat, testthat (>= 3.0.0), knitr, rmarkdown, grDevices
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0

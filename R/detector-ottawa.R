@@ -9,6 +9,15 @@
 #' `qualitative` and reported separately. An algorithm that claimed to judge
 #' "substantial harm" on its own would be overselling what the data support.
 #'
+#' @section Relationship to `rcma()`:
+#' The effect-change half of this method is [rcma()]'s entire rule: the same
+#' `effect_ratio()`, the same 0.5 / 1.5 thresholds. At default parameters
+#' `rcma() == "out_of_date"` therefore **implies** `ottawa() == "out_of_date"`
+#' by construction, so the two detectors cannot disagree in that direction and
+#' their agreement is not an empirical quantity. Faithful to the published
+#' methods; declared so that nobody reads a structural identity as a finding.
+#' See [rcma()] for the measured demonstration.
+#'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.
 #' @param alpha Significance threshold. The published method uses 0.04, not 0.05.

@@ -104,6 +104,16 @@ reading this table can mistake it for an independent result. `rcma` and
 `sufficiency`, scored against the same truth, are not marked, because
 neither shares `conclusion`'s specific logic.
 
+There is a second, structural dependency that no column can carry, because it
+holds between two *detectors* rather than between a detector and a truth:
+`rcma()`'s entire rule is one of `ottawa()`'s three signals, with the same
+thresholds. `rcma` firing therefore implies `ottawa` firing, always, and the
+two can never disagree in that direction. Both remain in the table — that is
+what the published methods do — but a reader recomputing the inter-method
+agreement question this vignette opens with should know that one of the ten
+detector pairs is arithmetic rather than evidence. It is stated in `?rcma`,
+`?ottawa`, and in `vignette("methods", package = "staleness")`.
+
 ## 5. A backtest, executed
 
 The backtest above walks `stream` one year at a time. At each cut it
@@ -118,19 +128,37 @@ bt
 summary(bt)
 ```
 
-Two things are worth noticing in this particular run before reading anything
-into the sensitivity and specificity numbers. First, `barrowman` and
-`simulation` do not appear at all: both require a prior meta-analysis that
-was *not yet statistically significant*, and in this series — a strong,
-consistent protective effect of BCG vaccination — even the earliest
-two-study snapshot, from 1949, was already significant at conventional
-thresholds. Both methods are `not_applicable` at every single cut, which
-`calibration()` correctly excludes rather than silently scoring as
-agreement. That is the narrow-scope critique from
-`vignette("methods", package = "staleness")`, visible directly in real data
-rather than argued in the abstract.
+Three things are worth noticing in this particular run before reading
+anything into the sensitivity and specificity numbers.
 
-Second, this is thirteen studies over three decades: enough to demonstrate
+First, `barrowman` and `simulation` carry `n = 0` and `NA` metrics in every
+row. Both require a prior meta-analysis that was *not yet statistically
+significant*, and in this series — a strong, consistent protective effect of
+BCG vaccination — even the earliest snapshots were already significant at
+conventional thresholds. Both methods are `not_applicable` at every single
+cut, so there is nothing to score. `calibration()` reports that as a row
+rather than as an absence: "this detector never applied to this evidence" is
+itself a result about the detector, and a table that simply omitted the two
+would leave a reader to notice the gap, or not. It is the narrow-scope
+critique from `vignette("methods", package = "staleness")`, visible directly
+in real data rather than argued in the abstract. Note also the `n` column:
+`sufficiency` scores 18 cuts where `rcma` and `ottawa` score 19, because at
+the earliest cut the updated meta-analysis still had fewer than five studies
+and `sufficiency()` declined that one too.
+
+Second, this run uses `horizon = 3` with `window = 5`, and the censoring
+follows the *larger* of the two. A cut needs three years of future for its
+truth to have materialised, but it also needs five years of future for the
+detector to be handed the same amount of new evidence every other scored cut
+was handed. Censoring on the horizon alone would leave the last cuts looking
+evaluable while their five-year evidence window ran off the end of the data —
+they would see one or two new studies instead of a full window, be shown less
+change than really happened, and be scored as full observations anyway.
+That biases exactly those cuts toward `current`, invisibly. `backtest()`
+censors on `max(horizon, window)` for that reason, which is why the
+`censored` count above is larger than the horizon alone would produce.
+
+Third, this is thirteen studies over three decades: enough to demonstrate
 the machinery end to end, nowhere near enough to draw a general conclusion
 about which detector deserves trust across the literature. `backtest()`
 works the same way regardless of series length; drawing a real verdict about
@@ -159,14 +187,18 @@ detector caught at all:
 lead_time(bt, truth = "shift")
 ```
 
-Every `median_lead` above is `NA`, not zero, and the reason is visible in
-`summary(bt)`: `rcma`, `ottawa` and `sufficiency` all had sensitivity 0
-against `shift` in this run, with `n_events = 5` in every row. Five true
+Every `median_lead` above is `NA`, not zero, and the two reasons are
+different. For `rcma`, `ottawa` and `sufficiency`, `n_events = 5`: five true
 shifts happened in this series, per the `shift` definition, and none of the
 three applicable detectors ever flagged one of them as `out_of_date` —
-neither early nor late. `lead_time()` reports `NA` rather than inventing a
-number for events that were never caught at all; a real numeric lead only
-exists for events a detector did catch.
+neither early nor late, which is the sensitivity 0 visible in `summary(bt)`.
+`lead_time()` reports `NA` rather than inventing a number for events that
+were never caught at all; a real numeric lead only exists for events a
+detector did catch. For `barrowman` and `simulation`, `n_events = 0`: they
+were `not_applicable` at every cut, so there were no eligible rows in which
+an event could even be located. The distinction between "had five chances and
+took none" and "never got a chance" is exactly what the two columns together
+make visible, and why a method with nothing to score still gets a row.
 
 That distinction matters because a numeric `median_lead` of exactly zero
 would describe a *different*, and in one sense better, failure: a detector
