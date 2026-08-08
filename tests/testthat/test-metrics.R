@@ -62,6 +62,78 @@ test_that("lead_time reports how early a detector fired before the event", {
   lt <- lead_time(bt, truth = "shift")
   expect_true("median_lead" %in% names(lt))
   expect_equal(nrow(lt), 2)
+  # rcma: events at 2000 and 2001, fired out_of_date at both. Event 2000's
+  # earliest on-time firing is 2000 itself (lead 0); event 2001's earliest
+  # on-time firing is 2000 (lead 1). median(c(0, 1)) = 0.5.
+  rcma_row <- lt[lt$method == "rcma", ]
+  expect_equal(rcma_row$median_lead, 0.5)
+  expect_equal(rcma_row$n_events, 2)
+})
+
+# --- Fix: lead_time() must look at every true event, not just the first ----
+#
+# Coordinator review found the first implementation collapsed to
+# first_event <- min(events) and only ever checked firings at or before that
+# single earliest event. With true events at 2000, 2001 and 2002 and the
+# detector firing out_of_date only at 2002, that version returned
+# n_events = 3 but median_lead = NA: a firing that genuinely anticipated a
+# later event was invisible, and the column promised a median that was
+# never computed. Fixed to compute one lead per true event (NA when that
+# event was never caught in time) and take the median of the defined leads.
+
+test_that("lead_time takes the median across all true events, not just the first", {
+  # The exact scenario from review: true events at cuts 2000, 2001 and 2002;
+  # the detector only ever fires out_of_date at 2002. The two earlier events
+  # were missed outright (no on-time firing, contribute no lead at all); the
+  # 2002 event was caught in the very period it happened, contributing a
+  # lead of 0 -- a real value, not a stand-in for "missed".
+  res <- data.frame(
+    cut     = c(2000, 2001, 2002),
+    method  = "rcma",
+    verdict = c("current", "current", "out_of_date"),
+    signal  = NA_real_,
+    reason  = "",
+    truth_shift      = c(TRUE, TRUE, TRUE),
+    truth_surprise   = FALSE,
+    truth_conclusion = FALSE,
+    censored = FALSE,
+    stringsAsFactors = FALSE
+  )
+  bt <- structure(list(results = res, methods = "rcma",
+                        horizon = 5, window = 3, n_cuts = 3, n_censored = 0),
+                   class = "staleness_backtest")
+  lt <- lead_time(bt, truth = "shift")
+  expect_equal(lt$median_lead, 0)
+  expect_equal(lt$n_events, 3)
+})
+
+test_that("lead_time reports the actual lead when a detector fires well before the event", {
+  res <- data.frame(
+    cut     = c(2000, 2001, 2002, 2003, 2004),
+    method  = "rcma",
+    verdict = c("out_of_date", "current", "current", "current", "current"),
+    signal  = NA_real_,
+    reason  = "",
+    truth_shift      = c(FALSE, FALSE, FALSE, FALSE, TRUE),
+    truth_surprise   = FALSE,
+    truth_conclusion = FALSE,
+    censored = FALSE,
+    stringsAsFactors = FALSE
+  )
+  bt <- structure(list(results = res, methods = "rcma",
+                        horizon = 5, window = 3, n_cuts = 5, n_censored = 0),
+                   class = "staleness_backtest")
+  lt <- lead_time(bt, truth = "shift")
+  expect_equal(lt$median_lead, 4)  # fired at 2000, the single event is at 2004
+  expect_equal(lt$n_events, 1)
+})
+
+test_that("lead_time returns NA when the detector never fires in time; n_events still counts the misses", {
+  bt <- fake_bt()
+  lt <- lead_time(bt, truth = "shift")
+  ott_row <- lt[lt$method == "ottawa", ]
+  expect_true(is.na(ott_row$median_lead))
+  expect_equal(ott_row$n_events, 2)  # both true events counted, neither caught in time
 })
 
 # --- NA correction (binding correction to the brief) ------------------------

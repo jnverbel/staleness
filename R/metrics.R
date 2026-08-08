@@ -64,20 +64,32 @@ calibration <- function(bt, truth = "shift") {
 #' The metric that decides practical usefulness. A detector that only fires
 #' in the same period the evidence already moved looks perfect in a
 #' contingency table and is useless in practice: `calibration()` cannot tell
-#' the two apart, because it scores each cut in isolation. `lead_time()`
-#' reports, per method, how many time units before the first true event (per
-#' the chosen `truth` definition) the detector first flagged `out_of_date`.
+#' the two apart, because it scores each cut in isolation.
 #'
-#' The same three exclusions as [calibration()] apply before the event is
+#' `lead_time()` looks at every true event (per the chosen `truth`
+#' definition), not just the first. For each true event it finds the
+#' detector's earliest `out_of_date` firing at or before that event's cut
+#' and records `event_cut - firing_cut` as that event's lead; an event the
+#' detector never flagged in time (no firing at or before it) contributes no
+#' lead at all rather than a miss disguised as a number. `median_lead` is
+#' the median of the leads that *are* defined, i.e. the median time-to-event
+#' across the events the detector caught early or on time — the events it
+#' missed entirely are excluded from that median, not folded into it as
+#' zero. A `median_lead` of 0 is a real, meaningful value: it means the
+#' detector, in the middle of its caught events, only ever fired in the same
+#' period the evidence had already moved, not that it failed to catch
+#' anything.
+#'
+#' The same three exclusions as [calibration()] apply before events are
 #' located: censored cuts, `not_applicable` verdicts, and rows whose truth
 #' column is `NA` are dropped first, so a degenerate standard error can
 #' neither manufacture nor hide an event.
 #'
 #' A method with no true event under `truth` in the uncensored window gets
 #' `n_events = 0` and `median_lead = NA`: there is nothing to lead. A method
-#' that never fired `out_of_date` at or before its first true event also gets
-#' `median_lead = NA`: it never gave advance warning, so there is no lead
-#' time to report, only a miss (already visible in `calibration()`).
+#' that never fired `out_of_date` at or before any of its true events also
+#' gets `median_lead = NA`, with `n_events` still reporting how many events
+#' it missed (visible in detail via `calibration()`'s sensitivity).
 #'
 #' @param bt A `staleness_backtest`, see [backtest()].
 #' @param truth One of `"shift"`, `"surprise"`, `"conclusion"`, see
@@ -96,14 +108,24 @@ lead_time <- function(bt, truth = "shift") {
     d <- res[res$method == m, ]
     d <- d[order(d$cut), ]
     events <- d$cut[d[[col]]]
-    if (!length(events)) {
-      return(data.frame(method = m, median_lead = NA_real_, n_events = 0L,
-                        stringsAsFactors = FALSE))
+    fired  <- d$cut[d$verdict == "out_of_date"]
+
+    # One lead per true event: the gap to that event's earliest on-time
+    # firing, or NA when the detector never fired at or before it. A miss
+    # must never contribute a numeric lead (e.g. 0), or it would be
+    # indistinguishable from genuine same-period detection.
+    leads <- vapply(events, function(event_cut) {
+      on_time <- fired[fired <= event_cut]
+      if (length(on_time)) event_cut - min(on_time) else NA_real_
+    }, numeric(1))
+
+    median_lead <- if (any(!is.na(leads))) {
+      stats::median(leads, na.rm = TRUE)
+    } else {
+      NA_real_
     }
-    first_event <- min(events)
-    fired <- d$cut[d$verdict == "out_of_date" & d$cut <= first_event]
-    lead <- if (length(fired)) first_event - min(fired) else NA_real_
-    data.frame(method = m, median_lead = lead, n_events = length(events),
+
+    data.frame(method = m, median_lead = median_lead, n_events = length(events),
                stringsAsFactors = FALSE)
   })
   do.call(rbind, out)
