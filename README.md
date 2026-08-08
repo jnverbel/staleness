@@ -1,5 +1,10 @@
 # staleness
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/jnverbel/staleness/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jnverbel/staleness/actions/workflows/R-CMD-check.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<!-- badges: end -->
+
 A meta-analysis is a photograph, not a standing fact. Roughly a quarter of
 systematic reviews are out of date within two years of publication, and half
 within five and a half (Shojania et al., 2007). Five statistical methods for
@@ -23,11 +28,18 @@ meta-analysis fitting of its own. It is built entirely on `metafor`.
 ## Installation
 
 `staleness` is not yet on CRAN. Install the development version from
-source:
+GitHub:
 
 ```r
 # install.packages("remotes")
-remotes::install_local("path/to/staleness")
+remotes::install_github("jnverbel/staleness")
+```
+
+`metafor` does all the model fitting and is installed alongside. Building the
+vignettes additionally needs `knitr`, `rmarkdown` and `metadat`:
+
+```r
+remotes::install_github("jnverbel/staleness", build_vignettes = TRUE)
 ```
 
 ## Usage

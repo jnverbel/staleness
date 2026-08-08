@@ -3,3 +3,8 @@
 ^docs$
 ^\.gitignore$
 ^\.DS_Store$
+^paper\.md$
+^paper\.bib$
+^cran-comments\.md$
+^CONTRIBUTING\.md$
+^CODE_OF_CONDUCT\.md$
