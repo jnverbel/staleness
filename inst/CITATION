@@ -1,0 +1,19 @@
+citHeader("To cite the staleness package in publications, use:")
+
+bibentry(
+  bibtype = "Manual",
+  title   = "staleness: Detect and Calibrate Out-of-Date Meta-Analyses",
+  author  = person("Javier", "Nunez", email = "javier@tectonico.com.co"),
+  year    = "2026",
+  note    = sprintf("R package version %s", meta$Version),
+  url     = "https://CRAN.R-project.org/package=staleness"
+)
+
+citFooter(
+  "This package implements five previously published methods for detecting",
+  "out-of-date meta-analyses (see vignette(\"methods\", package = \"staleness\")",
+  "for each method's origin). Please also cite the original method paper when",
+  "reporting a result produced by a specific detector, and, when reporting",
+  "calibration results, the comparative evaluation these detectors are",
+  "backtested against (Pattanittum et al., 2012, PLoS ONE 7(11):e48894)."
+)

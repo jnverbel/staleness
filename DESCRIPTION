@@ -1,0 +1,19 @@
+Package: staleness
+Type: Package
+Title: Detect and Calibrate Out-of-Date Meta-Analyses
+Version: 0.0.0.9000
+Authors@R: person("Javier", "Nunez", email = "javier@tectonico.com.co", role = c("aut", "cre"))
+Description: Applies the five published statistical methods for detecting whether a
+    systematic review or meta-analysis has gone out of date, and provides a
+    backtesting engine to calibrate those methods against historical evidence.
+    Methods implemented follow Shojania and colleagues (2007) <doi:10.7326/0003-4819-147-4-200708210-00179>
+    and the comparative evaluation of updating signals in the evidence synthesis
+    literature. The package performs no literature searching and no screening.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.1)
+Imports: metafor, stats, graphics
+Suggests: metadat, testthat (>= 3.0.0), knitr, rmarkdown, grDevices
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0

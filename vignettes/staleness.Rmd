@@ -1,0 +1,80 @@
+---
+title: "Getting started with staleness"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with staleness}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+A meta-analysis is a photograph, not a standing fact. Roughly a quarter of
+systematic reviews are out of date within two years of publication, and half
+within five and a half. This package asks, for one meta-analysis and the
+evidence published since: is it still current?
+
+```{r setup}
+library(staleness)
+library(metafor)
+
+dat <- metadat::dat.bcg
+es  <- escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos, di = cneg,
+              data = dat)
+ma  <- rma(yi, vi, data = es)
+stream <- evidence_stream(ma, date = es$year)
+stream
+```
+
+`evidence_stream()` is the only function in the package that knows about
+dates. Everything downstream of it — every detector, `check_currency()`, the
+backtesting engine — works with two frozen snapshots of evidence and never
+looks at a clock.
+
+Take the state of knowledge in 1970 and ask what the following decade did to
+it:
+
+```{r check}
+prev <- snapshot_at(stream, 1970)
+new  <- window_between(stream, 1970, 1980)
+
+check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
+```
+
+`snapshot_at()` refits the meta-analysis using only studies published on or
+before the cut. `window_between()` collects the studies published in the
+following decade. `check_currency()` never sees a date: it receives two
+bodies of evidence and answers whether the second one changes the
+conclusions of the first.
+
+## Why `not applicable` is not `current`
+
+Three verdicts exist, not two. `barrowman` only applies when the prior
+meta-analysis was not statistically significant; asked outside that case it
+answers `not applicable`, never `current`.
+
+The distinction is not pedantry. Counting inapplicability as a clean bill of
+health would inflate every calibration statistic in this package, and it is
+precisely the shortcut that makes a tool look better than it is.
+
+```{r na}
+sig <- rma(yi = rep(log(0.4), 8), vi = rep(0.01, 8), measure = "RR")
+barrowman(sig, n_prev = 400, n_new = 900)
+```
+
+The prior meta-analysis above is already significant (`RR = 0.4` over eight
+studies with tight variances), so the participant-ratio method has nothing
+to compute: it is not that the review is current, it is that this method has
+no opinion here. The same rule holds for every detector: a detector that
+cannot answer a question never quietly reports the safe answer.
+
+## Where to go next
+
+`vignette("methods", package = "staleness")` documents each of the five
+detectors — its formula, its origin, and the specific way it can mislead
+you. `vignette("backtesting", package = "staleness")` covers the harder
+question underneath all of this: given that the five methods barely agree
+with each other, which one, if any, should you trust? That vignette builds
+and interprets a full backtest.

@@ -1,0 +1,532 @@
+---
+title: "The five detectors and what is wrong with them"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The five detectors and what is wrong with them}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(staleness)
+library(metafor)
+```
+
+Five statistical methods for deciding whether a meta-analysis needs updating
+were published between 2003 and 2014. None of them ever received a reusable
+software implementation, so nobody has ever been able to run all five against
+the same body of evidence and see where they agree. This package implements
+all five as pure functions with a common signature — `(prev, new_ma, ...)` in,
+a `staleness_verdict` out — precisely so that can finally be done (see
+`vignette("backtesting", package = "staleness")` for what happens when it is).
+
+This vignette is deliberately unflattering. Each section below states a
+detector's formula, where it comes from, and the specific way the published
+literature — or this package's own backtesting — shows it can mislead you.
+Implementing a method faithfully is not the same as endorsing it.
+
+## `rcma()`: recursive cumulative meta-analysis
+
+```
+ratio = theta_updated / theta_prior      signal if ratio <= 0.5 or ratio >= 1.5
+```
+
+The idea, due to Ioannidis and Lau's work on how treatment effects evolve as
+evidence accumulates (*Proceedings of the National Academy of Sciences*,
+2001), is the simplest of the five: refit the meta-analysis after each new
+study and watch how far the pooled estimate moves. A move of 50% or more in
+either direction is the signal.
+
+```{r rcma-signal}
+prev   <- rma(yi = rep(log(0.50), 4), vi = rep(0.04, 4), measure = "RR")
+new_ma <- rma(yi = rep(log(0.20), 4), vi = rep(0.04, 4), measure = "RR")
+rcma(prev, new_ma)
+```
+
+**What is wrong with it.** The ratio is only well-behaved for measures that
+are themselves ratios (risk ratio, odds ratio, hazard ratio): those live on a
+log scale where `exp(a - b)` is a well-defined, symmetric ratio regardless of
+how small the effect is. For difference measures — a mean difference, a raw
+risk difference — the ratio is undefined once the prior effect is close to
+zero: a prior estimate of 0.02 moving to 0.40 produces a ratio of 20, an
+artefact of the denominator, not a real twenty-fold change. The method as
+published does not address this case at all.
+
+```{r rcma-na}
+prev_md <- rma(yi = rep(0.02, 4), vi = rep(0.25, 4), measure = "MD")
+new_md  <- rma(yi = rep(0.40, 4), vi = rep(0.25, 4), measure = "MD")
+rcma(prev_md, new_md)
+```
+
+This package's answer is to read the measure straight off the `rma` object
+and, for difference measures with a prior effect indistinguishable from zero,
+return `not_applicable` with the reason attached rather than a number that
+looks plausible and is not.
+
+## `ottawa()`: the Ottawa method
+
+Two quantitative signals: a change in statistical significance (using
+**p < 0.04**, not the conventional 0.05 — this is the threshold in the
+original method, not a typo), and a change in the pooled effect of at least
+50%, computed the same way `rcma()` computes it. The method is due to Shojania
+and colleagues' survival analysis of how quickly systematic reviews go out of
+date (*Annals of Internal Medicine*, 2007), the same paper that established
+the headline numbers this package's introduction vignette opens with.
+
+```{r ottawa-signal}
+prev_o <- rma(yi = c(0.02, -0.01, 0.03, -0.02), vi = rep(0.05, 4), measure = "RR")
+new_o  <- rma(yi = rep(log(0.40), 8), vi = rep(0.01, 8), measure = "RR")
+ottawa(prev_o, new_o)
+```
+
+The original method also lists four *qualitative* signals: opposing
+findings, evidence of substantial harm, a new superior therapy, and a change
+in the balance of effectiveness. **This package does not infer any of
+them.** They are accepted as a character vector supplied by the analyst
+(`qualitative = "substantial harm reported"`, for instance) and reported
+separately from the two quantitative signals. An algorithm that claimed to
+judge "substantial harm" from effect sizes alone would be a much bigger
+promise than the data can support, and would spend the credibility of the
+whole package to make it.
+
+**Declared: `ottawa` contains `rcma` verbatim.** The effect-change half of
+the Ottawa method *is* `rcma()`'s entire rule — the same ratio, computed by
+the same internal function, against the same 0.5 and 1.5 thresholds. At
+default parameters, therefore:
+
+```
+rcma(prev, new_ma) == "out_of_date"   implies   ottawa(prev, new_ma) == "out_of_date"
+```
+
+always, by construction. Verified over 400 random prior/updated pairs:
+`rcma` fired 63 times, `ottawa` fired 116 times, and every one of `rcma`'s 63
+was among `ottawa`'s — zero disjoint firings, as the algebra requires.
+
+This is faithful to the published methods and is not a defect in either: the
+Ottawa method genuinely adopts the rCMA effect-change criterion and adds a
+significance criterion and four qualitative ones on top of it. It is declared
+here for the same reason `CONTAMINATED_PAIRS` exists. This package goes to
+some trouble to make sure nobody mistakes a structural identity between a
+detector and a truth definition for an empirical finding; a structural
+dependency between two *detectors* deserves the same treatment. The headline
+question this package exists to re-ask — the five methods agreed at
+Kappa = 0.14 on 80 reviews — involves ten detector pairs, and one of them is
+deterministic. Anyone recomputing that agreement should be counting nine.
+
+## `barrowman()`: the participant-ratio method
+
+```
+q = m / n            n = (Z_crit^2 * N) / Z^2            signal if q > 1
+```
+
+`m` is the number of participants contributed by the new studies; `N` is the
+total in the prior meta-analysis; `Z` is that meta-analysis's own test
+statistic; `Z_crit` is 1.96. `n` is a back-calculation: how many new
+participants, added at the same average effect and variance as the existing
+evidence, would it take to push the pooled result across the significance
+threshold. `q > 1` means the new evidence already supplied more than that.
+
+```{r barrowman-signal}
+prev_b <- rma(yi = c(0.10, -0.05, 0.08, -0.02), vi = rep(0.05, 4), measure = "MD")
+z <- prev_b$zval
+n_req <- (1.96^2 * 400) / z^2
+barrowman(prev_b, n_prev = 400, n_new = ceiling(n_req * 1.5))
+barrowman(prev_b, n_prev = 400, n_new = floor(n_req * 0.5))
+```
+
+**What is wrong with it.** The method, proposed by Barrowman and colleagues
+as a way to identify null meta-analyses ripe for updating (*BMC Medical
+Research Methodology*, 2003), only makes sense when the prior meta-analysis
+was *not* statistically significant — `n` is derived from how far the prior
+result sits from the significance boundary, and that derivation has no
+answer when the prior result was already on the far side of it. This
+restricts the method to a narrow slice of published meta-analyses. When it
+does not apply, `barrowman()` returns `not_applicable`, never `current`:
+treating "the method has nothing to say" as "the review is fine" would hand
+this detector an unearned advantage in any calibration exercise, since it
+would then never be wrong on exactly the cases it declined to judge.
+
+```{r barrowman-na}
+sig <- rma(yi = rep(log(0.4), 8), vi = rep(0.01, 8), measure = "RR")
+barrowman(sig, n_prev = 400, n_new = 900)
+```
+
+## `sufficiency()`: sufficiency and stability
+
+```
+index = N_fs / (5k + 10)      stability = has the cumulative pooled effect
+                                          stopped moving?
+```
+
+`N_fs` is Rosenthal's fail-safe N: an estimate of how many unpublished null
+studies it would take to erase a significant pooled effect. A review is
+*sufficient* when the index exceeds 1 — Rosenthal's own rule of thumb for a
+result being robust to unpublished null findings. It is *stable* when the
+cumulative pooled effect, accumulated study by study in publication order,
+has no more movement left in it than the same studies would produce in a
+random order. The published rule states that as the slope of a regression
+across the cumulative effects; this package tests a different statistic,
+which is a **declared departure** — the largest of the package's adaptations
+— and the next-but-one subsection sets out exactly what was changed, why the
+published statistic was measured and rejected, and what the substitute does
+instead.
+
+The method is due to Mullen, Muellerleile and Bryant's treatment of
+cumulative meta-analysis indicators (*Personality and Social Psychology
+Bulletin*, 2001). This package follows the specific two-snapshot form of it
+used in the comparative evaluation of Pattanittum and colleagues (*PLoS
+ONE*, 2012), because that is the only source that defines sufficiency and
+stability as a comparison between a *prior* meta-analysis and an *updated*
+one, rather than as a property of a single, static body of studies.
+
+**The rule, and why it is easy to get backwards.** A review counts as
+out of date only when it is **both sufficient and unstable at once**:
+
+```{r sufficiency-out}
+yi <- seq(log(0.9), log(0.2), length.out = 20)
+vi <- rep(0.01, 20)
+drifting <- rma(yi = yi, vi = vi, measure = "RR")
+sufficiency(drifting, drifting)
+```
+
+Insufficiency by itself — an index at or below 1 — is **never** grounds for
+"out of date", no matter how unstable the cumulative effect looks:
+
+```{r sufficiency-insufficient}
+yi <- rep(log(0.99), 6)
+vi <- rep(0.04, 6)
+weak <- rma(yi = yi, vi = vi, measure = "RR")
+sufficiency(weak, weak)
+```
+
+This is the primary source's own reading, confirmed against its data, not
+just its prose: of the 80 reviews in the Pattanittum et al. comparison, all
+80 had a fail-safe ratio below 1 (insufficient), and for exactly that reason
+the method could not flag a single one of them as out of date. Had the
+opposite direction been correct — insufficiency implying "out of date" — that
+same fact about the 80 reviews would have produced the opposite result: all
+80 flagged.
+
+The two halves also read from different bodies of evidence, and that is
+deliberate, not an oversight: sufficiency — the fail-safe N and the `k` in
+`5k + 10` — is computed from the meta-analysis **as it stood when
+previously published**; stability is computed from the cumulative series of
+the **updated** meta-analysis, because that is where drift from new studies
+would actually show up. See section 4.4 of the package's design document for
+the full paper trail behind this, including the case that would silently
+give the wrong verdict if both halves were read from the same snapshot.
+
+### Declared adaptation: how stability is actually tested
+
+Every other adaptation in this package is documented at length — `rcma()`'s
+`not_applicable` rule for difference measures, `ottawa()`'s refusal to infer
+qualitative signals, the prev/updated split above, the inverted direction of
+the out-of-date criterion. This one is the last of them, and it matters most,
+because the backtesting results will be read as findings about the published
+method.
+
+**What the source says.** Pattanittum et al. (2012, Table 1), reproducing
+Mullen et al.'s rule, states the out-of-date criterion as *"failsafe ratio >1
+and absolute slope of the linear regression >0"*, where the regression is
+*"fitted across the cumulative treatment effects ... versus information
+increment"*.
+
+**Why it cannot be implemented as written.** On continuous data the
+least-squares slope of a cumulative series is never exactly zero. Taken
+literally, `|slope| > 0` is true of essentially every real meta-analysis, so
+the stability indicator would carry no information at all and the method
+would reduce to "sufficient ⇒ out of date". Some rule for deciding when a
+slope is *large enough* has to stand in for it.
+
+Three substitutes were implemented and measured. The first two failed, and
+the numbers are given here rather than summarised, because the point of this
+package is to adjudicate these methods with data.
+
+**Attempt 1 — the OLS t-test. Invalid.** The obvious substitute is the
+t-test on the slope that `lm()` reports, treating `|slope| > 0` as "slope
+significantly different from zero". That test is invalid here, and
+measurably so. A cumulative weighted mean is near-perfectly autocorrelated by
+construction, and it converges on the pooled effect by the law of large
+numbers whether or not anything is changing, so the OLS null distribution
+does not apply: the test detects *convergence* and reports *instability*.
+Measured over 300 samples of evidence that genuinely does not change — 20
+prior studies and 10 new ones drawn from one distribution — it returned
+`out_of_date` **209 times**. `rcma()` and `ottawa()` returned it zero times
+on the same 300 samples. At the degenerate limit it was worse: twelve
+byte-identical studies give a cumulative series spanning 2.2e-16, and the fit
+obligingly returned a slope of -7.4e-17 with p = 0.014, i.e. "out of date".
+
+**Attempt 2 — permute study order, keep the slope. Calibrated on average;
+blind exactly where it mattered.** Replacing the OLS null with a
+**permutation test over study order** — compare the observed slope with the
+slopes of the same studies reshuffled 999 times — fixed the headline number:
+16 firings in 300 on the same no-change experiment, the nominal 5%. It also
+rests on a defensible principle, that study order is exchangeable when
+nothing is changing. Two independent measurements then showed it does not
+work:
+
+* **No power against late change.** With 20 prior studies at RR 0.5 and 10
+  new ones at RR 0.30, it fired on **1 of 200** samples, and on **0 of 200**
+  once the new studies moved to RR 0.15 or beyond — power that *fell* as the
+  change grew. On a 20-study series sitting at RR 0.5 and then dropping to
+  RR 0.05, it fired when the drop came after study 2, 5, 8 or 10 and was
+  silent when it came after study 12, 15 or 18. The mechanism is that the
+  slope of a cumulative series is dominated by its first few points, where
+  almost no information has accumulated and the series swings hardest: a
+  permuted order that happens to open on an outlying study produces a larger
+  slope than a genuine cliff at study 15 ever does. A mature review updated
+  with a smaller batch of new studies is this package's canonical case, and
+  it is precisely the case the detector could not see.
+* **False alarms under time-correlated heteroscedasticity.** With no drift at
+  all but variance falling over time — early small trials, later large ones,
+  which is what a real evidence stream looks like — it fired on **83 of 300**
+  samples (28%), and on a schedule of twenty small trials followed by ten
+  large ones, on **127 of 300** (42%). Study order is exchangeable under no
+  change only if the *variances* are exchangeable too, and in a real series
+  they are not: the cumulative estimate wanders while only small trials have
+  accumulated and then settles when the large ones arrive, which looks like
+  drift, while permuted orders put the large trials early half the time and
+  never show it.
+
+**A fidelity fix that is not a repair.** The regression above was fitted
+against the study index `1, 2, 3, ...`, not against accumulated information
+`cumsum(1 / vi)`, which is what the source's *"versus information increment"*
+specifies and what trial-sequential-analysis methods use. That was a genuine
+infidelity and it is now fixed — `detail$slope` is fitted on the information
+axis. It repairs **nothing**, and that was measured rather than assumed: when
+study variances are equal, `cumsum(1 / vi)` is an affine function of the
+index, so every slope in the permutation — observed and null alike — is
+rescaled by the same constant and the p-value is identical *to the last bit*.
+All three failing measurements above were unchanged by it, and the 28%
+false-alarm rate moved only to 25%. A plausible mechanism and fidelity to the
+source were not enough; the measurement is what settled it.
+
+**Attempt 3 — change the statistic. What runs.** The slope over a cumulative
+series is simply a poor instrument for the question the method is asking. It
+is replaced with the **largest standardised movement the cumulative series
+has left in it**: for each split point *m*, the fixed-effect pooled estimate
+of the first *m* studies is compared with the pooled estimate of the rest,
+divided by the standard error of that difference, and the statistic is the
+maximum absolute value over *m*.
+
+```
+I_m = sum of 1/v_i over the first m studies      (information accumulated)
+
+        theta_hat(1..m)  -  theta_hat(m+1..k)
+Z_m = ------------------------------------------      T = max |Z_m|
+        sqrt( 1/I_m  +  1/(I_k - I_m) )                    m
+```
+
+This still asks the method's own question, and it is monotone in the same
+quantity the published slope is a proxy for: the movement remaining in the
+cumulative curve after step *m* is exactly `1 - I_m/I_k` times the difference
+`Z_m` standardises. What it adds is that its dependence on the variance
+schedule is **weak instead of structural**. Two things are exactly true: the
+statistic is *scale*-pivotal, so multiplying every `vi` by a constant leaves
+it bit-identical, and each `Z_m` is *marginally* standard normal under any
+schedule (measured SDs 0.998–1.002 across schedules spanning 650:1). What is
+**not** true — and an earlier draft of this vignette claimed it — is that the
+statistic therefore carries no imprint of the schedule at all. `max_m |Z_m|`
+is the discrete supremum of a standardised Brownian bridge sampled at the
+information fractions `I_m/I_k`, and those fractions are a function of the
+schedule. Null quantiles at `k = 30` over 60,000 draws:
+
+| schedule (variance) | ratio | median | 95th pct |
+|---|---|---|---|
+| flat | 1:1 | 1.817 | 2.881 |
+| V-shaped, big–small–big | 16:1 | 1.923 | 2.950 |
+| Λ-shaped, small–big–small | 16:1 | 1.599 | 2.732 |
+| geometric decay | 646:1 | 1.930 | 2.956 |
+
+The V and Λ nulls differ with a Kolmogorov–Smirnov `D` of 0.25, and the
+flat-schedule 95th percentile delivers 6.1% under V and 3.4% under Λ. So the
+case for keeping the order-permutation null is that the residual dependence
+is small — quantiles move a few percent where the slope statistic moved by
+orders of magnitude — not that it is zero. What that costs is measured below.
+Everything around it is unchanged: `n_perm` (999)
+order permutations, the two-sided `(1 + count) / (n_perm + 1)` estimator so
+the p-value is never exactly zero, reported as `p_stability` and compared
+against `alpha_stability` (default 0.05); a fixed seed; the caller's random
+stream saved and restored; and a cumulative series that is constant to within
+floating-point rounding short-circuited as maximally stable before anything
+is computed.
+
+Measured against the same four experiments, with the two predecessors for
+comparison:
+
+| Experiment (no drift = false alarms, drift = power) | OLS *t* | Perm + slope | Perm + `max Z_m` |
+|---|---|---|---|
+| No drift, 20 + 10 studies, equal variances (300) | 209 | 16 | **15** (5.0%) |
+| Power, 10 new studies at RR 0.40 / 0.30 / 0.15 / 0.02 (200 each) | — | 10 / 1 / 0 / 0 | **200 / 200 / 200 / 200** |
+| Shift-position scan, drop after study 2 / 5 / 8 / 10 / 12 / 15 / 18 | — | fires / fires / fires / fires / — / — / — | **fires at all seven** |
+| No drift, variance falling over time (300) | — | 83 (28%) | **16** (5.3%) |
+| No drift, variance rising over time (300) | — | 0 (no power left) | **20** (6.7%) |
+| No drift, 20 small then 10 large trials (300) | — | 127 (42%) | **19** (6.3%) |
+
+**Calibration, and where it fails.** The first draft of this vignette said
+calibration "stays between 4.0% and 6.7% across nine variance and
+heterogeneity regimes". That was true of those nine and false as a general
+claim: every one of them was flat, mildly linear or a single step. Measured
+over 1000 no-drift samples at `k = 30` (2000 for the worst case), against the
+actual permutation test:
+
+| variance schedule | ratio | false alarms |
+|---|---|---|
+| flat | 1:1 | 5.3% |
+| linear decay (the E4 schedule) | 16:1 | 5.7% |
+| `dat.bcg`, real variances in year order | 60:1 | 5.0% |
+| `dat.egger2001`, real variances | 90:1 | 3.0% |
+| Λ-shaped, small–big–small | 16:1 | 2.4% (conservative) |
+| step, 20 small then 10 large trials | 50:1 | 8.1% |
+| V-shaped, big–small–big | 16:1 | 8.4% |
+| `dat.bcg`, the same variances sorted decreasing | 60:1 | 9.4% |
+| geometric decay, `vi = 0.5 * 0.845^j` | 114:1 | 9.3% |
+| **geometric decay, `vi = 0.5 * 0.80^j`** | **650:1** | **11.1%** |
+| geometric growth, the same reversed | 650:1 | 10.9% |
+
+What matters is not the direction of the trend — growth and decay are equally
+bad — but its **smoothness, monotonicity and range**. Irregular real-world
+schedules come out nominal; taking `dat.bcg`'s own variances and merely
+sorting them into decreasing order moves it from 5.0% to 9.4%, which isolates
+the arrangement from the numbers. The measured worst case is about **11%** on
+a smooth 650:1 monotone precision ramp, roughly twice nominal. That is a
+disclosed limitation rather than a claim of nominality, and it is pinned by an
+invariant test so it cannot silently get worse.
+
+Across series length, at a flat schedule: 0.9% at `k = 5`, 1.7% at `k = 6`,
+3.4% at `k = 8`, 3.3% at `k = 10`, 5.5% at `k = 12`, and nominal from there —
+still half-nominal at twice the minimum `k` this detector accepts.
+
+Two other repairs were implemented and measured before this one was adopted,
+and are recorded because negative results are results. **Permuting
+standardised residuals** while holding the variance schedule fixed does fix
+the heteroscedasticity false alarms (83/300 → 15/300) but cannot touch the
+power problem at all: when variances are equal it is *identical* to permuting
+study order, so the shift-position scan was unchanged. **Weighting the
+regression** by accumulated information restores a great deal of power
+(1/200 → 200/200 at RR 0.30, and the scan reaches study 12) but leaves the
+heteroscedastic false-alarm rate at 42/300 (14%) and 78/300 (26%) on the two
+schedules above — better, still broken. Only replacing the statistic cleared
+both bars.
+
+The `slope` itself is still reported in `detail`, now on the information axis
+the source specifies, so anyone who wants to apply the literal published rule
+can read it straight off the verdict. It no longer decides anything.
+
+**What is still wrong with the statistic that runs.** Four things, all
+measured, none of them hidden — a detector with a disclosed blind spot is
+honest, one with an undisclosed one is not. Three of them were understated in
+the first draft of this vignette and are restated here with the numbers that
+falsified the original wording.
+
+* **Conservative well past `k = 5`**: 0.9% at `k = 5` but still only 3.4% at
+  `k = 8` and 3.3% at `k = 10`, reaching nominal around `k = 12`. The first
+  draft blamed the 120 distinct orderings available at `k = 5`, which cannot
+  explain `k = 8` and its 40,320. The mechanism is the next bullet with its
+  sign reversed: the maximum is often driven by the split isolating the single
+  most extreme study, and a given study lands at an end in `2 / k` of all
+  orderings — 40% at `k = 5`, 25% at `k = 8`, 6.7% at `k = 30`. At small `k`
+  a large share of permutations reproduce the observed extreme, so the null is
+  diffuse and the test under-fires. A `current` verdict from a short update is
+  weak evidence of stability.
+* **A single discordant study, arriving first or last, can carry the
+  statistic — and the threshold is much lower than first reported.** With
+  ordinary sampling noise on the other studies, P(fires) over 400 samples:
+
+  | `k` | no outlier | `D` = 3 SE | `D` = 5 SE | `D` = 10 SE |
+  |---|---|---|---|---|
+  | 20 | 0.050 | 0.175 | 0.625 | 0.660 |
+  | 25 | 0.037 | 0.205 | 0.885 | 0.938 |
+  | 30 | 0.045 | 0.210 | 0.927 | 0.990 |
+  | 40 | 0.052 | 0.240 | 0.995 | 0.993 |
+
+  So a **five**-SE discordant study at either end forces `unstable` almost
+  always from about `k = 25` — not "twenty SE from about `k = 35`", which is
+  what the first draft said. That figure came from a noise-free fixture where
+  every other study was byte-identical, which makes the mirror-image ordering
+  an exact tie, inflates the permutation count, and lands in the one corner of
+  the parameter space where the effect looks mild. The same saturation shows
+  in the table: at `D` = 20 SE the rate *falls* back to 0.453 at `k = 20`. A
+  five-SE discordant study is an ordinary occurrence in a real review, so at
+  moderate `k` this detector is substantially a single-outlier detector.
+  Whether that is the right answer is arguable — such a study does move the
+  pooled estimate — but it must not be read as evidence of a trend.
+  `detail$split` separates the two readings and does so reliably: among the
+  firings above it pointed at `k - 1`, the single-study split, in 97–99% of
+  cases.
+* **A smooth, strongly monotone variance schedule runs anti-conservative**, to
+  about 11% against a nominal 5%, per the calibration table above.
+* **Power falls away under strong between-study heterogeneity.** Against 20
+  prior studies at RR 0.5 and 10 new at RR 0.30: 200/200 at `tau = 0` and
+  `tau = 0.10`, 199/200 at `tau = 0.20`, 160/200 at `tau = 0.35`. The
+  permutation null is built from the same heterogeneous studies, so
+  calibration holds throughout; it is power, not the false-alarm rate, that
+  degrades. The detector is at its sharpest where the size of the change is
+  large relative to the spread between studies — against 20 prior studies at
+  RR 0.5, ten new ones at RR 0.50 fire on 8/200 samples (the nominal rate),
+  RR 0.47 on 117/200, RR 0.45 on 197/200, and RR 0.42 and beyond on 200/200.
+
+**What is wrong with it, independent of any of the above.** Rosenthal's
+fail-safe N has been discredited as a measure of publication bias since
+Becker (2005) — it answers a narrower and less useful question than it is
+usually taken to answer, and better alternatives (trim-and-fill, funnel-plot
+regression) have existed for years. `sufficiency()` implements it
+anyway, faithfully, exactly as the published method specifies it, because
+this package's purpose is not to pre-judge which of the five methods
+deserves to survive contact with data. If Rosenthal's N is as weak a
+foundation as the critique suggests, the backtesting engine will show it —
+that is a fact to be established empirically, in
+`vignette("backtesting", package = "staleness")`, and not decided in advance
+by leaving the method out.
+
+## `simulation()`: prospective power
+
+Ten thousand replicate "new studies" are simulated using the parameters of
+the recently published literature, added to the prior meta-analysis, and the
+fraction of replicates in which the pooled result reaches significance is
+recorded as a power estimate. A power at or above 80% is the signal.
+
+```{r simulation-signal}
+prev_sim <- rma(yi = c(0.30, 0.28, 0.32, 0.29), vi = rep(0.16, 4), measure = "MD")
+new_ev   <- list(yi = c(0.30, 0.31, 0.29), vi = rep(0.005, 3), k = 3)
+simulation(prev_sim, new_ev, seed = 3)
+```
+
+Like `barrowman()`, this method only has something to say about a prior
+meta-analysis that was not yet significant:
+
+```{r simulation-na}
+prev_sig <- rma(yi = rep(log(0.4), 8), vi = rep(0.01, 8), measure = "RR")
+new_small <- list(yi = rep(log(0.4), 3), vi = rep(0.01, 3), k = 3)
+simulation(prev_sig, new_small, seed = 1)
+```
+
+**What is wrong with it.** In the same published comparison that produced
+the fail-safe-N numbers above, the simulation method flagged **none of the
+80 reviews** as out of date — not one. That is either the sign of an
+extremely conservative method that will almost never generate a false
+alarm, or the sign of a method that is misspecified for the way it was
+applied, and the published literature does not settle which. It is exactly
+the kind of question this package's backtesting engine exists to make
+answerable with data instead of leaving it as a footnote.
+
+## Sources
+
+- Ioannidis JPA, Lau J. Evolution of treatment effects over time: empirical
+  insight from recursive cumulative metaanalyses. *Proceedings of the
+  National Academy of Sciences*, 2001.
+- Shojania KG et al. How quickly do systematic reviews go out of date? A
+  survival analysis. *Annals of Internal Medicine*, 2007.
+- Barrowman NJ et al. Identifying null meta-analyses that are ripe for
+  updating. *BMC Medical Research Methodology*, 2003.
+- Mullen B, Muellerleile P, Bryant B. Cumulative meta-analysis: a
+  consideration of indicators of sufficiency and stability. *Personality and
+  Social Psychology Bulletin*, 2001.
+- Pattanittum P et al. A comparison of statistical methods for identifying
+  out-of-date systematic reviews. *PLoS ONE*, 2012;7(11):e48894 (PMC3502410).
+- Becker BJ. Failsafe N or file-drawer number. In *Publication Bias in
+  Meta-Analysis*, 2005.
