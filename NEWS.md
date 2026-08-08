@@ -34,6 +34,16 @@ First public release.
   only ever against the detector: dropping a firing can lengthen or erase a
   lead, never shorten it.
 
+## Reproducibility
+
+* `inst/calibration/calibration.R` regenerates every calibration figure quoted
+  in `?sufficiency`, `vignette("methods")` and the paper, from the seeds the
+  original measurements used, and reconstructs both of the statistics that
+  were replaced so the before-and-after comparison can be re-derived. Two
+  published figures did not survive that check and were corrected: the
+  20-small-then-10-large schedule reads 20/300 (6.7%), not 19/300, and the
+  schedule itself is 50:1.
+
 ## Notes on two published methods
 
 * `sufficiency()` tests stability with a change-point statistic

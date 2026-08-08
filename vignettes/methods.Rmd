@@ -369,7 +369,16 @@ comparison:
 | Shift-position scan, drop after study 2 / 5 / 8 / 10 / 12 / 15 / 18 | — | fires / fires / fires / fires / — / — / — | **fires at all seven** |
 | No drift, variance falling over time (300) | — | 83 (28%) | **16** (5.3%) |
 | No drift, variance rising over time (300) | — | 0 (no power left) | **20** (6.7%) |
-| No drift, 20 small then 10 large trials (300) | — | 127 (42%) | **19** (6.3%) |
+| No drift, 20 small then 10 large trials, 50:1 (300) | — | 127 (42%) | **20** (6.7%) |
+
+Every number in the table above is reproducible. `inst/calibration/calibration.R`
+regenerates all of them from the seeds the original measurements used, and
+reconstructs the replaced statistic as well, so the "before" column can be
+re-derived rather than taken on trust:
+
+```
+Rscript inst/calibration/calibration.R
+```
 
 **Calibration, and where it fails.** The first draft of this vignette said
 calibration "stays between 4.0% and 6.7% across nine variance and

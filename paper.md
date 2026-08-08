@@ -76,7 +76,11 @@ change-point statistic, the largest standardised split in the cumulative
 series, assessed against an order-permutation null. The published slope is
 still computed and returned alongside. The substitution, its measured
 calibration across nine variance regimes, and the regimes in which it loses
-power are documented in the package's `methods` vignette. Rosenthal's fail-safe
+power are documented in the package's `methods` vignette. Every figure behind
+that decision is reproducible from the package itself: `inst/calibration/`
+regenerates all of them from the original seeds, and reconstructs both
+statistics that were replaced, so the before-and-after can be re-derived
+rather than taken on trust. Rosenthal's fail-safe
 N, on which the sufficiency half rests, has been discredited [@becker2005] and
 is implemented for fidelity to the published method rather than as an
 endorsement.
