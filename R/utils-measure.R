@@ -55,3 +55,52 @@ effect_ratio <- function(theta_new, theta_prev, measure, se_prev, min_z = 2) {
   }
   list(ratio = theta_new / theta_prev, reason = "")
 }
+
+#' Ratio of relative risk reductions, the Ottawa effect criterion
+#'
+#' The Ottawa method's "change in effect size of at least 50%" is **not**
+#' computed on the effect itself. Pattanittum et al. (2012), Table 1, states
+#' it explicitly: for treatment effects measured as a relative ratio (RR, OR)
+#' the comparison is between the *relative risk reduction* of the updated
+#' meta-analysis and the RRR of the previous one, where `RRR = 1 - RR`. For
+#' mean differences the relative change is computed as `rcma()` computes it.
+#'
+#' The distinction is not cosmetic. Across the ten reviews with the largest
+#' indicator in that study's Appendix S3, all ten fire on the RRR ratio and
+#' **none** of them fires on the ratio of the risk ratios: a review moving
+#' from RR 0.995 to RR 0.848 barely moves the risk ratio (0.85) while its risk
+#' reduction goes from 0.5% to 15%, a factor of 30.
+#'
+#' That sensitivity is also the criterion's weakness. `1 - RR` is tiny
+#' whenever the prior effect is near no-effect, so the ratio explodes on
+#' rounding alone, and the same guard the difference-measure branch uses
+#' applies here: a prior effect indistinguishable from no effect yields
+#' `NA_real_` rather than a large and meaningless number.
+#'
+#' @inheritParams effect_ratio
+#' @return List with `ratio` (possibly `NA_real_`) and `reason`.
+#' @keywords internal
+rrr_ratio <- function(theta_new, theta_prev, measure, se_prev, min_z = 2) {
+  # Mean differences: the source defers to the rCMA rule.
+  if (!is_ratio_measure(measure)) {
+    return(effect_ratio(theta_new, theta_prev, measure, se_prev, min_z))
+  }
+  # NOT guarded by min_z, deliberately. The difference-measure branch refuses
+  # a prior effect within min_z standard errors of zero, and transplanting
+  # that rule here would disable the detector on precisely the reviews it was
+  # designed for: the Ottawa method targets meta-analyses whose result is not
+  # significant, and in the published application every one of the eighty
+  # reviews was a null meta-analysis by inclusion criterion. A guard that
+  # rejects all of them answers a different question from the method's.
+  #
+  # Only the genuine singularity is refused: RR exactly 1 makes RRR exactly 0
+  # and the ratio undefined.
+  rrr_prev <- 1 - exp(theta_prev)
+  if (!is.finite(rrr_prev) || rrr_prev == 0) {
+    return(list(
+      ratio  = NA_real_,
+      reason = "prior effect is exactly no effect; the risk-reduction ratio is undefined"
+    ))
+  }
+  list(ratio = (1 - exp(theta_new)) / rrr_prev, reason = "")
+}

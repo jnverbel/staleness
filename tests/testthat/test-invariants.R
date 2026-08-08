@@ -67,15 +67,44 @@ no_change_run <- function(seed0, n, effect, vi_study, n_prev = 2000, n_new = 100
   verdicts
 }
 
-test_that("unchanging evidence never signals: null-effect regime, all five detectors apply", {
+test_that("unchanging evidence never signals: null-effect regime", {
   # A null effect keeps the prior meta-analysis non-significant, which is the
   # only regime where barrowman() and simulation() have anything to say. All
-  # five detectors answer at every seed, and none of them may fire.
+  # five detectors answer at every seed, and four of them may not fire.
+  #
+  # ottawa() is excluded, and not because of an implementation choice. Its
+  # effect criterion is the ratio of relative risk REDUCTIONS, and under a
+  # null effect the denominator 1 - RR_prev is near zero, so the ratio is
+  # unstable by construction. That is a property of the published method,
+  # measured and pinned in the test below rather than hidden by leaving
+  # ottawa out silently.
   v <- no_change_run(seed0 = 1000, n = 60, effect = 0, vi_study = 0.05)
-  for (m in available_methods()) {
+  for (m in setdiff(available_methods(), "ottawa")) {
     expect_equal(sum(v[, m] == "not_applicable"), 0, info = m)
     expect_equal(sum(v[, m] == "out_of_date"), 0, info = m)
   }
+})
+
+test_that("ottawa's effect criterion is unstable exactly where it is applied", {
+  # Not a defect in this implementation -- it reproduces the published
+  # criterion, verified against Pattanittum's Appendix S3 -- but a property
+  # of the criterion itself, and one worth measuring because the method is
+  # meant for null meta-analyses, which is the regime it misbehaves in.
+  rate <- function(seed0, mu) {
+    fired <- vapply(seq_len(200), function(i) {
+      set.seed(seed0 + i)
+      yi <- stats::rnorm(12, mu, 0.05); vi <- rep(0.05, 12)
+      prev <- metafor::rma(yi = yi[1:6], vi = vi[1:6], measure = "RR")
+      upd  <- metafor::rma(yi = yi,      vi = vi,      measure = "RR")
+      isTRUE(ottawa(prev, upd)$detail$signal_effect)
+    }, logical(1))
+    mean(fired)
+  }
+  # Null effect: fires on most samples containing no change whatsoever.
+  expect_gt(rate(4000, 0), 0.4)
+  # A real, precise effect moves the denominator away from zero and the
+  # criterion behaves.
+  expect_lt(rate(5000, log(0.5)), 0.05)
 })
 
 test_that("unchanging evidence signals no more often than chance: strong-effect regime", {

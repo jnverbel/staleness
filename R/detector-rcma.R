@@ -4,24 +4,27 @@
 #' half relative to the prior estimate.
 #'
 #' @section Relationship to `ottawa()`:
-#' This rule is contained verbatim in [ottawa()], which fires on the same
-#' `effect_ratio()` with the same 0.5 / 1.5 thresholds as one of its three
-#' signals. At default parameters, therefore, `rcma() == "out_of_date"`
-#' **implies** `ottawa() == "out_of_date"`: the two detectors are not
-#' independent, and no `rcma` firing can ever be disjoint from `ottawa`.
-#' Verified over 400 random prior/updated pairs: `rcma` fired 63 times,
-#' `ottawa` fired 116 times, and every one of `rcma`'s 63 was among
-#' `ottawa`'s. Zero disjoint firings, as the algebra requires.
+#' These two rules look like the same rule and are not, which earlier versions
+#' of this documentation asserted wrongly. Both compare an updated effect
+#' against a prior one at thresholds of 0.5 and 1.5, but they compare
+#' different quantities. `rcma()` takes the ratio of the effects. [ottawa()]
+#' takes the ratio of the relative risk *reductions*,
+#' `(1 - RR_new) / (1 - RR_prev)` -- the definition its published application
+#' uses (Pattanittum et al. 2012, Table 1), verified in this package's test
+#' suite against the ten reviews in that study's Appendix S3.
 #'
-#' This is faithful to the published methods, not a defect in either: the
-#' Ottawa method genuinely adopts the rCMA effect-change criterion and adds to
-#' it. It is declared because it is structural rather than empirical. Anyone
-#' recomputing the inter-method agreement question this package exists to
-#' answer (Kappa = 0.14, across the three methods that discriminated at all)
-#' would otherwise be treating
-#' one of the ten detector pairs as data when it is arithmetic. The same
-#' reasoning gave rise to [CONTAMINATED_PAIRS] for detector-truth pairs;
-#' detector-to-detector containment deserves the same visibility.
+#' On difference measures the two do coincide, because the source defers to
+#' the rCMA rule there. On ratio measures they can disagree completely: of
+#' those ten published reviews, every one fires on the RRR ratio and **not
+#' one** fires on the ratio of the risk ratios. A review moving from RR 0.995
+#' to RR 0.848 barely moves the risk ratio, while its risk reduction goes from
+#' 0.5\% to 15\%.
+#'
+#' So there is no containment on ratio measures, and an `rcma` firing is not a
+#' subset of the `ottawa` firings. This section stays because the relationship
+#' is easy to assume and wrong in both directions: anyone recomputing the
+#' inter-method agreement this package exists to re-ask should treat these as
+#' two criteria, not as one criterion counted twice.
 #'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.

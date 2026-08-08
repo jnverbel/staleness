@@ -72,6 +72,26 @@ yet exist. Cuts too close to the end of the series to have an observable future
 are marked censored and excluded from the metrics instead of being scored
 against a truth that cannot be known.
 
+# Fidelity, checked against the published application
+
+Implementing a method from prose is where a comparison study silently goes
+wrong, so each detector here is checked against the one published application
+of all five. That check found an error in this package: the Ottawa method's
+"change in effect size of at least 50%" is computed on relative risk
+*reductions*, `(1 - RR_new) / (1 - RR_prev)`, not on the effects themselves
+[@pattanittum2012]. Of the ten reviews with the largest Ottawa indicator in
+that study's appendix, all ten fire under the published definition and none
+fires under the ratio of risk ratios. The tests reproduce those ten.
+
+The correction carries a finding. The denominator goes to zero as the prior
+effect approaches no effect, so the criterion is unstable precisely on the
+null meta-analyses the method targets: on evidence containing no change at
+all, its effect signal fires on 64% of samples under a null effect and on 0%
+once the effect is real. That is a property of the criterion, and it accounts
+for the published comparison flagging 34 of 80 reviews by Ottawa against 7
+each by the other two discriminating methods, on a cohort of null
+meta-analyses.
+
 # Implementation note
 
 One method is implemented with a declared deviation. The stability half of

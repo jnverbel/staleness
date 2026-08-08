@@ -95,32 +95,42 @@ judge "substantial harm" from effect sizes alone would be a much bigger
 promise than the data can support, and would spend the credibility of the
 whole package to make it.
 
-**Declared: `ottawa` contains `rcma` verbatim.** The effect-change half of
-the Ottawa method *is* `rcma()`'s entire rule — the same ratio, computed by
-the same internal function, against the same 0.5 and 1.5 thresholds. At
-default parameters, therefore:
+**Corrected: `ottawa` does *not* contain `rcma`.** Earlier versions of this
+vignette said it did, on the reasonable-looking grounds that both compare an
+updated effect to a prior one at 0.5 and 1.5. They compare different
+quantities. `rcma()` uses the ratio of the effects; the Ottawa method uses the
+ratio of the relative risk *reductions*:
 
 ```
-rcma(prev, new_ma) == "out_of_date"   implies   ottawa(prev, new_ma) == "out_of_date"
+RRR ratio = (1 - RR_updated) / (1 - RR_previous)      signal if <= 0.5 or >= 1.5
 ```
 
-always, by construction. Verified over 400 random prior/updated pairs:
-`rcma` fired 63 times, `ottawa` fired 116 times, and every one of `rcma`'s 63
-was among `ottawa`'s — zero disjoint firings, as the algebra requires.
+That is the definition its published application states (Pattanittum et al.,
+2012, Table 1), and this package now follows it. For mean differences the
+source defers to the rCMA rule, so there the two do coincide.
 
-This is faithful to the published methods and is not a defect in either: the
-Ottawa method genuinely adopts the rCMA effect-change criterion and adds a
-significance criterion and four qualitative ones on top of it. It is declared
-here for the same reason `CONTAMINATED_PAIRS` exists. This package goes to
-some trouble to make sure nobody mistakes a structural identity between a
-detector and a truth definition for an empirical finding; a structural
-dependency between two *detectors* deserves the same treatment, and here it
-bites harder than it first appears. The headline figure this package exists to
-re-ask — Kappa = 0.14 on 80 reviews — was **not** computed across all five
-methods. Two of them flagged nothing at all on that sample, so the published
-agreement is over the three that discriminated: Ottawa, recursive CMA and
-Barrowman. That is three pairs, not ten, and `rcma` ⊂ `ottawa` is one of them.
-A third of the pairs behind that number is arithmetic rather than evidence.
+The difference is not academic. That study's Appendix S3 publishes the ten
+reviews with the largest Ottawa indicator, with both pooled effects and the
+ratio the authors computed. Reproduced in this package's test suite: **all ten
+fire on the RRR ratio, and none of them fires on the ratio of the risk
+ratios.** A review moving from RR 0.995 to RR 0.848 barely moves the risk
+ratio — 0.85, comfortably inside the band — while its risk reduction goes from
+0.5% to 15%.
+
+**What is wrong with it.** The denominator `1 - RR_previous` goes to zero as
+the prior effect approaches no effect, so the ratio explodes exactly where the
+method is meant to be used: on meta-analyses whose result is not yet
+significant. Measured on evidence containing no change whatsoever, the effect
+signal fires on **64% of samples** under a null effect, and on **0%** once the
+effect is real and precise.
+
+That is not a quirk of this implementation; it follows from the criterion, and
+it explains the published comparison. Ottawa flagged 34 of the 80 reviews where
+recursive CMA and Barrowman flagged 7 each — and every one of those 80 was a
+null meta-analysis by inclusion criterion. The headline figure this package
+exists to re-ask, Kappa = 0.14, was computed over the three methods that
+discriminated at all, one of which was firing most of the time for structural
+reasons.
 
 ## `barrowman()`: the participant-ratio method
 

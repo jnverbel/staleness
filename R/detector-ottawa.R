@@ -50,7 +50,9 @@ ottawa <- function(prev, new_ma, alpha = 0.04,
   is_sig  <- new_ma$pval < alpha
   sig_signal <- if (sig_change == "gain") (!was_sig && is_sig) else (was_sig != is_sig)
 
-  r <- effect_ratio(
+  # The Ottawa effect criterion is the ratio of relative risk REDUCTIONS, not
+  # of the effects -- see rrr_ratio() and Pattanittum et al. (2012), Table 1.
+  r <- rrr_ratio(
     theta_new  = as.numeric(new_ma$beta),
     theta_prev = as.numeric(prev$beta),
     measure    = prev$measure,

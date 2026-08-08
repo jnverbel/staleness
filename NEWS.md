@@ -34,6 +34,27 @@ First public release.
   only ever against the detector: dropping a firing can lengthen or erase a
   lead, never shorten it.
 
+## Fidelity
+
+* `ottawa()`'s effect criterion now compares relative risk **reductions**,
+  `(1 - RR_new) / (1 - RR_prev)`, which is what the method's published
+  application specifies for ratio measures; mean differences still defer to
+  the `rcma()` rule. The package previously compared the effects themselves.
+  Of the ten reviews with the largest Ottawa indicator in Pattanittum et al.
+  (2012), Appendix S3, all ten fire under the corrected definition and none
+  fired under the old one. Those ten are now a test fixture.
+
+* Consequently `ottawa()` no longer contains `rcma()`. The two use different
+  quantities on ratio measures, so an `rcma` firing is not a subset of the
+  `ottawa` firings and the containment declared in earlier documentation was
+  wrong. On difference measures they still coincide.
+
+* The corrected criterion is unstable where the method is meant to be used:
+  `1 - RR_prev` approaches zero on a null meta-analysis, and on evidence with
+  no change at all the effect signal fires on 64% of samples under a null
+  effect versus 0% under a real one. Measured, pinned by a test, and
+  documented in `?ottawa` and `vignette("methods")` rather than smoothed over.
+
 ## Reproducibility
 
 * `inst/calibration/calibration.R` regenerates every calibration figure quoted
