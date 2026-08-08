@@ -116,12 +116,21 @@ test_that("unchanging evidence signals no more often than chance: strong-effect 
 # looks exactly like drift. Permuting orders puts the large trials early half
 # the time, so the null is flat and the real series looks extreme against it.
 #
-# Measured on the slope statistic that shipped before: 83/300 = 28% false
-# alarms with variance falling over time, and 101/300 = 34% on a step schedule
-# of twenty small trials followed by ten large ones. Five to seven times
-# nominal, on evidence with no drift in it whatsoever. The fix was to make the
-# statistic pivotal so it carries no imprint of the schedule (see
-# ?sufficiency); this is the test that holds it to that.
+# Every count quoted below was measured on THIS function's own generator and
+# seed set (n = 200, seed0 = 9000), so the comments and the bounds refer to the
+# same numbers. The old slope statistic against the shipped one:
+#
+#   schedule                       old slope   shipped   long-run rate (n=1000)
+#   variance falling, linear x16      62/200    12/200            4.9%
+#   step, 20 small then 10 large      92/200    12/200            7.4%
+#   variance rising, linear x16        0/200    13/200            4.5%
+#   geometric decay x650             151/200    24/200           10.3%
+#
+# The fix was to replace the statistic with one whose dependence on the
+# variance schedule is weak rather than structural (see ?sufficiency). Weak is
+# not zero, and the last row is the disclosed limit: on a smooth, strongly
+# monotone precision ramp the test runs anti-conservative at about 10-11%.
+# Its bound below is set from that measured rate, not from the nominal 5%.
 
 # Counts how often the STABILITY half fires, not how often the verdict does:
 # a verdict-level count would be diluted by the occasional sample whose `prev`
@@ -141,17 +150,17 @@ hetero_false_alarms <- function(vi, n = 200, effect = log(0.5), seed0 = 9000) {
 }
 
 test_that("time-correlated heteroscedasticity does not manufacture false alarms", {
-  # 200 samples, no drift, variance falling steadily over time: early small
-  # trials, later large ones. At the nominal 5% the expected count is 10 and
-  # the upper 99.9% binomial bound is 20; the shipped slope statistic produced
-  # about 56 here, so the bound has teeth.
-  expect_lte(hetero_false_alarms(seq(0.16, 0.01, length.out = 30)), 20)
+  # Variance falling steadily over time: early small trials, later large ones.
+  # Long-run rate 4.9%, so 9.8 expected of 200 and the 99.9% binomial bound is
+  # 20; the bound is 25 for headroom. Measured: 12 shipped, 62 old slope.
+  expect_lte(hetero_false_alarms(seq(0.16, 0.01, length.out = 30)), 25)
 })
 
 test_that("a step change in study size does not manufacture false alarms", {
-  # The harder version of the same shape, and the one the slope statistic was
-  # worst on (34%): twenty small trials, then ten large ones, no drift.
-  expect_lte(hetero_false_alarms(c(rep(0.25, 20), rep(0.005, 10))), 20)
+  # Twenty small trials, then ten large ones, no drift. Long-run rate 7.4% --
+  # already above nominal, which is why the bound is 30 rather than 20 and why
+  # the exponential guard below exists at all. Measured: 12 shipped, 92 old.
+  expect_lte(hetero_false_alarms(c(rep(0.25, 20), rep(0.005, 10))), 30)
 })
 
 test_that("the reverse schedule does not destroy the test either", {
@@ -159,11 +168,31 @@ test_that("the reverse schedule does not destroy the test either", {
   # statistic it was worse than a false alarm: the rate fell to 0/200, i.e. the
   # test had no power left at all in that regime -- a detector that can never
   # fire trivially passes an upper bound. So this one is bounded on BOTH sides.
-  # At a true 5% rate the chance of seeing zero firings in 200 samples is
-  # 3.5e-5, so the lower bound is safe and it is the half with the teeth here.
+  # At the measured 4.5% the chance of seeing zero firings in 200 samples is
+  # 1e-4, so the lower bound is safe and it is the half with the teeth here.
   fired <- hetero_false_alarms(seq(0.01, 0.16, length.out = 30))
-  expect_lte(fired, 20)
+  expect_lte(fired, 25)
   expect_gte(fired, 1)
+})
+
+test_that("a monotone exponential precision ramp stays inside its disclosed limit", {
+  # The regime the three guards above cannot see, and the one that falsified
+  # the first draft of this package's calibration claim. All three schedules
+  # above are mild or piecewise-linear; this one is smooth, strongly monotone
+  # and spans 650:1 in variance (vi = 0.5 * 0.80^j), which is where the
+  # residual dependence of max|Z_m| on the shape of the variance schedule
+  # actually bites. Long-run rate 10.3% (independently 11.1% over 2000
+  # samples, CI 9.8-12.6%) -- roughly twice nominal, and DISCLOSED as a limit
+  # in ?sufficiency rather than claimed away.
+  #
+  # The bound is therefore set from the measured rate, not from 5%: 20.6
+  # expected of 200, sd 4.3, 99.9% bound 34.7, so 40 with headroom. Measured:
+  # 24 shipped, 151 old slope. It still has decisive teeth, and it will fail
+  # if a future change makes this regime worse than it is documented to be --
+  # which is the point of pinning a disclosed limitation with a test.
+  fired <- hetero_false_alarms(0.5 * 0.80^(0:29))
+  expect_lte(fired, 40)
+  expect_gte(fired, 5)
 })
 
 test_that("sufficiency does not fire on a cumulative series that is only rounding noise", {

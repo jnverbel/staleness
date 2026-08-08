@@ -33,11 +33,43 @@ It measures the same thing the published slope is reaching for. The
 cumulative estimate's remaining movement after step `m` is exactly
 `(1 - I_m / I_k)` times `theta_after - theta_before`, so `Z_m` is that
 movement expressed in units of its own standard error, and the maximum over
-`m` is the largest step the cumulative curve has left in it. Unlike the
-slope it is **pivotal**: under no drift each `Z_m` is standard normal
-whatever the study variances are, so the statistic does not inherit the
-variance schedule — which is what makes the permutation null in
-[sufficiency()] hold when study sizes change systematically over calendar
-time.
+`m` is the largest step the cumulative curve has left in it.
 }
+\section{How far the pivotality goes, and where it stops}{
+
+Two things are exactly true. **Scale pivotality**: multiplying every `vi` by
+a constant leaves the statistic bit-identical, since it is a ratio of a
+movement to its own standard error. And **marginal pivotality**: under no
+drift each individual `Z_m` is standard normal whatever the variance
+schedule is (measured standard deviations 0.998–1.002 across schedules
+spanning 650:1).
+
+The stronger claim — that the statistic therefore carries no imprint of the
+variance schedule at all — does **not** follow, and an earlier draft of this
+documentation asserted it wrongly. `max_m |Z_m|` is the discrete supremum of
+a standardised Brownian bridge sampled at the information fractions
+`I_m / I_k`, and those fractions are themselves a function of the schedule.
+Measured null quantiles at `k = 30` over 60,000 draws:
+
+\preformatted{
+  schedule (variance)          ratio    median   95th pct
+  flat                           1:1     1.817      2.881
+  V-shaped,  big-small-big      16:1     1.923      2.950
+  L-shaped,  small-big-small    16:1     1.599      2.732
+  geometric decay              646:1     1.930      2.956
+}
+
+The V and Λ nulls differ with a Kolmogorov–Smirnov `D` of 0.25, and the
+flat-schedule 95th percentile delivers 6.1\% under V and 3.4\% under Λ.
+
+So the justification for the order-permutation null in [sufficiency()] is
+that the dependence is **weak**, not that it is absent — quantiles move by a
+few percent where the old slope statistic moved by orders of magnitude
+(0\% to 42\% false alarms across the same schedules). Since the null is
+rebuilt from each dataset's own studies rather than read off a reference
+distribution, most of that residual shows up only where the schedule is
+smooth and strongly monotone. See the calibration section of [sufficiency()]
+for what it costs in practice, and where.
+}
+
 \keyword{internal}

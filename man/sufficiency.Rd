@@ -103,8 +103,8 @@ and then drops to RR 0.05, it fired when the drop came after study
 2, 5, 8 or 10 and was silent when it came after study 12, 15 or 18. Worse,
 the permutation null itself is not valid when study variances change
 systematically over calendar time: with early small trials and later large
-ones and *no drift at all*, it fired on 83/300 samples (28%), and on a
-schedule of 20 small trials followed by 10 large ones, on 127/300 (42%).
+ones and *no drift at all*, it fired on 83/300 samples (28\%), and on a
+schedule of 20 small trials followed by 10 large ones, on 127/300 (42\%).
 Study order is exchangeable under no change only if the variances are
 exchangeable too, and in a real evidence stream they are not.
 
@@ -115,7 +115,7 @@ fidelity fix but **not** a fix for any of this. When variances are equal,
 `cumsum(1 / vi)` is an affine function of the study index, so every slope
 is rescaled by the same constant and the permutation p-value is *identical
 to the last bit*. It was measured: E1, E2 and E3 above were unchanged, and
-the 28% false-alarm rate moved only to 25%.
+the 28\% false-alarm rate moved only to 25\%.
 
 **What runs instead.** The statistic is replaced with the largest
 standardised movement the cumulative series has left in it
@@ -127,26 +127,58 @@ method's own question — *has the pooled estimate stopped moving?* — and it
 is monotone in the same quantity the published slope is a proxy for, since
 the movement remaining in the cumulative curve after step `m` is exactly
 `(1 - I_m / I_k)` times the difference it standardises. What it adds is
-that it is **pivotal**: under no drift each `Z_m` is standard normal
-whatever the variances are, so the statistic carries no imprint of the
-variance schedule, and the permutation null over study order becomes valid
-again. The permutation machinery is otherwise unchanged — `n_perm` draws,
-the two-sided `(1 + count) / (n_perm + 1)` estimator so the p-value is
-never zero, a fixed seed, the caller's random stream preserved, and a
-cumulative series that is constant to floating-point rounding
-short-circuited as maximally stable before anything is computed.
+that its dependence on the variance schedule is **weak instead of
+structural**: it is exactly scale-pivotal and each `Z_m` is marginally
+standard normal under any schedule, so the schedule no longer drives the
+statistic the way it drove the slope. It does not vanish from it entirely —
+see the pivotality section of [stability_shift_z()] for the measured
+residual and the calibration table below for what it costs. The permutation
+machinery is otherwise unchanged — `n_perm` draws, the two-sided
+`(1 + count) / (n_perm + 1)` estimator so the p-value is never zero, a fixed
+seed, the caller's random stream preserved, and a cumulative series that is
+constant to floating-point rounding short-circuited as maximally stable
+before anything is computed.
 
-Measured against the same four experiments: false alarms 15/300 (5.0%);
+Measured against the same four experiments: false alarms 15/300 (5.0\%);
 power against 10 new studies at RR 0.40/0.30/0.15/0.02, 200/200 at every
 level; the shift-position scan fires at all seven positions including
 12, 15 and 18; and the heteroscedastic no-drift false-alarm rate is 16/300
-(5.3%) with variance falling over time, 20/300 (6.7%) with it rising, and
-19/300 (6.3%) on the 20-small-then-10-large schedule that produced 42%
+(5.3\%) with variance falling over time, 20/300 (6.7\%) with it rising, and
+19/300 (6.3\%) on the 20-small-then-10-large schedule that produced 42\%
 before.
-Calibration stays between 4.0% and 6.7% across nine variance and
-heterogeneity regimes; the one exception is `k = 5`, where only four split
-points and 120 distinct orderings exist and the test is conservative
-(1.0%) rather than anti-conservative.
+}
+
+\section{Calibration, and the variance schedules that break it}{
+
+An earlier draft of this documentation reported that calibration "stays
+between 4.0\% and 6.7\% across nine variance and heterogeneity regimes". That
+was true of those nine regimes and false as a general claim: all nine were
+flat, mildly linear or single-step. Measured over 1000 no-drift samples at
+`k = 30` (2000 for the worst case), against the actual permutation test:
+
+\preformatted{
+  variance schedule                              ratio   false alarms
+  flat                                             1:1       5.3\%
+  linear decay (the E4 schedule)                  16:1       5.7\%
+  dat.bcg, real variances in year order           60:1       5.0\%
+  dat.egger2001, real variances                   90:1       3.0\%
+  L-shaped, small-big-small                       16:1       2.4\%  <- conservative
+  step, 20 small then 10 large trials             50:1       8.1\%
+  V-shaped, big-small-big                         16:1       8.4\%
+  dat.bcg, the same variances sorted decreasing   60:1       9.4\%
+  geometric decay, vi = 0.5 * 0.845^j            114:1       9.3\%
+  geometric decay, vi = 0.5 * 0.80^j             650:1      11.1\%  <- worst measured
+  geometric growth, the same reversed            650:1      10.9\%
+}
+
+The pattern is not the direction of the trend — growth and decay are
+equally bad — but its **smoothness, monotonicity and range**. Irregular
+real-world schedules are nominal; the same `dat.bcg` variances rearranged
+into sorted order go from 5.0\% to 9.4\%, which is the cleanest demonstration
+that it is the arrangement and not the numbers. A smooth 650:1 monotone
+precision ramp is the measured worst case at about **11\%**, roughly twice
+nominal. That is a disclosed limit, not a claim of nominality; it is pinned
+by a test in `test-invariants.R` so it cannot silently get worse.
 
 `detail$slope` still reports the literal published quantity — the
 least-squares slope of the cumulative effects against accumulated
@@ -156,27 +188,58 @@ It no longer decides anything.
 
 \section{Known limits of the stability test}{
 
-Three, all measured, none of them hidden.
+Four, all measured, none of them hidden. Three of the four were understated
+in the first draft of this documentation and are restated here with the
+numbers that falsified the original wording.
 
-**It is conservative at `k = 5`.** With four split points and only 120
-distinct orderings, the permutation null is coarse: the false-alarm rate on
-unchanging evidence is 1.0% rather than 5%, so the detector has little
-power at the very bottom of its permitted range. It under-fires rather than
-over-fires, which is the safe direction, but a `current` verdict from a
-five-study update is weak evidence of stability.
+**It is conservative well past `k = 5`.** The false-alarm rate on unchanging
+evidence is 0.9\% at `k = 5`, 1.7\% at `k = 6`, 3.4\% at `k = 8`, 3.3\% at
+`k = 10` and 5.5\% at `k = 12` — still half-nominal at twice the minimum, and
+nominal only from about `k = 12`. (The first draft said "conservative at
+`k = 5`" and blamed the 120 distinct orderings, which cannot explain `k = 8`
+and its 40,320.) The real mechanism is the same one that produces the next
+limitation, with its sign reversed: the maximum is often driven by the split
+that isolates the single most extreme study, and a given study lands at an
+end in `2 / k` of all orderings — 40\% at `k = 5`, 25\% at `k = 8`, 6.7\% at
+`k = 30`. At small `k` a large fraction of permutations therefore reproduce
+the observed extreme, the null is diffuse, and the test under-fires. It
+under-fires rather than over-fires, which is the safe direction, but a
+`current` verdict from a short update is weak evidence of stability.
 
-**A single strongly discordant study, arriving first or last, can carry
-the statistic.** The statistic is a maximum over split points, and the
-split that isolates one study is one of them. A study 20 standard errors
-away from the rest, sitting at either end of the series, reaches a
-permutation p-value of roughly `2 / k` on its own — not significant at
-`k = 20` (p = 0.12), significant from about `k = 35` (p = 0.045 at
-`k = 40`). This is arguably the right answer, since such a study does move
-the pooled estimate and the ordering really is extreme among all
-orderings, but it means an `out_of_date` verdict on a long series can rest
-on one outlier rather than on a trend. `detail$split` says which reading
-applies: a split at `k - 1` is one study, a split in the middle is a body
-of them.
+**A single discordant study, arriving first or last, can carry the
+statistic — and the threshold is low.** The statistic is a maximum over
+split points, and the split that isolates one study is one of them. With
+ordinary sampling noise on the other studies, the probability that one study
+`D` standard errors from the rest, sitting at either end, forces `unstable`:
+
+\preformatted{
+   k     no outlier   D = 3 SE   D = 5 SE   D = 10 SE
+  20          0.050      0.175      0.625       0.660
+  25          0.037      0.205      0.885       0.938
+  30          0.045      0.210      0.927       0.990
+  40          0.052      0.240      0.995       0.993
+}
+
+So the operative statement is that a **five**-SE discordant study at either
+end forces `unstable` almost always from about `k = 25` — not, as the first
+draft said, twenty SE from about `k = 35`. That earlier claim was measured
+on a noise-free fixture in which every other study was byte-identical, which
+makes the mirror-image ordering an exact tie and inflates the permutation
+count; it landed in the one corner of the parameter space where the effect
+looks mild. (The same saturation is visible above: at `D` = 20 SE the rate
+*falls* again, to 0.453 at `k = 20`.) A five-SE discordant study is an
+ordinary occurrence in a real review, so at moderate `k` this detector is
+substantially a single-outlier detector. Whether that is the right answer is
+arguable — such a study does move the pooled estimate, and that ordering
+really is extreme among all orderings — but it must not be mistaken for
+evidence of a trend. `detail$split` separates the two readings and does so
+reliably: among firings in the table above it pointed at `k - 1`, the
+single-study split, in 97–99\% of cases.
+
+**A smooth, strongly monotone variance schedule runs anti-conservative**, up
+to about 11\% against a nominal 5\%. See the calibration section above for the
+full table and for the regimes where it does not happen, which include every
+real variance schedule tested.
 
 **Power falls away under strong between-study heterogeneity.** Against 20
 prior studies at RR 0.5 and 10 new ones at RR 0.30, power is 200/200 at

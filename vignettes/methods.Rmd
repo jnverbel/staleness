@@ -324,10 +324,30 @@ Z_m = ------------------------------------------      T = max |Z_m|
 This still asks the method's own question, and it is monotone in the same
 quantity the published slope is a proxy for: the movement remaining in the
 cumulative curve after step *m* is exactly `1 - I_m/I_k` times the difference
-`Z_m` standardises. What it adds is that it is **pivotal** — under no drift
-each `Z_m` is standard normal whatever the study variances are — so the
-statistic carries no imprint of the variance schedule and the permutation
-null becomes valid again. Everything around it is unchanged: `n_perm` (999)
+`Z_m` standardises. What it adds is that its dependence on the variance
+schedule is **weak instead of structural**. Two things are exactly true: the
+statistic is *scale*-pivotal, so multiplying every `vi` by a constant leaves
+it bit-identical, and each `Z_m` is *marginally* standard normal under any
+schedule (measured SDs 0.998–1.002 across schedules spanning 650:1). What is
+**not** true — and an earlier draft of this vignette claimed it — is that the
+statistic therefore carries no imprint of the schedule at all. `max_m |Z_m|`
+is the discrete supremum of a standardised Brownian bridge sampled at the
+information fractions `I_m/I_k`, and those fractions are a function of the
+schedule. Null quantiles at `k = 30` over 60,000 draws:
+
+| schedule (variance) | ratio | median | 95th pct |
+|---|---|---|---|
+| flat | 1:1 | 1.817 | 2.881 |
+| V-shaped, big–small–big | 16:1 | 1.923 | 2.950 |
+| Λ-shaped, small–big–small | 16:1 | 1.599 | 2.732 |
+| geometric decay | 646:1 | 1.930 | 2.956 |
+
+The V and Λ nulls differ with a Kolmogorov–Smirnov `D` of 0.25, and the
+flat-schedule 95th percentile delivers 6.1% under V and 3.4% under Λ. So the
+case for keeping the order-permutation null is that the residual dependence
+is small — quantiles move a few percent where the slope statistic moved by
+orders of magnitude — not that it is zero. What that costs is measured below.
+Everything around it is unchanged: `n_perm` (999)
 order permutations, the two-sided `(1 + count) / (n_perm + 1)` estimator so
 the p-value is never exactly zero, reported as `p_stability` and compared
 against `alpha_stability` (default 0.05); a fixed seed; the caller's random
@@ -347,15 +367,39 @@ comparison:
 | No drift, variance rising over time (300) | — | 0 (no power left) | **20** (6.7%) |
 | No drift, 20 small then 10 large trials (300) | — | 127 (42%) | **19** (6.3%) |
 
-Calibration stays between 4.0% and 6.7% across nine variance and
-heterogeneity regimes at `k = 30` — including between-study heterogeneity up
-to `tau = 0.20` and lognormally distributed variances — and reads 5.0% at
-`k = 8` and 4.5% at `k = 60`. The one exception is
-`k = 5`, the minimum this detector accepts, where only four split points and
-120 distinct orderings exist and the test is **conservative** (1.0% rather
-than 5%) — it under-fires there rather than over-fires, which is the safe
-direction for a false-alarm-sensitive instrument but does mean the detector
-has little power at the bottom of its range.
+**Calibration, and where it fails.** The first draft of this vignette said
+calibration "stays between 4.0% and 6.7% across nine variance and
+heterogeneity regimes". That was true of those nine and false as a general
+claim: every one of them was flat, mildly linear or a single step. Measured
+over 1000 no-drift samples at `k = 30` (2000 for the worst case), against the
+actual permutation test:
+
+| variance schedule | ratio | false alarms |
+|---|---|---|
+| flat | 1:1 | 5.3% |
+| linear decay (the E4 schedule) | 16:1 | 5.7% |
+| `dat.bcg`, real variances in year order | 60:1 | 5.0% |
+| `dat.egger2001`, real variances | 90:1 | 3.0% |
+| Λ-shaped, small–big–small | 16:1 | 2.4% (conservative) |
+| step, 20 small then 10 large trials | 50:1 | 8.1% |
+| V-shaped, big–small–big | 16:1 | 8.4% |
+| `dat.bcg`, the same variances sorted decreasing | 60:1 | 9.4% |
+| geometric decay, `vi = 0.5 * 0.845^j` | 114:1 | 9.3% |
+| **geometric decay, `vi = 0.5 * 0.80^j`** | **650:1** | **11.1%** |
+| geometric growth, the same reversed | 650:1 | 10.9% |
+
+What matters is not the direction of the trend — growth and decay are equally
+bad — but its **smoothness, monotonicity and range**. Irregular real-world
+schedules come out nominal; taking `dat.bcg`'s own variances and merely
+sorting them into decreasing order moves it from 5.0% to 9.4%, which isolates
+the arrangement from the numbers. The measured worst case is about **11%** on
+a smooth 650:1 monotone precision ramp, roughly twice nominal. That is a
+disclosed limitation rather than a claim of nominality, and it is pinned by an
+invariant test so it cannot silently get worse.
+
+Across series length, at a flat schedule: 0.9% at `k = 5`, 1.7% at `k = 6`,
+3.4% at `k = 8`, 3.3% at `k = 10`, 5.5% at `k = 12`, and nominal from there —
+still half-nominal at twice the minimum `k` this detector accepts.
 
 Two other repairs were implemented and measured before this one was adopted,
 and are recorded because negative results are results. **Permuting
@@ -373,22 +417,49 @@ The `slope` itself is still reported in `detail`, now on the information axis
 the source specifies, so anyone who wants to apply the literal published rule
 can read it straight off the verdict. It no longer decides anything.
 
-**What is still wrong with the statistic that runs.** Three things, all
+**What is still wrong with the statistic that runs.** Four things, all
 measured, none of them hidden — a detector with a disclosed blind spot is
-honest, one with an undisclosed one is not.
+honest, one with an undisclosed one is not. Three of them were understated in
+the first draft of this vignette and are restated here with the numbers that
+falsified the original wording.
 
-* **Conservative at `k = 5`**, as above: 1.0% rather than 5%, so a `current`
-  verdict from a five-study update is weak evidence of stability.
-* **A single strongly discordant study, arriving first or last, can carry
-  the statistic.** The maximum runs over every split point, including the two
-  that isolate one study. A study 20 standard errors from the rest, at either
-  end of the series, reaches a permutation p-value of about `2 / k` on its
-  own: not significant at `k = 20` (p = 0.12), significant from around
-  `k = 35` (p = 0.045 at `k = 40`). That is arguably correct — such a study
-  does move the pooled estimate, and the ordering really is extreme among all
-  orderings — but it means an `out_of_date` verdict on a long series can rest
-  on one outlier rather than a trend. `detail$split` distinguishes the two: a
-  split at `k - 1` is one study, a split in the middle is a body of them.
+* **Conservative well past `k = 5`**: 0.9% at `k = 5` but still only 3.4% at
+  `k = 8` and 3.3% at `k = 10`, reaching nominal around `k = 12`. The first
+  draft blamed the 120 distinct orderings available at `k = 5`, which cannot
+  explain `k = 8` and its 40,320. The mechanism is the next bullet with its
+  sign reversed: the maximum is often driven by the split isolating the single
+  most extreme study, and a given study lands at an end in `2 / k` of all
+  orderings — 40% at `k = 5`, 25% at `k = 8`, 6.7% at `k = 30`. At small `k`
+  a large share of permutations reproduce the observed extreme, so the null is
+  diffuse and the test under-fires. A `current` verdict from a short update is
+  weak evidence of stability.
+* **A single discordant study, arriving first or last, can carry the
+  statistic — and the threshold is much lower than first reported.** With
+  ordinary sampling noise on the other studies, P(fires) over 400 samples:
+
+  | `k` | no outlier | `D` = 3 SE | `D` = 5 SE | `D` = 10 SE |
+  |---|---|---|---|---|
+  | 20 | 0.050 | 0.175 | 0.625 | 0.660 |
+  | 25 | 0.037 | 0.205 | 0.885 | 0.938 |
+  | 30 | 0.045 | 0.210 | 0.927 | 0.990 |
+  | 40 | 0.052 | 0.240 | 0.995 | 0.993 |
+
+  So a **five**-SE discordant study at either end forces `unstable` almost
+  always from about `k = 25` — not "twenty SE from about `k = 35`", which is
+  what the first draft said. That figure came from a noise-free fixture where
+  every other study was byte-identical, which makes the mirror-image ordering
+  an exact tie, inflates the permutation count, and lands in the one corner of
+  the parameter space where the effect looks mild. The same saturation shows
+  in the table: at `D` = 20 SE the rate *falls* back to 0.453 at `k = 20`. A
+  five-SE discordant study is an ordinary occurrence in a real review, so at
+  moderate `k` this detector is substantially a single-outlier detector.
+  Whether that is the right answer is arguable — such a study does move the
+  pooled estimate — but it must not be read as evidence of a trend.
+  `detail$split` separates the two readings and does so reliably: among the
+  firings above it pointed at `k - 1`, the single-study split, in 97–99% of
+  cases.
+* **A smooth, strongly monotone variance schedule runs anti-conservative**, to
+  about 11% against a nominal 5%, per the calibration table above.
 * **Power falls away under strong between-study heterogeneity.** Against 20
   prior studies at RR 0.5 and 10 new at RR 0.30: 200/200 at `tau = 0` and
   `tau = 0.10`, 199/200 at `tau = 0.20`, 160/200 at `tau = 0.35`. The
