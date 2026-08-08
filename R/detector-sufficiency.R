@@ -83,12 +83,18 @@ cum_drift_slope <- function(cum_theta, info) {
 #' `m` is the largest step the cumulative curve has left in it.
 #'
 #' @section How far the pivotality goes, and where it stops:
-#' Two things are exactly true. **Scale pivotality**: multiplying every `vi` by
-#' a constant leaves the statistic bit-identical, since it is a ratio of a
-#' movement to its own standard error. And **marginal pivotality**: under no
-#' drift each individual `Z_m` is standard normal whatever the variance
-#' schedule is (measured standard deviations 0.998–1.002 across schedules
-#' spanning 650:1).
+#' Two things are exactly true. **Scale pivotality**: rescaling the effects and
+#' their variances together — `yi` to `theta + a * (yi - theta)` and `vi` to
+#' `a^2 * vi` — leaves the statistic bit-identical, since it is a ratio of a
+#' movement to its own standard error and both halves move by `a`. Note what
+#' this does *not* say: multiplying `vi` alone by `c` while holding `yi` fixed
+#' divides every `Z_m` by `sqrt(c)` (measured: 1.2247 at `vi = 1`, 0.6124 at
+#' `vi = 4`, for `yi = c(1, 2, 3)`). That weaker statement is what an earlier
+#' draft of this section claimed, and it is false. The permutation *p*-value is
+#' unaffected either way, because every permuted statistic rescales by the same
+#' factor. And **marginal pivotality**: under no drift each individual `Z_m` is
+#' standard normal whatever the variance schedule is (measured standard
+#' deviations 0.998–1.002 across schedules spanning 650:1).
 #'
 #' The stronger claim — that the statistic therefore carries no imprint of the
 #' variance schedule at all — does **not** follow, and an earlier draft of this
@@ -390,6 +396,24 @@ stability_shift_at <- function(yi, vi) {
 #'   `stable`, `slope` (the published slope, reported only), `z_shift` and
 #'   `split` (the statistic actually tested and where it peaked),
 #'   `p_stability`, `k` (of `prev`) and `k_new` (of `new_ma`).
+#' @examples
+#' library(metafor)
+#' # Sufficiency is judged on the PRIOR review, stability on the UPDATED one.
+#' # The two arguments are not interchangeable.
+#' prev <- rma(yi = rep(log(0.50), 6), vi = rep(0.02, 6), measure = "RR")
+#'
+#' # Six more studies telling the same story: sufficient and stable.
+#' steady <- rma(yi = rep(log(0.50), 12), vi = rep(0.02, 12), measure = "RR")
+#' sufficiency(prev, steady)
+#'
+#' # Now the later studies break away from the earlier ones. The statistic is
+#' # the largest standardised split in the cumulative series, so a late shift
+#' # is exactly what it is built to catch.
+#' shifted <- rma(yi = c(rep(log(0.50), 6), rep(log(1.30), 6)),
+#'                vi = rep(0.02, 12), measure = "RR")
+#' res <- sufficiency(prev, shifted)
+#' res
+#' res$detail[c("sufficient", "stable", "p_stability", "split")]
 #' @export
 sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
                         n_perm = 999, seed = 20260807) {
@@ -420,15 +444,20 @@ sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
   }
 
   # Degenerate short circuit, BEFORE anything is computed. Byte-identical
-  # studies give a cumulative series whose entire spread is rounding noise --
-  # 12 identical studies span 2.2e-16 -- and fitting a model to that returned a
-  # slope of 1e-17 with a "significant" p-value. Such a series is not drifting;
-  # it is constant, which is maximal stability. Never fit a model to rounding
-  # noise.
-  fitted_series <- cum_theta[-1]
-  scale <- max(abs(fitted_series))
+  # studies span only rounding noise -- 12 identical studies span 2.2e-16 --
+  # and there is no split to find in them: every study sits on the same
+  # effect, which is maximal stability. Never test rounding noise.
+  #
+  # Keyed to the spread of `yi`, because that is what the change-point
+  # statistic reads. It used to be keyed to `cum_theta[-1]`, the series the
+  # old OLS slope was fitted to, and that is not the same condition: a
+  # cumulative series can be flat from its second entry onwards while the
+  # split isolating the FIRST study is enormous. `yi = c(10, -10, 0, 0, ...)`
+  # is exactly that shape -- constant cumulative tail, max|Z_m| = 10.2 -- and
+  # the old condition reported it as perfectly stable, p = 1.
+  scale <- max(abs(yi))
   tol <- 4 * k_new * .Machine$double.eps * max(scale, .Machine$double.eps)
-  if (diff(range(fitted_series)) <= tol) {
+  if (diff(range(yi)) <= tol) {
     slope       <- 0
     z_shift     <- 0
     split       <- NA_integer_

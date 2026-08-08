@@ -96,3 +96,42 @@ test_that("a whole backtest leaves the caller's random stream untouched", {
   got <- runif(3)
   expect_equal(got, expected)
 })
+
+test_that("without a seed, consecutive calls actually differ", {
+  # Restoring the stream unconditionally made every seedless call start from
+  # the same state, so simulation() returned byte-identical draws while its
+  # documentation promised the opposite. In backtest(seed = NULL) that made
+  # the Monte Carlo error perfectly correlated across cuts instead of
+  # independent.
+  prev <- metafor::rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+                       vi = c(0.16, 0.20, 0.18, 0.15, 0.22))
+  new  <- list(yi = c(-0.45, -0.38, -0.52, -0.29, -0.41),
+               vi = c(0.05, 0.04, 0.06, 0.05, 0.04), k = 5)
+  set.seed(11)
+  got <- replicate(6, simulation(prev, new, B = 200, seed = NULL)$signal)
+  expect_gt(length(unique(got)), 1)
+})
+
+test_that("with a seed, the result repeats and the caller's stream survives", {
+  prev <- metafor::rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+                       vi = c(0.16, 0.20, 0.18, 0.15, 0.22))
+  new  <- list(yi = c(-0.45, -0.38, -0.52, -0.29, -0.41),
+               vi = c(0.05, 0.04, 0.06, 0.05, 0.04), k = 5)
+  a <- simulation(prev, new, B = 200, seed = 7)$signal
+  b <- simulation(prev, new, B = 200, seed = 7)$signal
+  expect_identical(a, b)
+
+  set.seed(99); expected <- runif(1)
+  set.seed(99); invisible(simulation(prev, new, B = 200, seed = 7))
+  expect_identical(runif(1), expected)
+})
+
+test_that("a session with no random stream is left with none", {
+  # The function whose stated purpose is to leave no footprint was creating
+  # .Random.seed in globalenv() where there had been none.
+  if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+    rm(".Random.seed", envir = globalenv())
+  }
+  invisible(with_preserved_seed(stats::runif(1), seed = 3))
+  expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
+})

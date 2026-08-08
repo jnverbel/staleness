@@ -343,3 +343,58 @@ test_that("a non-finite cumulative effect is declined, not guessed at", {
   expect_equal(v$verdict, "not_applicable")
   expect_match(v$reason, "not finite")
 })
+
+test_that("a flat cumulative tail does not hide a split at the first study", {
+  # cum_theta[-1] is exactly constant here, which is what the OLD statistic
+  # was fitted to -- but the change-point statistic reads splits, and the one
+  # isolating study 1 is enormous. Keying the degenerate short circuit to the
+  # cumulative series would report perfect stability over a 10-SE split.
+  yi <- c(10, -10, rep(0, 28))
+  vi <- rep(1, 30)
+  expect_lt(diff(range(cumulative_effect(yi, vi)[-1])), 1e-12)  # the trap
+  expect_gt(stability_shift_z(yi, vi), 10)                      # the truth
+
+  prev <- metafor::rma(yi = rep(0, 5), vi = rep(1, 5))
+  new  <- metafor::rma(yi = yi, vi = vi)
+  res  <- sufficiency(prev, new)
+  expect_equal(res$detail$z_shift, stability_shift_z(yi, vi), tolerance = 1e-8)
+  expect_false(is.na(res$detail$split))
+  expect_lt(res$detail$p_stability, 1)
+})
+
+test_that("byte-identical studies are still maximally stable, with no p-value", {
+  # The case the short circuit exists for: rounding noise must never be
+  # tested. Its spread in yi is zero, so the statistic has nothing to read.
+  yi <- rep(log(0.5), 12)
+  vi <- rep(0.02, 12)
+  prev <- metafor::rma(yi = rep(log(0.5), 6), vi = rep(0.02, 6))
+  new  <- metafor::rma(yi = yi, vi = vi)
+  res  <- sufficiency(prev, new)
+  expect_true(res$detail$stable)
+  expect_equal(res$detail$z_shift, 0)
+  expect_equal(res$detail$p_stability, 1)
+})
+
+test_that("a single new study resolves cleanly instead of warning three times", {
+  prev <- metafor::rma(yi = rep(log(0.5), 6), vi = rep(0.02, 6))
+  new  <- metafor::rma(yi = c(log(0.5), log(0.6)), vi = c(0.02, 0.02))
+  # min_k = 1 is user-settable, and k_new = 1 used to reach max(numeric(0)).
+  one <- metafor::rma(yi = rep(log(0.5), 2), vi = rep(0.02, 2))
+  expect_no_warning(sufficiency(prev, one, min_k = 1))
+})
+
+test_that("scale pivotality is about yi and vi TOGETHER, not vi alone", {
+  yi <- c(1, 2, 3)
+  base <- stability_shift_z(yi, rep(1, 3))
+
+  # The property the statistic actually has: rescale the deviations and the
+  # variances together and nothing moves.
+  a <- 3; theta <- 2
+  expect_equal(stability_shift_z(theta + a * (yi - theta), rep(1, 3) * a^2),
+               base)
+
+  # The property it does NOT have, asserted here so the documentation cannot
+  # drift back to claiming it: vi alone divides every Z_m by sqrt(c).
+  expect_equal(stability_shift_z(yi, rep(4, 3)), base / 2)
+  expect_false(isTRUE(all.equal(stability_shift_z(yi, rep(4, 3)), base)))
+})

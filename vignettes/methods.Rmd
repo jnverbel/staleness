@@ -326,9 +326,13 @@ quantity the published slope is a proxy for: the movement remaining in the
 cumulative curve after step *m* is exactly `1 - I_m/I_k` times the difference
 `Z_m` standardises. What it adds is that its dependence on the variance
 schedule is **weak instead of structural**. Two things are exactly true: the
-statistic is *scale*-pivotal, so multiplying every `vi` by a constant leaves
-it bit-identical, and each `Z_m` is *marginally* standard normal under any
-schedule (measured SDs 0.998–1.002 across schedules spanning 650:1). What is
+statistic is *scale*-pivotal, so rescaling the effects and their variances
+together — `yi` to `theta + a(yi - theta)` and `vi` to `a^2 vi` — leaves it
+bit-identical, and each `Z_m` is *marginally* standard normal under any
+schedule (measured SDs 0.998–1.002 across schedules spanning 650:1). Scaling
+`vi` on its own is a different operation and not one the statistic is blind
+to: it divides every `Z_m` by `sqrt(c)`, leaving the *p*-value unchanged
+because the permuted statistics rescale with it. What is
 **not** true — and an earlier draft of this vignette claimed it — is that the
 statistic therefore carries no imprint of the schedule at all. `max_m |Z_m|`
 is the discrete supremum of a standardised Brownian bridge sampled at the

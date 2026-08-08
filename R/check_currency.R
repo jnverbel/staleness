@@ -10,6 +10,32 @@
 #' @param qualitative Character vector of qualitative signals, see [ottawa()].
 #' @param seed Integer seed for [simulation()].
 #' @return An object of class `staleness_check`.
+#' @examples
+#' library(metafor)
+#' bcg <- data.frame(
+#'   yi   = c(-0.89, -1.59, -1.35, -1.44, -0.22, -0.79, -1.62,
+#'             0.01, -0.47, -1.37, -0.34,  0.45, -0.02),
+#'   vi   = c(0.326, 0.195, 0.415, 0.020, 0.051, 0.007, 0.223,
+#'            0.004, 0.056, 0.073, 0.012, 0.533, 0.071),
+#'   year = c(1948, 1949, 1960, 1977, 1973, 1953, 1973,
+#'            1980, 1968, 1961, 1974, 1969, 1976),
+#'   ni   = c(262, 609, 451, 26465, 10877, 2992, 3174,
+#'            176782, 14776, 3381, 77972, 4839, 34767)
+#' )
+#' stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
+#'                           date = bcg$year, ni = bcg$ni)
+#' prev <- snapshot_at(stream, 1970)
+#' new  <- window_between(stream, 1970, 1980)
+#'
+#' # `new` is the new evidence on its own, never the updated model: this
+#' # function refits it internally. Handing it a fitted rma is an error, not
+#' # a quietly doubled dataset.
+#' check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
+#'
+#' # barrowman() needs the participant counts, and says so when they are absent.
+#' check_currency(prev, new, methods = "barrowman")
+#' check_currency(prev, new, methods = "barrowman",
+#'                n_prev = sum(bcg$ni[bcg$year <= 1970]), n_new = sum(new$ni))
 #' @export
 check_currency <- function(prev, new, methods = available_methods(),
                            n_prev = NULL, n_new = NULL,
@@ -17,6 +43,17 @@ check_currency <- function(prev, new, methods = available_methods(),
   unknown <- setdiff(methods, available_methods())
   if (length(unknown)) {
     stop("unknown method: ", paste(unknown, collapse = ", "), call. = FALSE)
+  }
+  # `new` is the new evidence alone, but rcma() and ottawa() take the updated
+  # model, so passing the updated rma here is the natural mistake. An rma.uni
+  # carries $yi, $vi and $k, which is everything the guards below look for, so
+  # duck typing would let it through and pool the prior studies twice -- a
+  # quietly wrong answer rather than an error.
+  if (inherits(new, "rma")) {
+    stop("`new` must be the new evidence on its own -- a list with `yi`, `vi` ",
+         "and `k`, as returned by `window_between()` -- not a fitted ",
+         "meta-analysis. Passing the updated model here would count every ",
+         "prior study twice.", call. = FALSE)
   }
   if (is.null(new$k) || new$k < 1) {
     # Absence of new evidence is not evidence of currency. It gets its own

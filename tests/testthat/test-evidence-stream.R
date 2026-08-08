@@ -76,3 +76,38 @@ test_that("evidence_stream refuses missing sample sizes, with a message that say
   expect_s3_class(evidence_stream(ma, date = 2000:2005, ni = rep(100, 6)),
                   "staleness_stream")
 })
+
+test_that("an NA in an explicitly supplied ni is still refused", {
+  ma <- metafor::rma(yi = c(0.1, 0.2, 0.15, 0.05), vi = rep(0.05, 4))
+  expect_error(
+    evidence_stream(ma, date = 2001:2004, ni = c(100, NA, 120, 130)),
+    "never imputed"
+  )
+})
+
+test_that("an NA in metafor's own ni does not block the whole stream", {
+  # ni is filled in from ma$ni when the caller does not supply it, so a
+  # dataset where one study never reported its sample size used to kill
+  # construction outright -- taking the four detectors that never look at ni
+  # down with it. barrowman() already answers "not_applicable" with the right
+  # reason for a non-finite n, so the hard error was both redundant and more
+  # destructive than the thing it prevented.
+  d <- data.frame(ai = c(4, 5, 6, 7), bi = c(100, 110, 120, 130),
+                  ci = c(11, 12, 13, 14), di = c(90, 95, 100, 105))
+  es <- metafor::escalc(measure = "RR", ai = ai, bi = bi, ci = ci, di = di,
+                        data = d)
+  ma <- metafor::rma(yi, vi, data = es)
+  ma$ni[2] <- NA                      # one study never reported its n
+
+  expect_no_error(evidence_stream(ma, date = 2001:2004))
+  stream <- evidence_stream(ma, date = 2001:2004)
+  expect_s3_class(stream, "staleness_stream")
+  expect_true(anyNA(stream$ni))
+
+  # And the detector that does need it says so precisely, rather than
+  # claiming no sample sizes were supplied at all.
+  prev <- snapshot_at(stream, 2002)
+  res  <- barrowman(prev, n_prev = sum(stream$ni[1:2]), n_new = 250)
+  expect_equal(res$verdict, "not_applicable")
+  expect_match(res$reason, "finite")
+})

@@ -37,12 +37,18 @@ movement expressed in units of its own standard error, and the maximum over
 }
 \section{How far the pivotality goes, and where it stops}{
 
-Two things are exactly true. **Scale pivotality**: multiplying every `vi` by
-a constant leaves the statistic bit-identical, since it is a ratio of a
-movement to its own standard error. And **marginal pivotality**: under no
-drift each individual `Z_m` is standard normal whatever the variance
-schedule is (measured standard deviations 0.998–1.002 across schedules
-spanning 650:1).
+Two things are exactly true. **Scale pivotality**: rescaling the effects and
+their variances together — `yi` to `theta + a * (yi - theta)` and `vi` to
+`a^2 * vi` — leaves the statistic bit-identical, since it is a ratio of a
+movement to its own standard error and both halves move by `a`. Note what
+this does *not* say: multiplying `vi` alone by `c` while holding `yi` fixed
+divides every `Z_m` by `sqrt(c)` (measured: 1.2247 at `vi = 1`, 0.6124 at
+`vi = 4`, for `yi = c(1, 2, 3)`). That weaker statement is what an earlier
+draft of this section claimed, and it is false. The permutation *p*-value is
+unaffected either way, because every permuted statistic rescales by the same
+factor. And **marginal pivotality**: under no drift each individual `Z_m` is
+standard normal whatever the variance schedule is (measured standard
+deviations 0.998–1.002 across schedules spanning 650:1).
 
 The stronger claim — that the statistic therefore carries no imprint of the
 variance schedule at all — does **not** follow, and an earlier draft of this
