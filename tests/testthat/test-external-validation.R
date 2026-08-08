@@ -356,3 +356,75 @@ test_that("a Mantel-Haenszel fit is refused with a usable explanation", {
   expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year),
                "inverse-variance")
 })
+
+# --- The mirror case: a review that WAS dangerously out of date -----------
+#
+# dat.li2007 is intravenous magnesium for acute myocardial infarction, the
+# textbook counterexample to Lau. Small trials suggested a large benefit; the
+# 58,050-patient ISIS-4 trial in 1995 removed it. The Cochrane review these
+# data come from reports both pooled results, so the reproduction is checkable.
+#
+# The pair matters more than either case alone. In Lau the correct behaviour
+# for rcma is silence -- the effect never moved. Here it is to speak, loudly
+# and early. A detector that only ever fires, or only ever stays quiet, would
+# look right in one of the two and wrong in the other.
+
+test_that("the package reproduces the Cochrane review's two pooled results", {
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.li2007)
+  # Mantel-Haenszel for the fixed-effect result: RevMan's default for binary
+  # outcomes, and the second case in this file where inverse variance gets the
+  # point estimate right but rounds the interval differently (1.05 vs 1.04).
+  # Reproducing a Cochrane review to the digit means matching its estimator.
+  fe <- metafor::rma.mh(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.li2007)
+  re <- metafor::rma(yi, vi, data = es, method = "DL")   # Cochrane's default
+
+  # "a fixed-effect meta-analysis showed no difference (OR 0.99, 0.94 to 1.04)"
+  expect_equal(round(exp(as.numeric(fe$beta)), 2), 0.99)
+  expect_equal(round(exp(fe$ci.lb), 2), 0.94)
+  expect_equal(round(exp(fe$ci.ub), 2), 1.04)
+
+  # "a random-effects meta-analysis showed a significant reduction
+  #  (OR 0.66, 0.53 to 0.82)"
+  expect_equal(round(exp(as.numeric(re$beta)), 2), 0.66)
+  expect_equal(round(exp(re$ci.lb), 2), 0.53)
+  expect_equal(round(exp(re$ci.ub), 2), 0.82)
+})
+
+test_that("ISIS-4 removes the effect, and rcma saw it coming", {
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.li2007)
+
+  # Before ISIS-4: a significant 35% reduction. After it: nothing.
+  before <- metafor::rma(yi, vi, data = es[es$year <= 1994, ], method = "FE")
+  after  <- metafor::rma(yi, vi, data = es[es$year <= 1995, ], method = "FE")
+  expect_lt(before$pval, 0.001)
+  expect_lt(exp(as.numeric(before$beta)), 0.70)
+  expect_gt(after$pval, 0.05)
+  expect_gt(exp(as.numeric(after$beta)), 0.95)
+
+  ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
+  st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
+  bt <- backtest(st, cuts = "yearly", horizon = 3, window = 5, min_k = 3,
+                 seed = 42)
+  r <- bt$results[!bt$results$censored, ]
+
+  # rcma watches effect size, and here the effect moved from 0.65 to 1.02. It
+  # fires on the cuts before ISIS-4 and on none after -- the opposite of its
+  # behaviour on dat.lau1992, where the effect never moved and it never fired.
+  rc <- r[r$method == "rcma", ]
+  fired <- rc$cut[rc$verdict == "out_of_date"]
+  expect_true(all(fired < 1995))
+  expect_gte(length(fired), 5)
+
+  # Scored against a truth that shares no logic with it: perfect, and early.
+  cal <- calibration(bt, "shift")
+  expect_equal(cal$sensitivity[cal$method == "rcma"], 1)
+  expect_equal(cal$specificity[cal$method == "rcma"], 1)
+  expect_false(cal$contaminated[cal$method == "rcma"])
+  expect_gte(lead_time(bt, "shift")$median_lead[
+    lead_time(bt, "shift")$method == "rcma"], 3)
+})

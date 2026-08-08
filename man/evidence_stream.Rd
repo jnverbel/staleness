@@ -12,9 +12,12 @@ evidence_stream(ma, date, ni = NULL)
 refitted with [metafor::rma()], so accepting them would return
 inverse-variance estimates under a Mantel-Haenszel label, and refitting
 with Mantel-Haenszel is impossible from `yi` and `vi` alone. This matters
-in practice -- the founding example of the field, Lau et al. (1992), is a
-Mantel-Haenszel analysis of binary data, and reproducing its published
-odds ratio to the digit requires `rma.mh()`.}
+in practice: Mantel-Haenszel is RevMan's default for binary outcomes, so
+it is what Cochrane reviews report. Both historical cases this package is
+validated against need it to reproduce their published intervals to the
+digit -- Lau et al. (1992) and the Cochrane review behind
+`metadat::dat.li2007`. Inverse variance gets the point estimate right in
+both and rounds an interval bound differently in both.}
 
 \item{date}{Numeric or Date vector, one entry per study, same order as the
 data used to fit `ma`. Missing values are an error; they are never imputed.}
