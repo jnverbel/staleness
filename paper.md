@@ -22,10 +22,12 @@ A meta-analysis is a photograph, not a standing fact. About a quarter of
 systematic reviews are out of date within two years of publication and half
 within five and a half [@shojania2007], yet deciding *when* a particular review
 needs updating is still largely a matter of judgement. Five statistical methods
-for making that decision have been published since 2001
-[@ioannidis2001; @mullen2001; @barrowman2003], and the only study to run them
-side by side found they agreed at Kappa = 0.14 — essentially chance
-[@pattanittum2012].
+for making that decision were published between 1999 and 2007
+[@ioannidis1999; @mullen2001; @barrowman2003; @shojania2007; @sutton2007]. The
+only study to run all five
+side by side, on 80 Cochrane reviews, found that two of them flagged nothing
+at all, and that the three which did discriminate agreed at Kappa = 0.14 —
+essentially chance [@pattanittum2012].
 
 `staleness` is an R package that does two things. It applies all five published
 detectors to an existing meta-analysis and the evidence published since,
@@ -38,7 +40,13 @@ own: all estimation is delegated to `metafor` [@viechtbauer2010].
 # Statement of need
 
 Every one of the five methods was published as a description in a paper, and
-none had a reusable software implementation. That absence has a consequence
+none had a reusable software implementation. A search of all 24,708 packages
+on CRAN returns no hit for the Ottawa method, for Barrowman, for recursive
+cumulative meta-analysis as an updating diagnostic, or for updating systematic
+reviews at all. The components exist — `metafor` [@viechtbauer2010] computes
+cumulative meta-analyses and Rosenthal's fail-safe N, and `RTSA` covers trial
+sequential analysis — but no package assembles any of them into a decision
+about whether a review has gone out of date. That absence has a consequence
 beyond inconvenience: it is why the comparison question has stayed open. A
 research team that wants to know which updating signal to trust must first
 reimplement five methods from prose, and each reimplementation is a fresh

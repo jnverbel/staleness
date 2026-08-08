@@ -28,10 +28,11 @@ this package answers it instead — with data.
 The five methods have been run side by side exactly once, in the comparative
 evaluation this package cites throughout (Pattanittum et al., 2012, applying
 them to 80 published systematic reviews). Their agreement with each other was
-**Kappa = 0.14** — indistinguishable from chance. Of the three methods that
-produced usable verdicts on that sample, `ottawa` flagged 34 reviews as out
-of date, `barrowman` flagged 7, and the simulation method flagged none. Only
-one review was flagged by all three at once.
+**Kappa = 0.14** — indistinguishable from chance, and computed over the three
+methods that discriminated at all: `ottawa` flagged 34 of the 80 reviews,
+`rcma` flagged 7 and `barrowman` flagged 7. The other two, `sufficiency` and
+`simulation`, flagged nothing whatsoever. Only one review was flagged by all
+three of the discriminating methods at once.
 
 That is not a story about one weak method among four strong ones. It is a
 story about nobody knowing, in the thirteen years since, which of the five

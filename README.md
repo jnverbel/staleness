@@ -8,10 +8,14 @@
 A meta-analysis is a photograph, not a standing fact. Roughly a quarter of
 systematic reviews are out of date within two years of publication, and half
 within five and a half (Shojania et al., 2007). Five statistical methods for
-detecting this have been published since 2003. None of them, until now, had
-a reusable software implementation — which is also why nobody has ever been
-able to run all five against real history and find out which of them
-actually work.
+detecting this were published between 1999 and 2007. None of them, until now, had a
+reusable software implementation: a search of all 24,708 CRAN packages returns
+no hit for the Ottawa method, for Barrowman, for recursive cumulative
+meta-analysis as an updating diagnostic, or for updating systematic reviews at
+all. The building blocks are there — `metafor` computes cumulative
+meta-analyses and Rosenthal's fail-safe N — but the detectors are not. Which is
+also why nobody has ever been able to run all five against real history and
+find out which of them actually work.
 
 `staleness` does two things:
 
@@ -91,8 +95,11 @@ detail.
 
 ## Backtesting
 
-The five methods agreed with each other at Kappa = 0.14 in the one published
-comparison that ran them side by side — essentially chance. `staleness`
+In the one published comparison that ran all five side by side, on 80
+Cochrane reviews, two of them flagged nothing at all: the sufficiency method
+and the simulation method each identified zero out-of-date reviews. The three
+that did discriminate — Ottawa (34 reviews), recursive CMA (7) and Barrowman
+(7) — agreed at Kappa = 0.14, essentially chance (Pattanittum et al., 2012). `staleness`
 exists to make that comparison repeatable, on any body of evidence, with a
 design that avoids the trap of defining "ground truth" using the same rule a
 detector is scored against: three independent truth definitions are

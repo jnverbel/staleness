@@ -17,9 +17,11 @@ library(metafor)
 ```
 
 Five statistical methods for deciding whether a meta-analysis needs updating
-were published between 2003 and 2014. None of them ever received a reusable
-software implementation, so nobody has ever been able to run all five against
-the same body of evidence and see where they agree. This package implements
+were published between 1999 and 2007. None of them ever received a reusable
+software implementation — a search of all of CRAN finds the building blocks
+(`metafor` for cumulative meta-analyses and the fail-safe N) but none of the
+five detectors — so nobody has ever been able to run all five against the same
+body of evidence and see where they agree. This package implements
 all five as pure functions with a common signature — `(prev, new_ma, ...)` in,
 a `staleness_verdict` out — precisely so that can finally be done (see
 `vignette("backtesting", package = "staleness")` for what happens when it is).
@@ -112,10 +114,13 @@ significance criterion and four qualitative ones on top of it. It is declared
 here for the same reason `CONTAMINATED_PAIRS` exists. This package goes to
 some trouble to make sure nobody mistakes a structural identity between a
 detector and a truth definition for an empirical finding; a structural
-dependency between two *detectors* deserves the same treatment. The headline
-question this package exists to re-ask — the five methods agreed at
-Kappa = 0.14 on 80 reviews — involves ten detector pairs, and one of them is
-deterministic. Anyone recomputing that agreement should be counting nine.
+dependency between two *detectors* deserves the same treatment, and here it
+bites harder than it first appears. The headline figure this package exists to
+re-ask — Kappa = 0.14 on 80 reviews — was **not** computed across all five
+methods. Two of them flagged nothing at all on that sample, so the published
+agreement is over the three that discriminated: Ottawa, recursive CMA and
+Barrowman. That is three pairs, not ten, and `rcma` ⊂ `ottawa` is one of them.
+A third of the pairs behind that number is arithmetic rather than evidence.
 
 ## `barrowman()`: the participant-ratio method
 

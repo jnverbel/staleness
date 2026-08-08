@@ -17,7 +17,8 @@
 #' Ottawa method genuinely adopts the rCMA effect-change criterion and adds to
 #' it. It is declared because it is structural rather than empirical. Anyone
 #' recomputing the inter-method agreement question this package exists to
-#' answer (Kappa = 0.14 across the five methods) would otherwise be treating
+#' answer (Kappa = 0.14, across the three methods that discriminated at all)
+#' would otherwise be treating
 #' one of the ten detector pairs as data when it is arithmetic. The same
 #' reasoning gave rise to [CONTAMINATED_PAIRS] for detector-truth pairs;
 #' detector-to-detector containment deserves the same visibility.
