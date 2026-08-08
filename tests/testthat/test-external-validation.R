@@ -428,3 +428,64 @@ test_that("ISIS-4 removes the effect, and rcma saw it coming", {
   expect_gte(lead_time(bt, "shift")$median_lead[
     lead_time(bt, "shift")$method == "rcma"], 3)
 })
+
+# --- A third case, for the branch the other two never reach ---------------
+#
+# dat.lau1992 and dat.li2007 are both odds ratios in cardiology. Every ratio
+# measure takes one branch of effect_ratio(); the difference-measure branch,
+# with its guard against a prior effect indistinguishable from zero, had never
+# been exercised on real data.
+#
+# dat.bangertdrowns2004 is 48 writing-to-learn studies, 1926-1998, on the
+# standardized mean difference scale, with a small pooled effect (0.22). Note
+# what this case is NOT for: metadat states that these values are
+# bias-corrected and so "differ slightly from the values reported in the
+# article", and that the variances assume equal group sizes. Reproducing the
+# published pooled estimate is therefore impossible by construction, and not
+# attempted. This case is here for branch coverage on real data.
+
+test_that("difference measures take the other branch, and the guard fires", {
+  skip_if_not_installed("metadat")
+  d <- metadat::dat.bangertdrowns2004
+  d <- d[!is.na(d$yi) & !is.na(d$vi) & !is.na(d$year), ]
+  ma <- metafor::rma(yi, vi, data = d, measure = "SMD")
+  st <- evidence_stream(ma, date = d$year, ni = d$ni)
+
+  expect_false(is_ratio_measure(st$measure))
+
+  bt <- backtest(st, cuts = "yearly", horizon = 3, window = 5, min_k = 5,
+                 seed = 42)
+  r <- bt$results[!bt$results$censored, ]
+
+  # The guard documented in effect_ratio() -- a prior effect too close to zero
+  # for a ratio to mean anything -- actually fires here, on a real body of
+  # evidence, and says why.
+  rc <- r[r$method == "rcma", ]
+  na <- rc[rc$verdict == "not_applicable", ]
+  expect_gt(nrow(na), 0)
+  expect_true(all(grepl("indistinguishable from zero", na$reason)))
+
+  # A ratio it refuses to compute must never be dressed up as a signal.
+  expect_equal(sum(rc$verdict == "out_of_date"), 0)
+})
+
+test_that("ottawa still works when its effect half cannot be computed", {
+  # On difference measures the Ottawa effect criterion defers to the rcma
+  # rule, so when the guard blanks the ratio, only the significance half is
+  # left. The detector has to keep answering on that half rather than falling
+  # over or going silent.
+  skip_if_not_installed("metadat")
+  d <- metadat::dat.bangertdrowns2004
+  d <- d[!is.na(d$yi) & !is.na(d$vi) & !is.na(d$year), ]
+  ma <- metafor::rma(yi, vi, data = d, measure = "SMD")
+  st <- evidence_stream(ma, date = d$year, ni = d$ni)
+
+  prev <- snapshot_at(st, 1985)
+  new  <- snapshot_at(st, 1990)
+  res  <- ottawa(prev, new)
+
+  expect_true(is.na(res$signal))              # the ratio was refused
+  expect_false(res$detail$signal_effect)      # so the effect half is silent
+  expect_true(res$detail$signal_significance) # and the other half carried it
+  expect_equal(res$verdict, "out_of_date")
+})
