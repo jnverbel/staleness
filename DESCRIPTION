@@ -14,5 +14,6 @@ Encoding: UTF-8
 Depends: R (>= 4.1)
 Imports: metafor, stats, graphics, grDevices
 Suggests: metadat, testthat (>= 3.0.0), knitr, rmarkdown
+VignetteBuilder: knitr
 Config/testthat/edition: 3
-RoxygenNote: 7.3.2
+Config/roxygen2/version: 8.1.0

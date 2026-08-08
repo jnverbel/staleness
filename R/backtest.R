@@ -37,7 +37,15 @@
 #' @return An object of class `staleness_backtest` with elements `results` (a
 #'   data.frame with columns `cut`, `method`, `verdict`, `signal`, `reason`,
 #'   `truth_shift`, `truth_surprise`, `truth_conclusion`, `censored`),
-#'   `stream`, `methods`, `horizon`, `window`, `n_cuts` and `n_censored`.
+#'   `stream`, `methods`, `horizon`, `window`, `n_cuts` and `n_censored`. The
+#'   `truth_shift` and `truth_surprise` columns can be `NA` when the standard
+#'   error they divide by (`se_final` or the snapshot's own `se`) is
+#'   degenerate; that `NA` means "truth could not be determined here", not
+#'   "no shift occurred", and is deliberately left unresolved rather than
+#'   guessed at. Consumers must exclude those rows from any accuracy metric,
+#'   the same treatment `censored == TRUE` rows get — never count an `NA`
+#'   truth as a miss. [calibration()] and [lead_time()] already do this
+#'   filtering for you.
 #' @export
 backtest <- function(stream, cuts = "yearly", methods = available_methods(),
                      horizon = 5, window = 3, min_k = 3, seed = NULL) {

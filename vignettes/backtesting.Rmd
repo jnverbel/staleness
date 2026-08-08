@@ -1,0 +1,183 @@
+---
+title: "Calibrating the detectors"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Calibrating the detectors}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(staleness)
+library(metafor)
+```
+
+Implementing five published detectors faithfully, as
+`vignette("methods", package = "staleness")` does, answers the easy half of
+the problem. The hard half is: given a meta-analysis today, which of the five
+should you actually trust? This vignette is the scientific argument for why
+that question cannot be answered by reading the methods papers, and for how
+this package answers it instead — with data.
+
+## 1. The problem
+
+The five methods have been run side by side exactly once, in the comparative
+evaluation this package cites throughout (Pattanittum et al., 2012, applying
+them to 80 published systematic reviews). Their agreement with each other was
+**Kappa = 0.14** — indistinguishable from chance. Of the three methods that
+produced usable verdicts on that sample, `ottawa` flagged 34 reviews as out
+of date, `barrowman` flagged 7, and the simulation method flagged none. Only
+one review was flagged by all three at once.
+
+That is not a story about one weak method among four strong ones. It is a
+story about nobody knowing, in the thirteen years since, which of the five
+methods to reach for — because no software existed that could run all five
+against real history and check which ones were actually right.
+
+## 2. The circularity trap
+
+The obvious next step is to pick a definition of "was this meta-analysis
+really out of date at time t?" and score every detector's historical
+verdicts against it. The obvious definition — "the conclusion changed:
+significance flipped, or the effect reversed sign" — is a trap.
+
+`ottawa()` signals, in part, on exactly that: a change in statistical
+significance. If "truth" is defined the same way, `ottawa` is correct by
+construction, for every review, regardless of whether the method has any
+real predictive value. Scoring it against that truth would not be measuring
+calibration. It would be measuring whether `ottawa()`'s source code agrees
+with itself, dressed up as an empirical result.
+
+This package resolves that by never collapsing "truth" into a single
+definition, and by tracking which detector-truth pairs share enough logic to
+be circular, in the data itself rather than in a footnote someone can miss:
+
+```{r contaminated-pairs}
+CONTAMINATED_PAIRS
+```
+
+## 3. Three independent truths
+
+Every backtest is scored under three separate definitions of "the
+meta-analysis changed", each implemented in `R/truth.R` and listed by
+`available_truths()`:
+
+| Truth | What it measures |
+|---|---|
+| `shift` | How far the pooled estimate at time `t` sits from the final estimate, judged against how precisely we know the final estimate today (`|theta_final - theta_t| / SE_final`). |
+| `surprise` | The same distance, but judged against how precisely the estimate was known *at the time* (`|theta_final - theta_t| / SE_t`) — how surprising the eventual result would have looked to someone standing at `t`. |
+| `conclusion` | Whether the practical conclusion changed: a flip in the sign of the effect, or a flip in statistical significance. |
+
+`shift` and `surprise` never look at significance thresholds or effect-size
+ratios, so no detector's own logic can leak into them. `conclusion` is the
+one exception, and only for `ottawa`, which is exactly why it is the pair
+`CONTAMINATED_PAIRS` names.
+
+## 4. The contamination declaration
+
+`calibration()` computes sensitivity, specificity and false-alarm rate for
+every detector against a chosen truth, and it never lets a reader miss which
+rows are circular: every row carries a `contaminated` column, looked up from
+`CONTAMINATED_PAIRS`, sitting right next to the numbers it warns about.
+
+```{r contaminated-mark}
+dat <- metadat::dat.bcg
+es  <- escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos, di = cneg,
+              data = dat)
+ma  <- rma(yi, vi, data = es)
+stream <- evidence_stream(ma, date = es$year)
+
+bt <- backtest(stream, cuts = "yearly", horizon = 3, window = 5,
+              min_k = 3, seed = 42)
+calibration(bt, "conclusion")
+```
+
+`ottawa`'s row above reads `contaminated = TRUE`. Nothing stops a caller from
+using that number — sometimes the circular comparison is exactly what you
+want, if what you are asking is "does `ottawa` reproduce its own rule
+correctly" rather than "does `ottawa` predict the future" — but nobody
+reading this table can mistake it for an independent result. `rcma` and
+`sufficiency`, scored against the same truth, are not marked, because
+neither shares `conclusion`'s specific logic.
+
+## 5. A backtest, executed
+
+The backtest above walks `stream` one year at a time. At each cut it
+refits the meta-analysis using only studies published on or before that
+year (never anything later — this is checked by a dedicated test that
+verifies no detector can fire before a synthetic break actually happens),
+asks every detector the question it would be asked today, and compares the
+verdict with what the complete series eventually showed.
+
+```{r backtest-summary}
+bt
+summary(bt)
+```
+
+Two things are worth noticing in this particular run before reading anything
+into the sensitivity and specificity numbers. First, `barrowman` and
+`simulation` do not appear at all: both require a prior meta-analysis that
+was *not yet statistically significant*, and in this series — a strong,
+consistent protective effect of BCG vaccination — even the earliest
+two-study snapshot, from 1949, was already significant at conventional
+thresholds. Both methods are `not_applicable` at every single cut, which
+`calibration()` correctly excludes rather than silently scoring as
+agreement. That is the narrow-scope critique from
+`vignette("methods", package = "staleness")`, visible directly in real data
+rather than argued in the abstract.
+
+Second, this is thirteen studies over three decades: enough to demonstrate
+the machinery end to end, nowhere near enough to draw a general conclusion
+about which detector deserves trust across the literature. `backtest()`
+works the same way regardless of series length; drawing a real verdict about
+the five methods needs many series like this one, not one.
+
+```{r plot-calibration, fig.width = 6, fig.height = 4, fig.alt = "Bar chart of sensitivity and specificity per detector, scored against the shift truth definition"}
+plot(bt, truth = "shift")
+```
+
+## 6. Lead time
+
+Sensitivity and specificity, on their own, cannot tell a genuinely useful
+early-warning detector from one that only ever notices a change after the
+evidence has already moved. A detector that fires the same year the shift
+happens looks identical, in a contingency table, to one that fired five
+years ahead of it — both are "hits". In practice only one of them is worth
+having: an alarm that never rings before the fire has already spread saves
+nobody.
+
+`lead_time()` reports, per detector, the median number of years between a
+detector's earliest correct `out_of_date` firing and the true event it
+caught (per whichever truth definition is passed in), across every event the
+detector caught at all:
+
+```{r lead-time}
+lead_time(bt, truth = "shift")
+```
+
+Every `median_lead` above is `NA`, not zero, and the reason is visible in
+`summary(bt)`: `rcma`, `ottawa` and `sufficiency` all had sensitivity 0
+against `shift` in this run, with `n_events = 5` in every row. Five true
+shifts happened in this series, per the `shift` definition, and none of the
+three applicable detectors ever flagged one of them as `out_of_date` —
+neither early nor late. `lead_time()` reports `NA` rather than inventing a
+number for events that were never caught at all; a real numeric lead only
+exists for events a detector did catch.
+
+That distinction matters because a numeric `median_lead` of exactly zero
+would describe a *different*, and in one sense better, failure: a detector
+that does catch every event, but only ever in the same period the evidence
+had already moved. Sensitivity and specificity cannot tell that detector
+apart from one with genuine foresight — both score as perfect hits in a
+contingency table. Only `lead_time()` can, and a high-sensitivity detector
+with a `median_lead` of zero is not a useful early-warning system: it is a
+slower way of noticing something a reader would have seen anyway by looking
+at the updated forest plot. Distinguishing "never caught it" from "caught it
+too late to matter" from "caught it early enough to act on" is the one
+distinction this package's backtesting adds that the underlying literature
+has never reported, and it is what actually decides whether calibrating
+these detectors is worth doing at all.

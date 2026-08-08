@@ -1,0 +1,252 @@
+---
+title: "The five detectors and what is wrong with them"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The five detectors and what is wrong with them}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(staleness)
+library(metafor)
+```
+
+Five statistical methods for deciding whether a meta-analysis needs updating
+were published between 2003 and 2014. None of them ever received a reusable
+software implementation, so nobody has ever been able to run all five against
+the same body of evidence and see where they agree. This package implements
+all five as pure functions with a common signature — `(prev, new_ma, ...)` in,
+a `staleness_verdict` out — precisely so that can finally be done (see
+`vignette("backtesting", package = "staleness")` for what happens when it is).
+
+This vignette is deliberately unflattering. Each section below states a
+detector's formula, where it comes from, and the specific way the published
+literature — or this package's own backtesting — shows it can mislead you.
+Implementing a method faithfully is not the same as endorsing it.
+
+## `rcma()`: recursive cumulative meta-analysis
+
+```
+ratio = theta_updated / theta_prior      signal if ratio <= 0.5 or ratio >= 1.5
+```
+
+The idea, due to Ioannidis and Lau's work on how treatment effects evolve as
+evidence accumulates (*Proceedings of the National Academy of Sciences*,
+2001), is the simplest of the five: refit the meta-analysis after each new
+study and watch how far the pooled estimate moves. A move of 50% or more in
+either direction is the signal.
+
+```{r rcma-signal}
+prev   <- rma(yi = rep(log(0.50), 4), vi = rep(0.04, 4), measure = "RR")
+new_ma <- rma(yi = rep(log(0.20), 4), vi = rep(0.04, 4), measure = "RR")
+rcma(prev, new_ma)
+```
+
+**What is wrong with it.** The ratio is only well-behaved for measures that
+are themselves ratios (risk ratio, odds ratio, hazard ratio): those live on a
+log scale where `exp(a - b)` is a well-defined, symmetric ratio regardless of
+how small the effect is. For difference measures — a mean difference, a raw
+risk difference — the ratio is undefined once the prior effect is close to
+zero: a prior estimate of 0.02 moving to 0.40 produces a ratio of 20, an
+artefact of the denominator, not a real twenty-fold change. The method as
+published does not address this case at all.
+
+```{r rcma-na}
+prev_md <- rma(yi = rep(0.02, 4), vi = rep(0.25, 4), measure = "MD")
+new_md  <- rma(yi = rep(0.40, 4), vi = rep(0.25, 4), measure = "MD")
+rcma(prev_md, new_md)
+```
+
+This package's answer is to read the measure straight off the `rma` object
+and, for difference measures with a prior effect indistinguishable from zero,
+return `not_applicable` with the reason attached rather than a number that
+looks plausible and is not.
+
+## `ottawa()`: the Ottawa method
+
+Two quantitative signals: a change in statistical significance (using
+**p < 0.04**, not the conventional 0.05 — this is the threshold in the
+original method, not a typo), and a change in the pooled effect of at least
+50%, computed the same way `rcma()` computes it. The method is due to Shojania
+and colleagues' survival analysis of how quickly systematic reviews go out of
+date (*Annals of Internal Medicine*, 2007), the same paper that established
+the headline numbers this package's introduction vignette opens with.
+
+```{r ottawa-signal}
+prev_o <- rma(yi = c(0.02, -0.01, 0.03, -0.02), vi = rep(0.05, 4), measure = "RR")
+new_o  <- rma(yi = rep(log(0.40), 8), vi = rep(0.01, 8), measure = "RR")
+ottawa(prev_o, new_o)
+```
+
+The original method also lists four *qualitative* signals: opposing
+findings, evidence of substantial harm, a new superior therapy, and a change
+in the balance of effectiveness. **This package does not infer any of
+them.** They are accepted as a character vector supplied by the analyst
+(`qualitative = "substantial harm reported"`, for instance) and reported
+separately from the two quantitative signals. An algorithm that claimed to
+judge "substantial harm" from effect sizes alone would be a much bigger
+promise than the data can support, and would spend the credibility of the
+whole package to make it.
+
+## `barrowman()`: the participant-ratio method
+
+```
+q = m / n            n = (Z_crit^2 * N) / Z^2            signal if q > 1
+```
+
+`m` is the number of participants contributed by the new studies; `N` is the
+total in the prior meta-analysis; `Z` is that meta-analysis's own test
+statistic; `Z_crit` is 1.96. `n` is a back-calculation: how many new
+participants, added at the same average effect and variance as the existing
+evidence, would it take to push the pooled result across the significance
+threshold. `q > 1` means the new evidence already supplied more than that.
+
+```{r barrowman-signal}
+prev_b <- rma(yi = c(0.10, -0.05, 0.08, -0.02), vi = rep(0.05, 4), measure = "MD")
+z <- prev_b$zval
+n_req <- (1.96^2 * 400) / z^2
+barrowman(prev_b, n_prev = 400, n_new = ceiling(n_req * 1.5))
+barrowman(prev_b, n_prev = 400, n_new = floor(n_req * 0.5))
+```
+
+**What is wrong with it.** The method, proposed by Barrowman and colleagues
+as a way to identify null meta-analyses ripe for updating (*BMC Medical
+Research Methodology*, 2003), only makes sense when the prior meta-analysis
+was *not* statistically significant — `n` is derived from how far the prior
+result sits from the significance boundary, and that derivation has no
+answer when the prior result was already on the far side of it. This
+restricts the method to a narrow slice of published meta-analyses. When it
+does not apply, `barrowman()` returns `not_applicable`, never `current`:
+treating "the method has nothing to say" as "the review is fine" would hand
+this detector an unearned advantage in any calibration exercise, since it
+would then never be wrong on exactly the cases it declined to judge.
+
+```{r barrowman-na}
+sig <- rma(yi = rep(log(0.4), 8), vi = rep(0.01, 8), measure = "RR")
+barrowman(sig, n_prev = 400, n_new = 900)
+```
+
+## `sufficiency()`: sufficiency and stability
+
+```
+index = N_fs / (5k + 10)      stability = slope of the cumulative pooled effect
+```
+
+`N_fs` is Rosenthal's fail-safe N: an estimate of how many unpublished null
+studies it would take to erase a significant pooled effect. A review is
+*sufficient* when the index exceeds 1 — Rosenthal's own rule of thumb for a
+result being robust to unpublished null findings. It is *stable* when the
+slope of the cumulative pooled effect, plotted study by study in publication
+order, does not differ significantly from zero: the estimate has stopped
+moving as evidence accrued.
+
+The method is due to Mullen, Muellerleile and Bryant's treatment of
+cumulative meta-analysis indicators (*Personality and Social Psychology
+Bulletin*, 2001). This package follows the specific two-snapshot form of it
+used in the comparative evaluation of Pattanittum and colleagues (*PLoS
+ONE*, 2012), because that is the only source that defines sufficiency and
+stability as a comparison between a *prior* meta-analysis and an *updated*
+one, rather than as a property of a single, static body of studies.
+
+**The rule, and why it is easy to get backwards.** A review counts as
+out of date only when it is **both sufficient and unstable at once**:
+
+```{r sufficiency-out}
+yi <- seq(log(0.9), log(0.2), length.out = 20)
+vi <- rep(0.01, 20)
+drifting <- rma(yi = yi, vi = vi, measure = "RR")
+sufficiency(drifting, drifting)
+```
+
+Insufficiency by itself — an index at or below 1 — is **never** grounds for
+"out of date", no matter how unstable the cumulative effect looks:
+
+```{r sufficiency-insufficient}
+yi <- rep(log(0.99), 6)
+vi <- rep(0.04, 6)
+weak <- rma(yi = yi, vi = vi, measure = "RR")
+sufficiency(weak, weak)
+```
+
+This is the primary source's own reading, confirmed against its data, not
+just its prose: of the 80 reviews in the Pattanittum et al. comparison, all
+80 had a fail-safe ratio below 1 (insufficient), and for exactly that reason
+the method could not flag a single one of them as out of date. Had the
+opposite direction been correct — insufficiency implying "out of date" — that
+same fact about the 80 reviews would have produced the opposite result: all
+80 flagged.
+
+The two halves also read from different bodies of evidence, and that is
+deliberate, not an oversight: sufficiency — the fail-safe N and the `k` in
+`5k + 10` — is computed from the meta-analysis **as it stood when
+previously published**; stability is computed from the cumulative series of
+the **updated** meta-analysis, because that is where drift from new studies
+would actually show up. See section 4.4 of the package's design document for
+the full paper trail behind this, including the case that would silently
+give the wrong verdict if both halves were read from the same snapshot.
+
+**What is wrong with it, independent of any of the above.** Rosenthal's
+fail-safe N has been discredited as a measure of publication bias since
+Becker (2005) — it answers a narrower and less useful question than it is
+usually taken to answer, and better alternatives (trim-and-fill, funnel-plot
+regression) have existed for years. `sufficiency()` implements it
+anyway, faithfully, exactly as the published method specifies it, because
+this package's purpose is not to pre-judge which of the five methods
+deserves to survive contact with data. If Rosenthal's N is as weak a
+foundation as the critique suggests, the backtesting engine will show it —
+that is a fact to be established empirically, in
+`vignette("backtesting", package = "staleness")`, and not decided in advance
+by leaving the method out.
+
+## `simulation()`: prospective power
+
+Ten thousand replicate "new studies" are simulated using the parameters of
+the recently published literature, added to the prior meta-analysis, and the
+fraction of replicates in which the pooled result reaches significance is
+recorded as a power estimate. A power at or above 80% is the signal.
+
+```{r simulation-signal}
+prev_sim <- rma(yi = c(0.30, 0.28, 0.32, 0.29), vi = rep(0.16, 4), measure = "MD")
+new_ev   <- list(yi = c(0.30, 0.31, 0.29), vi = rep(0.005, 3), k = 3)
+simulation(prev_sim, new_ev, seed = 3)
+```
+
+Like `barrowman()`, this method only has something to say about a prior
+meta-analysis that was not yet significant:
+
+```{r simulation-na}
+prev_sig <- rma(yi = rep(log(0.4), 8), vi = rep(0.01, 8), measure = "RR")
+new_small <- list(yi = rep(log(0.4), 3), vi = rep(0.01, 3), k = 3)
+simulation(prev_sig, new_small, seed = 1)
+```
+
+**What is wrong with it.** In the same published comparison that produced
+the fail-safe-N numbers above, the simulation method flagged **none of the
+80 reviews** as out of date — not one. That is either the sign of an
+extremely conservative method that will almost never generate a false
+alarm, or the sign of a method that is misspecified for the way it was
+applied, and the published literature does not settle which. It is exactly
+the kind of question this package's backtesting engine exists to make
+answerable with data instead of leaving it as a footnote.
+
+## Sources
+
+- Ioannidis JPA, Lau J. Evolution of treatment effects over time: empirical
+  insight from recursive cumulative metaanalyses. *Proceedings of the
+  National Academy of Sciences*, 2001.
+- Shojania KG et al. How quickly do systematic reviews go out of date? A
+  survival analysis. *Annals of Internal Medicine*, 2007.
+- Barrowman NJ et al. Identifying null meta-analyses that are ripe for
+  updating. *BMC Medical Research Methodology*, 2003.
+- Mullen B, Muellerleile P, Bryant B. Cumulative meta-analysis: a
+  consideration of indicators of sufficiency and stability. *Personality and
+  Social Psychology Bulletin*, 2001.
+- Pattanittum P et al. A comparison of statistical methods for identifying
+  out-of-date systematic reviews. *PLoS ONE*, 2012;7(11):e48894 (PMC3502410).
+- Becker BJ. Failsafe N or file-drawer number. In *Publication Bias in
+  Meta-Analysis*, 2005.
