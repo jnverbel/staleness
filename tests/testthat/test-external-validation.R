@@ -489,3 +489,57 @@ test_that("ottawa still works when its effect half cannot be computed", {
   expect_true(res$detail$signal_significance) # and the other half carried it
   expect_equal(res$verdict, "out_of_date")
 })
+
+# --- A fourth case, found by searching for one the others could not give ---
+#
+# barrowman() and simulation() only speak when the prior meta-analysis was not
+# significant, and in the three cases above that condition rarely held, so both
+# spent most cuts returning not_applicable. Sweeping metadat for datasets with
+# several non-significant cuts turned up dat.laopaiboon2015: azithromycin for
+# lower respiratory tract infection, 15 trials 1991-2002, pooled OR 1.12
+# (0.61-2.04), p = 0.72. A null meta-analysis from end to end.
+
+test_that("barrowman and simulation answer on every cut of a null review", {
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.laopaiboon2015)
+  es <- es[!is.na(es$yi) & !is.na(es$vi) & es$vi > 0, ]
+  ma <- metafor::rma(yi, vi, data = es, measure = "OR")
+  expect_gt(ma$pval, 0.05)                      # the precondition both need
+
+  st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
+  bt <- backtest(st, cuts = "yearly", horizon = 2, window = 3, min_k = 3,
+                 seed = 42)
+  r <- bt$results[!bt$results$censored, ]
+
+  for (m in c("barrowman", "simulation")) {
+    d <- r[r$method == m, ]
+    expect_equal(sum(d$verdict == "not_applicable"), 0, info = m)
+    expect_gt(nrow(d), 5)
+  }
+  # Neither raises a false alarm on evidence that never moved.
+  cal <- calibration(bt, "shift")
+  expect_equal(cal$specificity[cal$method == "barrowman"], 1)
+  expect_equal(cal$specificity[cal$method == "simulation"], 1)
+})
+
+test_that("ottawa's instability on null reviews shows up in real data too", {
+  # Measured by simulation elsewhere in this suite: under a null effect the
+  # RRR criterion fires on most samples containing no change, because
+  # 1 - RR_prev approaches zero. Here is the same failure on a real review,
+  # which is the kind of confirmation a simulated result cannot give itself.
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.laopaiboon2015)
+  es <- es[!is.na(es$yi) & !is.na(es$vi) & es$vi > 0, ]
+  ma <- metafor::rma(yi, vi, data = es, measure = "OR")
+  st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
+  bt <- backtest(st, cuts = "yearly", horizon = 2, window = 3, min_k = 3,
+                 seed = 42)
+  cal <- calibration(bt, "shift")
+
+  # Specificity collapses for ottawa and holds for everything else.
+  expect_lt(cal$specificity[cal$method == "ottawa"], 0.3)
+  expect_equal(cal$specificity[cal$method == "rcma"], 1)
+  expect_equal(cal$specificity[cal$method == "sufficiency"], 1)
+})
