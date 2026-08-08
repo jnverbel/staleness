@@ -131,13 +131,26 @@ calibration <- function(bt, truth = "shift") {
 #' period the evidence had already moved, not that it failed to catch
 #' anything.
 #'
-#' The same three exclusions as [calibration()] apply, through the same
-#' internal filter: censored cuts, `not_applicable` verdicts, and rows whose
-#' truth column is `NA` are dropped before either the events or the firings
-#' are located. Both sides of the comparison are read from that already
-#' filtered frame, so a degenerate standard error removes an event and the
-#' verdict that would have been scored against it together, rather than
-#' leaving one without the other.
+#' @section Why the two sides of the comparison are filtered differently:
+#' This is the only metric here that relates *different* rows: the event comes
+#' from one cut and the firing that preceded it from another. [calibration()]
+#' scores each row on its own, so it needs the verdict and the truth from the
+#' same row and must drop the row when either is missing. That does not carry
+#' over.
+#'
+#' Censored cuts and `not_applicable` verdicts are excluded from both sides,
+#' as in [calibration()]. A truth of `NA` is excluded from the **events**
+#' only: an event is defined by `truth == TRUE`, and unknown is not true. It
+#' is *not* excluded from the **firings**. A firing is an observed fact about
+#' the detector, and its role here is to precede a later event; whether the
+#' truth of its own cut could be computed says nothing about that.
+#'
+#' Filtering the firings too — which earlier versions did, by reusing
+#' `calibration()`'s eligibility filter unchanged — deletes real early
+#' warnings. A detector that fired at 2000 where truth was indeterminate, for
+#' an event at 2001, reported `median_lead = NA` instead of 1. The bias has a
+#' direction: dropping a firing can only ever lengthen a lead or erase it,
+#' never shorten it, so it always reads against the detector.
 #'
 #' A method with no true event under `truth` in the uncensored window gets
 #' `n_events = 0` and `median_lead = NA`: there is nothing to lead. A method
@@ -177,13 +190,31 @@ calibration <- function(bt, truth = "shift") {
 lead_time <- function(bt, truth = "shift") {
   truth <- match.arg(truth, available_truths())
   col <- paste0("truth_", truth)
-  res <- eligible_rows(bt, truth)
+
+  # This is the one metric that relates DIFFERENT rows -- an event in one row,
+  # the firing that preceded it in another -- and the two sides do not carry
+  # the same requirement.
+  #
+  # An event is defined by `truth == TRUE`, so a row whose truth is NA cannot
+  # supply one: unknown is not true. A firing is an observed fact about the
+  # detector, and its job here is to precede a later event. Whether the truth
+  # of the firing's OWN cut could be computed says nothing about that.
+  #
+  # eligible_rows() applies `!is.na(truth)` to both sides, which is right for
+  # calibration() -- that scores each row in isolation and needs the verdict
+  # and the truth from the same row -- and wrong here. Applied to the firings
+  # it deletes real early warnings and biases every lead in one direction,
+  # since it can only ever remove a candidate, never add one.
+  usable <- bt$results
+  usable <- usable[!usable$censored & usable$verdict != "not_applicable", ]
+  scored <- usable[!is.na(usable[[col]]), ]
 
   out <- lapply(bt$methods, function(m) {
-    d <- res[res$method == m, ]
+    d <- scored[scored$method == m, ]
     d <- d[order(d$cut), ]
     events <- d$cut[d[[col]]]
-    fired  <- d$cut[d$verdict == "out_of_date"]
+    f <- usable[usable$method == m, ]
+    fired  <- f$cut[f$verdict == "out_of_date"]
 
     # One lead per true event: the gap to that event's earliest on-time
     # firing, or NA when the detector never fired at or before it. A miss

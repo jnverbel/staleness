@@ -13,12 +13,20 @@ The package deliberately does not search literature, does not screen studies,
 and does not fit meta-analyses. Those are the jobs of other tools and of human
 judgement.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/jnverbel/staleness}
+  \item Report bugs at \url{https://github.com/jnverbel/staleness/issues}
+}
+
+}
 \author{
-\strong{Maintainer}: Javier Nunez \email{javier@tectonico.com.co}
+\strong{Maintainer}: Javier Núñez \email{javier@tectonico.com.co}
 
 Authors:
 \itemize{
-  \item Javier Nunez \email{javier@tectonico.com.co}
+  \item Javier Núñez \email{javier@tectonico.com.co}
 }
 
 }

@@ -22,6 +22,18 @@ First public release.
   Scoring inapplicability as a correct call would flatter the detectors that
   decline most often.
 
+## Metric semantics
+
+* `lead_time()` no longer discards a detector's firing because the truth of
+  that firing's own cut could not be determined. It is the only metric that
+  relates different rows — the event in one, the firing that preceded it in
+  another — and the two sides do not carry the same requirement. An event
+  needs a known truth, because unknown is not true; a firing is an observed
+  fact whose role is to precede a later event. Reusing `calibration()`'s
+  row-wise eligibility filter on both sides deleted real early warnings, and
+  only ever against the detector: dropping a firing can lengthen or erase a
+  lead, never shorten it.
+
 ## Notes on two published methods
 
 * `sufficiency()` tests stability with a change-point statistic

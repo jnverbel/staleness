@@ -163,14 +163,23 @@ test_that("calibration excludes NA-truth rows instead of propagating NA into the
   expect_equal(rcma_row$specificity, 1)  # the two remaining non-events, correct
 })
 
-test_that("lead_time excludes NA-truth rows, n_events reflects the exclusion", {
+test_that("an NA truth removes the event but not the firing at that cut", {
   bt <- fake_bt()
   bt$results$truth_shift[bt$results$method == "rcma" & bt$results$cut == 2000] <- NA
   lt <- lead_time(bt, truth = "shift")
   rcma_row <- lt[lt$method == "rcma", ]
-  expect_equal(rcma_row$n_events, 1)  # only cut 2001 remains a true event
-  expect_true(is.finite(rcma_row$median_lead))
-  expect_equal(rcma_row$median_lead, 0)  # fired at 2001, the event is at 2001
+
+  # 2000 stops being a true event, because unknown is not true.
+  expect_equal(rcma_row$n_events, 1)
+
+  # But rcma DID fire at 2000, and the surviving event is at 2001, so the
+  # lead is 1. This assertion used to read 0, which is what the shared
+  # eligibility filter produced by deleting the 2000 firing along with its
+  # unknown truth -- and 0 does not mean "we lost the firing", it means "the
+  # detector only spoke once the evidence had already moved". The two are
+  # opposite verdicts on the detector, so the old expectation stated the
+  # defect rather than the intent.
+  expect_equal(rcma_row$median_lead, 1)
 })
 
 # --- Every requested method gets a row, even one that never applied ---------
@@ -238,4 +247,51 @@ test_that("rows come out in the order the backtest requested the methods", {
   bt <- na_everywhere_bt()
   expect_equal(calibration(bt, "shift")$method, bt$methods)
   expect_equal(lead_time(bt, "shift")$method, bt$methods)
+})
+
+test_that("a firing still counts as early warning when its own truth is NA", {
+  # lead_time() is the only metric that relates DIFFERENT rows: an event in
+  # one row, the firing that preceded it in another. eligible_rows() was
+  # built for calibration(), which scores each row in isolation and therefore
+  # must drop a row whose truth is unknown. Reused here it dropped the
+  # firings too, and a firing is an observed fact about the detector -- its
+  # role is to precede a later event, not to be scored against its own cut.
+  mk <- function(res) structure(
+    list(results = res, methods = "rcma", horizon = 3, window = 3,
+         n_cuts = nrow(res), n_censored = 0),
+    class = "staleness_backtest")
+
+  res <- data.frame(
+    cut = c(2000, 2001), method = "rcma",
+    verdict = c("out_of_date", "current"), signal = c(2.1, 1.0), reason = "",
+    truth_shift = c(NA, TRUE), truth_surprise = c(NA, TRUE),
+    truth_conclusion = c(NA, TRUE), censored = FALSE,
+    stringsAsFactors = FALSE)
+
+  lt <- lead_time(mk(res))
+  expect_equal(lt$n_events, 1)
+  expect_equal(lt$median_lead, 1)   # was NA: the 2000 firing had been erased
+
+  # The identical history with 2000's truth merely FALSE must agree. The two
+  # differ in what is known about 2000, not in what the detector did.
+  res_known <- res; res_known$truth_shift[1] <- FALSE
+  expect_equal(lead_time(mk(res_known))$median_lead, lt$median_lead)
+})
+
+test_that("an unknown truth still cannot manufacture an event", {
+  # The other half of the asymmetry: NA must never be read as TRUE. Events
+  # require a known truth; only the firings are exempt.
+  mk <- function(res) structure(
+    list(results = res, methods = "rcma", horizon = 3, window = 3,
+         n_cuts = nrow(res), n_censored = 0),
+    class = "staleness_backtest")
+  res <- data.frame(
+    cut = c(2000, 2001), method = "rcma",
+    verdict = c("out_of_date", "current"), signal = c(2.1, 1.0), reason = "",
+    truth_shift = c(NA, NA), truth_surprise = c(NA, NA),
+    truth_conclusion = c(NA, NA), censored = FALSE,
+    stringsAsFactors = FALSE)
+  lt <- lead_time(mk(res))
+  expect_equal(lt$n_events, 0)
+  expect_true(is.na(lt$median_lead))
 })

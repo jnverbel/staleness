@@ -36,14 +36,28 @@ zero. A `median_lead` of 0 is a real, meaningful value: it means the
 detector, in the middle of its caught events, only ever fired in the same
 period the evidence had already moved, not that it failed to catch
 anything.
+}
+\section{Why the two sides of the comparison are filtered differently}{
 
-The same three exclusions as [calibration()] apply, through the same
-internal filter: censored cuts, `not_applicable` verdicts, and rows whose
-truth column is `NA` are dropped before either the events or the firings
-are located. Both sides of the comparison are read from that already
-filtered frame, so a degenerate standard error removes an event and the
-verdict that would have been scored against it together, rather than
-leaving one without the other.
+This is the only metric here that relates *different* rows: the event comes
+from one cut and the firing that preceded it from another. [calibration()]
+scores each row on its own, so it needs the verdict and the truth from the
+same row and must drop the row when either is missing. That does not carry
+over.
+
+Censored cuts and `not_applicable` verdicts are excluded from both sides,
+as in [calibration()]. A truth of `NA` is excluded from the **events**
+only: an event is defined by `truth == TRUE`, and unknown is not true. It
+is *not* excluded from the **firings**. A firing is an observed fact about
+the detector, and its role here is to precede a later event; whether the
+truth of its own cut could be computed says nothing about that.
+
+Filtering the firings too — which earlier versions did, by reusing
+`calibration()`'s eligibility filter unchanged — deletes real early
+warnings. A detector that fired at 2000 where truth was indeterminate, for
+an event at 2001, reported `median_lead = NA` instead of 1. The bias has a
+direction: dropping a firing can only ever lengthen a lead or erase it,
+never shorten it, so it always reads against the detector.
 
 A method with no true event under `truth` in the uncensored window gets
 `n_events = 0` and `median_lead = NA`: there is nothing to lead. A method
@@ -54,6 +68,7 @@ it missed (visible in detail via `calibration()`'s sensitivity). As in
 that was `not_applicable` at every cut and therefore has no eligible rows
 at all.
 }
+
 \examples{
 library(metafor)
 bcg <- data.frame(
