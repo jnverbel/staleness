@@ -11,8 +11,27 @@ permissions: read-all
 
 jobs:
   R-CMD-check:
-    runs-on: ubuntu-latest
-    name: ubuntu-latest (release)
+    runs-on: ${{ matrix.config.os }}
+
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    strategy:
+      # Never cancel the other platforms because one failed: when a
+      # permutation test diverges, which platforms it diverges on IS the
+      # diagnosis.
+      fail-fast: false
+      matrix:
+        config:
+          - {os: macos-latest,   r: 'release'}
+          - {os: windows-latest, r: 'release'}
+          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest,  r: 'release'}
+          # Ubuntu runners bill at 1x, so reaching back a few releases is
+          # cheap. DESCRIPTION promises R >= 4.1; these are what actually
+          # gets verified.
+          - {os: ubuntu-latest,  r: 'oldrel-1'}
+          - {os: ubuntu-latest,  r: 'oldrel-2'}
+          - {os: ubuntu-latest,  r: 'oldrel-3'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -26,7 +45,8 @@ jobs:
 
       - uses: r-lib/actions/setup-r@v2
         with:
-          r-version: release
+          r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
       - uses: r-lib/actions/setup-r-dependencies@v2
@@ -34,8 +54,9 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      # --no-manual: the vignettes are html_vignette, so no LaTeX is required
-      # and building the PDF manual would be the only thing pulling it in.
+      # --no-manual: the vignettes are html_vignette, so nothing in the
+      # package needs LaTeX and building the PDF manual would be the only
+      # thing pulling it in.
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
