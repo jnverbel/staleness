@@ -49,3 +49,50 @@ test_that("high power crosses the threshold and signals", {
   expect_gt(v$signal, 0.8)
   expect_equal(v$verdict, "out_of_date")
 })
+
+# --- The caller's random stream is global state and must be left alone ------
+#
+# simulation() called set.seed() directly and then drew B * k_new normals, both
+# of which write to .Random.seed in the global environment. Verified before the
+# fix: `set.seed(123); runif(1)` gave 0.2875775, while
+# `set.seed(123); simulation(...); runif(1)` gave 0.9074913. Any script that
+# seeds once and then calls check_currency() or backtest() lost the
+# reproducibility of everything downstream, and CRAN policy forbids altering
+# global state. The seed is now applied inside with_preserved_seed(), which
+# saves .Random.seed and restores it on exit.
+
+test_that("simulation leaves the caller's random stream untouched, with a seed", {
+  prev <- metafor::rma(yi = c(0.20, 0.10, 0.25, 0.05), vi = rep(0.05, 4),
+                       measure = "MD")
+  new_ev <- list(yi = c(0.22, 0.18), vi = c(0.02, 0.02), k = 2)
+  set.seed(123); expected <- runif(3)
+  set.seed(123); invisible(simulation(prev, new_ev, B = 200, seed = 42))
+  got <- runif(3)
+  expect_equal(got, expected)
+})
+
+test_that("simulation leaves the caller's random stream untouched, without a seed", {
+  # seed = NULL consumed B * k_new draws from whatever stream the caller was
+  # on. Unreproducible results are the documented price of seed = NULL;
+  # silently advancing someone else's stream is not.
+  prev <- metafor::rma(yi = c(0.20, 0.10, 0.25, 0.05), vi = rep(0.05, 4),
+                       measure = "MD")
+  new_ev <- list(yi = c(0.22, 0.18), vi = c(0.02, 0.02), k = 2)
+  set.seed(123); expected <- runif(3)
+  set.seed(123); invisible(simulation(prev, new_ev, B = 200, seed = NULL))
+  got <- runif(3)
+  expect_equal(got, expected)
+})
+
+test_that("a whole backtest leaves the caller's random stream untouched", {
+  # The case that actually bites: seed once, backtest, and expect everything
+  # afterwards to still be reproducible.
+  yi <- c(0.05, 0.08, -0.02, 0.10, 0.04, 0.12, 0.15, 0.20, 0.18, 0.25,
+          0.30, 0.35, 0.40, 0.45, 0.50)
+  s <- evidence_stream(metafor::rma(yi = yi, vi = rep(0.05, length(yi))),
+                       date = 2000:2014, ni = rep(100, length(yi)))
+  set.seed(123); expected <- runif(3)
+  set.seed(123); invisible(backtest(s, horizon = 5, seed = 4))
+  got <- runif(3)
+  expect_equal(got, expected)
+})

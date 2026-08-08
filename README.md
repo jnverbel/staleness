@@ -55,10 +55,8 @@ check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
 #>   signal: 1.21
 #> ottawa       current
 #>   signal: 1.21
-#> sufficiency  OUT OF DATE
+#> sufficiency  current
 #>   signal: 4.24
-#>
-#>   detectors disagree
 
 bt <- backtest(stream, cuts = "yearly")
 summary(bt)

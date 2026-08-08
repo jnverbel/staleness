@@ -25,7 +25,11 @@ simulation(
 
 \item{power_threshold}{Signal when simulated power reaches this value.}
 
-\item{seed}{Optional integer seed. Results are not reproducible without it.}
+\item{seed}{Optional integer seed. Results are not reproducible without it.
+Either way the caller's own random stream is saved before the simulation
+and restored afterwards, so calling this detector — directly or through
+[check_currency()] or [backtest()] — never changes what a caller's
+subsequent `runif()`, `sample()` or `rnorm()` returns.}
 }
 \value{
 A `staleness_verdict`.

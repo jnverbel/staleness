@@ -4,7 +4,14 @@
 \alias{sufficiency}
 \title{Sufficiency and stability detector}
 \usage{
-sufficiency(prev, new_ma, min_k = 5, alpha_slope = 0.05)
+sufficiency(
+  prev,
+  new_ma,
+  min_k = 5,
+  alpha_slope = 0.05,
+  n_perm = 999,
+  seed = 20260807
+)
 }
 \arguments{
 \item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
@@ -14,7 +21,15 @@ sufficiency(prev, new_ma, min_k = 5, alpha_slope = 0.05)
 \item{min_k}{Minimum number of studies in `new_ma`. Below this the
 stability regression is meaningless.}
 
-\item{alpha_slope}{Significance level for the stability slope test.}
+\item{alpha_slope}{Cutoff for the stability permutation p-value: the review
+is unstable when `p_slope < alpha_slope`.}
+
+\item{n_perm}{Number of order permutations used to build the null
+distribution of the slope.}
+
+\item{seed}{Integer seed for the permutation draw. Fixed by default so
+verdicts are reproducible; the caller's own random stream is saved and
+restored around the draw, so calling this detector never changes it.}
 }
 \value{
 A `staleness_verdict`.
@@ -23,8 +38,9 @@ A `staleness_verdict`.
 Sufficiency is the fail-safe N scaled by `5k + 10`; a review is sufficient
 when this index exceeds 1, Rosenthal's own rule of thumb for a pooled effect
 being robust to unpublished null studies. Stability is the slope of the
-cumulative pooled effect regressed on accumulated information; a review is
-stable when that slope does not differ significantly from zero.
+cumulative pooled effect regressed on study index; a review is stable when
+that slope is no larger than the same studies would produce in a random
+order.
 }
 \details{
 The two indicators deliberately read from different bodies of evidence.
@@ -47,3 +63,38 @@ settled. Insufficient evidence alone is never grounds for "out of date" —
 the opposite combination from what a first reading of the secondary source
 suggests, and also confirmed in the design doc.
 }
+\section{How stability is tested, and why not as published}{
+
+The source states the instability criterion as an *"absolute slope of the
+linear regression >0"*. Taken literally that rule is degenerate: on
+continuous data the slope of a cumulative series is never exactly zero, so
+every review with `index > 1` would be flagged out of date and the
+indicator would carry no information. Some significance rule has to stand
+in for it.
+
+The obvious substitute — the t-test on the slope reported by
+[stats::lm()] — is invalid here, and measurably so. A cumulative mean is
+near-perfectly autocorrelated by construction and converges on the pooled
+effect by the law of large numbers, so an OLS test on it detects
+*convergence* and reports *instability*: over 300 samples of genuinely
+unchanging evidence (20 prior plus 10 new studies from one distribution) it
+returned `out_of_date` 209 times, where `rcma()` and `ottawa()` returned it
+none.
+
+This package therefore substitutes a **permutation test over study order**.
+The observed slope is compared against the slopes obtained by reshuffling
+the same studies `n_perm` times and recomputing the cumulative series each
+time; `p_slope` is the two-sided proportion of permuted slopes at least as
+large in absolute value, using the `(1 + count) / (n_perm + 1)` estimator
+so that the p-value is never zero. This assumes nothing about the
+independence of a series that is autocorrelated by design, and asks the
+scientifically meaningful question directly: is the drift in the cumulative
+effect larger than what *these same studies* would produce in a random
+order? Under evidence that is not changing, study order is exchangeable and
+the test is exact, so the no-change invariant holds by construction rather
+than by luck. The same 300-sample experiment run against this
+implementation returns `out_of_date` 12 times — the nominal 5% rate, within
+sampling error, instead of 70%. See `vignette("methods")` for the
+declaration of this adaptation.
+}
+

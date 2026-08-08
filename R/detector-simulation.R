@@ -15,6 +15,10 @@
 #' @param alpha Significance level for each simulated meta-analysis.
 #' @param power_threshold Signal when simulated power reaches this value.
 #' @param seed Optional integer seed. Results are not reproducible without it.
+#'   Either way the caller's own random stream is saved before the simulation
+#'   and restored afterwards, so calling this detector — directly or through
+#'   [check_currency()] or [backtest()] — never changes what a caller's
+#'   subsequent `runif()`, `sample()` or `rnorm()` returns.
 #' @return A `staleness_verdict`.
 #' @export
 simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
@@ -27,7 +31,6 @@ simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
     return(verdict_na("simulation",
       "no recent studies to estimate simulation parameters from"))
   }
-  if (!is.null(seed)) set.seed(seed)
 
   k_new  <- new_evidence$k
   vi_new <- mean(new_evidence$vi)
@@ -38,18 +41,24 @@ simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
   yi_prev <- as.numeric(prev$yi)
   vi_prev <- as.numeric(prev$vi)
 
-  hits <- 0L
-  for (b in seq_len(B)) {
-    yi_sim <- stats::rnorm(k_new, mean = theta, sd = sd_new)
-    yi_all <- c(yi_prev, yi_sim)
-    vi_all <- c(vi_prev, rep(vi_new, k_new))
-    # Fixed-effect pooling: fast and adequate for a significance count.
-    w      <- 1 / vi_all
-    est    <- sum(w * yi_all) / sum(w)
-    se     <- sqrt(1 / sum(w))
-    p      <- 2 * stats::pnorm(-abs(est / se))
-    if (p < alpha) hits <- hits + 1L
-  }
+  # The whole simulation runs inside with_preserved_seed(): both the optional
+  # set.seed() and the B * k_new draws it consumes are invisible to the
+  # caller's stream, which is put back exactly as it was found.
+  hits <- with_preserved_seed(seed = seed, {
+    h <- 0L
+    for (b in seq_len(B)) {
+      yi_sim <- stats::rnorm(k_new, mean = theta, sd = sd_new)
+      yi_all <- c(yi_prev, yi_sim)
+      vi_all <- c(vi_prev, rep(vi_new, k_new))
+      # Fixed-effect pooling: fast and adequate for a significance count.
+      w      <- 1 / vi_all
+      est    <- sum(w * yi_all) / sum(w)
+      se     <- sqrt(1 / sum(w))
+      p      <- 2 * stats::pnorm(-abs(est / se))
+      if (p < alpha) h <- h + 1L
+    }
+    h
+  })
 
   power <- hits / B
   new_verdict("simulation",
