@@ -207,6 +207,7 @@ evidence_stream <- function(ma, date, ni = NULL) {
 #' c(tau2_1970 = prev$tau2, tau2_all = snapshot_at(stream, 1980)$tau2)
 #' @export
 snapshot_at <- function(stream, cut) {
+  check_class(stream, "staleness_stream", "stream", "evidence_stream()")
   check_cut_point(cut, "cut")
   keep <- stream$date <= cut
   if (sum(keep) < 2) {
@@ -247,6 +248,7 @@ snapshot_at <- function(stream, cut) {
 #' sum(new$ni)
 #' @export
 window_between <- function(stream, from, to) {
+  check_class(stream, "staleness_stream", "stream", "evidence_stream()")
   check_cut_point(from, "from")
   check_cut_point(to, "to")
   # A backwards interval is empty by construction. Returning k = 0 for it

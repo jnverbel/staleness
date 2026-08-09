@@ -55,6 +55,7 @@ check_currency <- function(prev, new, methods = available_methods(),
     stop("`methods` is empty; name at least one of: ",
          paste(available_methods(), collapse = ", "), call. = FALSE)
   }
+  check_method_names(methods)
   unknown <- setdiff(methods, available_methods())
   if (length(unknown)) {
     stop("unknown method: ", paste(unknown, collapse = ", "), call. = FALSE)

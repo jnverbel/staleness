@@ -403,3 +403,74 @@ test_that("metafor subclasses are refused by the detectors, as by the stream", {
                                      method = "FE"), date = es$year)
   expect_s3_class(snapshot_at(st, 1970), "rma.uni")
 })
+
+test_that("a factor cannot run one detector and be labelled another", {
+  # The worst of the sweep. `methods` reaches switch(), and switch() on a
+  # factor uses its INTEGER CODE, not its label. factor("ottawa") has one
+  # level, so its code is 1 and switch() took the first branch:
+  #
+  #   check_currency(methods = factor("ottawa"))
+  #     name in the list : ottawa
+  #     verdict$method   : rcma
+  #     signal           : 1.6272   (ottawa on the same data gives 0.8432)
+  #
+  # Two identities in one object, and plausible numbers under the wrong label.
+  # In backtest() the results came back holding rcma rows while ottawa had
+  # been asked for, with nothing to say so.
+  prev <- metafor::rma(yi = rep(log(0.20), 4), vi = rep(0.05, 4), measure = "RR")
+  nev  <- list(yi = rep(log(0.5), 4), vi = rep(0.02, 4), k = 4)
+  expect_error(check_currency(prev, nev, methods = factor("ottawa")),
+               "character")
+  expect_error(check_currency(prev, nev, methods = c("rcma", NA)), "missing")
+
+  es <- bcg_es()
+  st <- evidence_stream(metafor::rma(yi, vi, data = es, measure = "RR",
+                                     method = "FE"), date = es$year)
+  expect_error(backtest(st, methods = factor("ottawa")), "character")
+  expect_error(backtest(st, methods = c("rcma", NA)), "missing")
+
+  # The label and the detector must agree when it is asked properly.
+  r <- check_currency(prev, nev, methods = "ottawa")
+  expect_equal(names(r$verdicts), "ottawa")
+  expect_equal(r$verdicts[[1]]$method, "ottawa")
+})
+
+test_that("truth_conclusion refuses p-values that cannot exist", {
+  # p_t = -1 read as significant and returned TRUE: a ground truth
+  # manufactured from a number outside [0, 1]. Impossible is refused; NA stays
+  # a datum and yields NA, as in the other two truths.
+  expect_error(truth_conclusion(0.1, -1, 0.1, 0.10), "p-value")
+  expect_error(truth_conclusion(0.1, 2, 0.1, 0.10), "p-value")
+  expect_error(truth_conclusion(0.1, Inf, 0.1, 0.10), "p-value")
+  expect_error(truth_conclusion(0.1, 0.21, 0.1, -1), "p-value")
+  # The boundaries themselves are legitimate p-values.
+  expect_false(is.na(truth_conclusion(0.1, 0, 0.1, 1)))
+  expect_true(truth_conclusion(-0.30, 0.21, -0.75, 0.001))
+})
+
+test_that("the stream and backtest consumers check what they were handed", {
+  # window_between(list(), 1, 2) returned k = 0 in silence, which reads as
+  # "we looked and found no new evidence" rather than "that was not a stream".
+  # snapshot_at(list(), 1) was worse: it reported "found 0 at cut 1", a
+  # statement about evidence that had never been examined.
+  expect_error(window_between(list(), 1, 2), "staleness_stream")
+  expect_error(snapshot_at(list(), 1), "staleness_stream")
+  # calibration() and lead_time() died with R's "invalid argument type".
+  expect_error(calibration(list(), "shift"), "staleness_backtest")
+  expect_error(lead_time(list(), "shift"), "staleness_backtest")
+})
+
+test_that("min_k counts studies, so it is a whole number", {
+  # min_k = 2.1, 2.5 and 2.9 were all accepted and all behaved exactly like 3
+  # -- 23 cuts where min_k = 2 gives 27 -- so two callers writing different
+  # numbers got the same backtest and neither could tell which from the object.
+  es <- bcg_es()
+  st <- evidence_stream(metafor::rma(yi, vi, data = es, measure = "RR",
+                                     method = "FE"), date = es$year)
+  for (bad in c(2.1, 2.5, 2.9)) {
+    expect_error(backtest(st, min_k = bad), "whole number", info = bad)
+  }
+  expect_error(backtest(st, min_k = 1), "whole number")
+  expect_silent(suppressWarnings(backtest(st, cuts = "yearly", horizon = 3,
+                                          window = 5, min_k = 3, seed = 1)))
+})

@@ -97,6 +97,8 @@ truth_surprise <- function(theta_t, se_t, theta_final, threshold = 1.96) {
 truth_conclusion <- function(theta_t, p_t, theta_final, p_final, alpha = 0.05) {
   check_scalar_input(theta_t, p_t, theta_final, p_final,
                      arg = "truth_conclusion()")
+  check_p_value(p_t, "p_t")
+  check_p_value(p_final, "p_final")
   check_probability(alpha, "alpha")
   sign_flip <- sign(theta_t) != sign(theta_final)
   sig_flip  <- (p_t < alpha) != (p_final < alpha)

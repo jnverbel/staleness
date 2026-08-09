@@ -159,6 +159,43 @@ First public release.
   infinite size is still a fact about the evidence, not the call, and still
   yields `"not_applicable"` with its reason.
 
+## One detector running under another's name
+
+* `methods` must be a character vector, in both `check_currency()` and
+  `backtest()`. It reaches `switch()`, and **`switch()` on a factor reads its
+  integer code, not its label**. `factor("ottawa")` has one level, so its code
+  is 1 and `switch()` took the first branch:
+
+  ```
+  check_currency(methods = factor("ottawa"))
+    name in the list : ottawa
+    verdict$method   : rcma
+    signal           : 1.6272    # ottawa on the same data gives 0.8432
+  ```
+
+  Two identities in one object, and plausible numbers under the wrong label:
+  `r$verdicts$ottawa$signal` returned rcma's. In `backtest()` the results came
+  back holding rcma rows while ottawa had been asked for. `NA` in `methods` is
+  refused too.
+
+* `truth_conclusion()` refuses p-values outside `[0, 1]`. `p_t = -1` read as
+  significant and returned `TRUE` — a ground truth manufactured from a number
+  that cannot exist. Impossible values are refused; `NA` stays a datum and
+  yields `NA`, as in the other two truths.
+
+* `snapshot_at()` and `window_between()` require a `staleness_stream`, and
+  `calibration()` and `lead_time()` a `staleness_backtest`.
+  `window_between(list(), 1, 2)` returned `k = 0` in silence, which reads as
+  "we looked and found no new evidence" rather than "that was not a stream";
+  `snapshot_at(list(), 1)` was worse, reporting "found 0 at cut 1" about
+  evidence it had never seen. The two metrics died with R's "invalid argument
+  type".
+
+* `min_k` must be a whole number, since it counts studies. `2.1`, `2.5` and
+  `2.9` were all accepted and all behaved exactly like `3` — 23 cuts where
+  `min_k = 2` gives 27 — so two callers writing different numbers got the same
+  backtest with nothing in the object to tell them apart.
+
 ## The model class every detector documents
 
 * `rcma()`, `ottawa()`, `barrowman()`, `sufficiency()`, `simulation()` and

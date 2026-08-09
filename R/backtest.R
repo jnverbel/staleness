@@ -105,16 +105,21 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
     stop("`window` must be a single, finite, positive number: a cut with no ",
          "window has no new evidence to assess", call. = FALSE)
   }
+  # A whole number, because it counts studies. min_k = 2.1 was accepted and
+  # behaved exactly like 3, so two callers writing different numbers got the
+  # same backtest and neither could tell from the object which one they had.
   if (!is.numeric(min_k) || length(min_k) != 1L || !is.finite(min_k) ||
-      min_k < 2) {
-    stop("`min_k` must be at least 2: a snapshot cannot be fitted from fewer ",
-         "than two studies", call. = FALSE)
+      min_k < 2 || min_k != round(min_k)) {
+    stop("`min_k` must be a whole number of at least 2: it counts studies, ",
+         "and a meta-analysis cannot be fitted from fewer than two",
+         call. = FALSE)
   }
   check_seed(seed)
   if (!length(methods)) {
     stop("`methods` is empty; name at least one of: ",
          paste(available_methods(), collapse = ", "), call. = FALSE)
   }
+  check_method_names(methods)
   # A detector named twice is the same detector. Left in, it got a row per
   # repetition and doubled its own n in every metric -- the duplicate-cut
   # defect on the other axis.

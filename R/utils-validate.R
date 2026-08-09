@@ -176,6 +176,46 @@ check_rma_uni <- function(x, arg) {
        class(x)[1], call. = FALSE)
 }
 
+# `methods` reaches switch(), and switch() on a factor uses its INTEGER code
+# rather than its label. factor("ottawa") has one level, so its code is 1 and
+# switch() took the first branch: rcma ran, the result was filed under the
+# name "ottawa", and the verdict inside it said rcma. Two identities in one
+# object, and plausible numbers under the wrong label.
+check_method_names <- function(methods, arg = "methods") {
+  if (!is.character(methods)) {
+    stop("`", arg, "` must be a character vector of detector names; got ",
+         class(methods)[1], ". A factor is not accepted: `switch()` reads its ",
+         "integer code, not its label, so it can run one detector and report ",
+         "another", call. = FALSE)
+  }
+  if (anyNA(methods)) {
+    stop("`", arg, "` has missing values; name the detectors to run",
+         call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+check_class <- function(x, cls, arg, made_by) {
+  if (!inherits(x, cls)) {
+    stop("`", arg, "` must be a ", cls, " object, as returned by ", made_by,
+         "; got ", class(x)[1], call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+# A p-value outside [0, 1] is impossible rather than unknown, so it is refused
+# the way a malformed call is. truth_conclusion(p_t = -1) used to read as
+# significant and return TRUE: a ground truth manufactured from a number that
+# cannot exist. NA stays a datum and yields NA, as in the other two truths.
+check_p_value <- function(x, arg) {
+  if (is.na(x)) return(invisible(NULL))
+  if (!is.finite(x) || x < 0 || x > 1) {
+    stop("`", arg, "` must be a p-value in [0, 1]; got ", format(x),
+         call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 check_positive_number <- function(x, arg) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
     stop("`", arg, "` must be a single positive number", call. = FALSE)

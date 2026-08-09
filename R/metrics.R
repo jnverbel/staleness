@@ -85,6 +85,7 @@ eligible_rows <- function(bt, truth) {
 #' CONTAMINATED_PAIRS
 #' @export
 calibration <- function(bt, truth = "shift") {
+  check_class(bt, "staleness_backtest", "bt", "backtest()")
   truth <- match.arg(truth, available_truths())
   col <- paste0("truth_", truth)
   res <- eligible_rows(bt, truth)
@@ -210,6 +211,7 @@ calibration <- function(bt, truth = "shift") {
 #' lead_time(bt)
 #' @export
 lead_time <- function(bt, truth = "shift", within = Inf) {
+  check_class(bt, "staleness_backtest", "bt", "backtest()")
   truth <- match.arg(truth, available_truths())
   if (!is.numeric(within) || length(within) != 1L || is.na(within) ||
       within <= 0) {
