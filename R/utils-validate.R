@@ -44,10 +44,16 @@ check_count <- function(x, arg) {
 # as different runs, giving the same result.
 check_seed <- function(x, arg = "seed") {
   if (is.null(x)) return(invisible(NULL))
-  if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x != round(x)) {
-    stop("`", arg, "` must be NULL or a single whole number; `set.seed()` ",
-         "truncates anything else, so two different values can silently give ",
-         "the same stream", call. = FALSE)
+  # The bound is R's integer range, and its lower end is -.Machine$integer.max,
+  # not the int32 minimum: R reserves -2147483648 for NA_integer_, so
+  # set.seed() rejects it. Checked by running both ends, not read off the type.
+  lim <- .Machine$integer.max
+  if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x != round(x) ||
+      abs(x) > lim) {
+    stop("`", arg, "` must be NULL or a single whole number in [-", lim, ", ",
+         lim, "]; `set.seed()` truncates anything else, so two different ",
+         "values can silently give the same stream, and anything past that ",
+         "range it rejects outright", call. = FALSE)
   }
   invisible(NULL)
 }

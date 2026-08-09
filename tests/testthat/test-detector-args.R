@@ -135,3 +135,31 @@ test_that("seed is validated wherever it enters", {
                "whole number")
   expect_error(sufficiency(prev, upd, min_k = 500, seed = 1.5), "whole number")
 })
+
+test_that("seed is bounded by the range set.seed() actually accepts", {
+  # check_seed() promised "a whole number" and set.seed() accepts less than
+  # that: past R's integer range it throws "supplied seed is not a valid
+  # integer" with a coercion warning. The promise was wider than the code, so
+  # the check handed the failure downstream instead of explaining it.
+  #
+  # The bound is +/- .Machine$integer.max, NOT the textbook int32 range: R
+  # reserves -2147483648 for NA_integer_, so set.seed(-2147483648) fails too.
+  # Verified by running both ends rather than assumed from the type.
+  #
+  # Unlike the power threshold, this boundary CAN be reached from the datum:
+  # 2147483647 and 2147483648 are both exactly representable as doubles, so
+  # the pair makes the operator visible.
+  lim <- .Machine$integer.max
+  expect_silent(check_seed(lim))
+  expect_silent(check_seed(-lim))
+  expect_error(check_seed(lim + 1), "whole number")
+  expect_error(check_seed(-lim - 1), "whole number")
+
+  prev <- fit_prev()
+  expect_silent(simulation(prev, new_ev(), B = 5, seed = lim))
+  expect_error(simulation(prev, new_ev(), B = 5, seed = lim + 1),
+               "whole number")
+  # And the error must come from us, not from set.seed() downstream.
+  expect_error(simulation(prev, new_ev(), B = 5, seed = lim + 1),
+               "set\\.seed", fixed = FALSE)
+})

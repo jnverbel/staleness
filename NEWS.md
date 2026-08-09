@@ -114,6 +114,13 @@ First public release.
   only at `with_preserved_seed()`, which the detectors reach after their early
   returns: a `not_applicable` verdict must not swallow a malformed seed.
 
+  The accepted range is `[-.Machine$integer.max, .Machine$integer.max]`, which
+  is what `set.seed()` takes — note the lower end, since R reserves
+  `-2147483648` for `NA_integer_` and rejects it as a seed. A whole number
+  past that range used to satisfy the check and then fail inside `set.seed()`
+  with a coercion warning, so the promise was wider than the code and the
+  failure arrived without an explanation.
+
 * `barrowman()` refuses impossible sample sizes. `n_prev = 0` drove the
   required sample size to zero, so the participant ratio was `Inf` and the
   verdict was `out_of_date`; a negative size made the ratio negative, which
