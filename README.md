@@ -8,14 +8,22 @@
 A meta-analysis is a photograph, not a standing fact. Roughly a quarter of
 systematic reviews are out of date within two years of publication, and half
 within five and a half (Shojania et al., 2007). Five statistical methods for
-detecting this were published between 1999 and 2007. None of them, until now, had a
-reusable software implementation: a search of all 24,708 CRAN packages returns
-no hit for the Ottawa method, for Barrowman, for recursive cumulative
-meta-analysis as an updating diagnostic, or for updating systematic reviews at
-all. The building blocks are there — `metafor` computes cumulative
-meta-analyses and Rosenthal's fail-safe N — but the detectors are not. Which is
-also why nobody has ever been able to run all five against real history and
-find out which of them actually work.
+detecting this were published between 1999 and 2007, and we could not find a
+reusable software implementation of any of them. Searching the metadata of all
+24,734 CRAN packages on 2026-08-09 returns no implementation of the Ottawa
+method, of Barrowman, or of recursive cumulative meta-analysis as an updating
+diagnostic; every hit on those names is a false positive, listed one by one in
+`inst/cran-search/`. The building blocks are there — `metafor` computes
+cumulative meta-analyses and Rosenthal's fail-safe N, `fsn` and `meta` cover
+pieces of the same ground, and `metagear` screens literature, which is the half
+of the problem this package does not touch — but the assembled detectors are
+not. Which is also why nobody has ever been able to run all five against real
+history and find out which of them actually work.
+
+That search is reproducible and dated, and it says *we did not find one*
+rather than *none exists*: it reads package metadata, not source code, and
+`metafor` itself would not turn up under "cumulative meta-analysis" because
+its `Description` never uses the phrase. See `inst/cran-search/README.md`.
 
 `staleness` does two things:
 

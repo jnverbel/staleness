@@ -159,6 +159,30 @@ First public release.
   infinite size is still a fact about the evidence, not the call, and still
   yields `"not_applicable"` with its reason.
 
+## The claim that nothing like this existed
+
+* `inst/cran-search/` turns that claim into evidence: a runnable search, the
+  terms and fields it uses, a dated snapshot, and a hand-written verdict for
+  every hit. Searching the metadata of all 24,734 CRAN packages on 2026-08-09
+  finds no implementation of any of the five detectors — every hit on a method
+  name is a false positive, and each is named rather than counted away, from
+  the University of **Ottawa**'s research group to a package that warns about
+  out-of-date **R packages**.
+
+* The claim is now stated as *we did not find one* rather than *none exists*,
+  because the search reads package metadata and not source code. The limit is
+  demonstrated rather than asserted: `metafor` matches neither "cumulative
+  meta-analysis" nor "fail-safe" in its own metadata, and exports `cumul()`
+  and `fsn()` regardless.
+
+* The search also named components the documentation had not: `fsn` and `meta`
+  alongside `metafor` and `RTSA`, and `metagear`, which screens literature —
+  the half of the problem this package explicitly does not attempt.
+
+* A hit with no recorded verdict is reported as `UNADJUDICATED` rather than
+  absorbed into a total, so a package arriving later is visible and the claim
+  can be withdrawn if one turns up.
+
 ## Applicability across historical reviews
 
 * `inst/applicability/` sweeps every dataset in `metadat`, keeps the 17 that

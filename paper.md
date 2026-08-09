@@ -40,13 +40,24 @@ own: all estimation is delegated to `metafor` [@viechtbauer2010].
 # Statement of need
 
 Every one of the five methods was published as a description in a paper, and
-none had a reusable software implementation. A search of all 24,708 packages
-on CRAN returns no hit for the Ottawa method, for Barrowman, for recursive
-cumulative meta-analysis as an updating diagnostic, or for updating systematic
-reviews at all. The components exist — `metafor` [@viechtbauer2010] computes
-cumulative meta-analyses and Rosenthal's fail-safe N, and `RTSA` covers trial
-sequential analysis — but no package assembles any of them into a decision
-about whether a review has gone out of date. That absence has a consequence
+we could not find a reusable software implementation of any of them. Searching
+the metadata of all 24,734 packages on CRAN on 2026-08-09 returns no
+implementation of the Ottawa method, of Barrowman, or of recursive cumulative
+meta-analysis as an updating diagnostic: every hit on those names is a false
+positive, and each is listed and adjudicated in `inst/cran-search/`, which
+holds the search as a runnable script and a dated snapshot. The components
+exist — `metafor` [@viechtbauer2010] computes cumulative meta-analyses and
+Rosenthal's fail-safe N, `fsn` and `meta` cover parts of the same ground, and
+`RTSA` covers trial sequential analysis — and `metagear` screens literature,
+the half of the problem this package does not attempt. But no package
+assembles any of them into a decision about whether a review has gone out of
+date.
+
+The claim is stated as *we did not find one*, not *none exists*, because the
+search reads package metadata rather than source code. The limit is
+demonstrable rather than hypothetical: `metafor` matches neither "cumulative
+meta-analysis" nor "fail-safe" in its own metadata, yet exports `cumul()` and
+`fsn()`. That absence has a consequence
 beyond inconvenience: it is why the comparison question has stayed open. A
 research team that wants to know which updating signal to trust must first
 reimplement five methods from prose, and each reimplementation is a fresh
