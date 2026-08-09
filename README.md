@@ -70,7 +70,7 @@ check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
 #> rcma         current
 #>   signal: 1.21
 #> ottawa       current
-#>   signal: 1.21
+#>   signal: 0.86
 #> sufficiency  current
 #>   signal: 4.24
 
@@ -88,6 +88,10 @@ plot(bt)
 | `barrowman` | Ratio of participants contributed by new studies to the number needed to reach significance. | Only applies when the prior meta-analysis was not significant. |
 | `sufficiency` | Rosenthal's fail-safe N and the stability of the cumulative effect. | Fail-safe N has been discredited since Becker (2005); implemented for fidelity to the published method, not as an endorsement. |
 | `simulation` | Simulated power of the next batch of studies. | Flagged none of 80 reviews in the one published comparison of all five methods. |
+
+The two signals above differ because they measure different things:
+`rcma` compares the pooled effects, `ottawa` compares the relative risk
+reductions. See `?ottawa`.
 
 `vignette("methods", package = "staleness")` covers each of these in full,
 including the formula, the original source, and the critique in more

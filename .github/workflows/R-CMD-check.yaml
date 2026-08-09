@@ -62,3 +62,15 @@ jobs:
         with:
           upload-snapshots: true
           args: 'c("--no-manual", "--as-cran")'
+
+      # R CMD check runs the tests against the built package, where README.md
+      # is not reachable from the test directory, so the test that pins the
+      # README's worked output to the real output skips there. Running the
+      # suite once against the source closes that gap: the README is the only
+      # documentation written by hand rather than regenerated, and it has
+      # already drifted once.
+      - name: Tests against the source tree (covers the README check)
+        if: runner.os == 'Linux' && matrix.config.r == 'release'
+        run: |
+          testthat::test_local(reporter = "summary", stop_on_failure = TRUE)
+        shell: Rscript {0}
