@@ -88,3 +88,42 @@ test_that("difference measures report the flag as FALSE, not missing", {
   expect_false(res$detail$effect_unstable)
   expect_true(is.na(res$detail$rrr_prev))
 })
+
+test_that("ottawa says when it stops reproducing the published arithmetic", {
+  # Shojania et al. (2007), AHRQ Technical Review 16, Methods: "we performed
+  # the updated meta-analyses by combining the original pooled result with the
+  # individual results of eligible new trials". The prior pooled estimate goes
+  # in as ONE point. check_currency() instead refits over all studies, which
+  # is the better estimate but not automatically the same arithmetic.
+  #
+  # Read from the open-access report rather than from a summary of it, and
+  # then checked numerically, because the report also claims the two coincide
+  # under fixed effects and that claim is testable.
+  set.seed(4)
+  yi_old <- rnorm(8, -0.4, 0.2); vi_old <- runif(8, 0.02, 0.10)
+  yi_new <- rnorm(4, -0.1, 0.2); vi_new <- runif(4, 0.02, 0.08)
+
+  same <- function(m) {
+    prev  <- metafor::rma(yi_old, vi_old, method = m)
+    all_s <- metafor::rma(c(yi_old, yi_new), c(vi_old, vi_new), method = m)
+    point <- metafor::rma(c(as.numeric(prev$beta), yi_new),
+                          c(prev$se^2, vi_new), method = m)
+    isTRUE(all.equal(as.numeric(all_s$beta), as.numeric(point$beta),
+                     tolerance = 1e-8))
+  }
+  # Under fixed effects the report is right and there is nothing to fix.
+  expect_true(same("FE"))
+  # Under REML it is not: refitting all studies is a different computation.
+  expect_false(same("REML"))
+
+  # So the verdict carries which of the two situations it is in.
+  prev_fe <- metafor::rma(yi_old, vi_old, measure = "RR", method = "FE")
+  upd_fe  <- metafor::rma(c(yi_old, yi_new), c(vi_old, vi_new),
+                          measure = "RR", method = "FE")
+  expect_true(ottawa(prev_fe, upd_fe)$detail$reproduces_published)
+
+  prev_re <- metafor::rma(yi_old, vi_old, measure = "RR", method = "REML")
+  upd_re  <- metafor::rma(c(yi_old, yi_new), c(vi_old, vi_new),
+                          measure = "RR", method = "REML")
+  expect_false(ottawa(prev_re, upd_re)$detail$reproduces_published)
+})

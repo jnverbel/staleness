@@ -157,7 +157,27 @@ ottawa <- function(prev, new_ma, alpha = 0.04,
       # method dictates -- correcting it would be implementing a different
       # method -- and the instability is reported alongside it instead.
       rrr_prev            = r$rrr_prev,
-      effect_unstable     = isTRUE(r$unstable)
+      effect_unstable     = isTRUE(r$unstable),
+      # Whether this verdict reproduces the published procedure's arithmetic.
+      #
+      # Shojania et al. (2007), AHRQ Technical Review 16, section Methods:
+      # "we performed the updated meta-analyses by combining the original
+      # pooled result with the individual results of eligible new trials" --
+      # the prior pooled estimate enters as ONE point, not as its constituent
+      # studies. They did that for practical reasons (the original reviews
+      # often did not report individual trials) and noted it is equivalent
+      # under fixed effects.
+      #
+      # Verified here rather than taken on faith. With method = "FE" the two
+      # give identical estimates and p-values to eight decimals. With REML
+      # they do not: on one worked example, beta -0.2607 against -0.2167 and
+      # p 0.00072 against 0.02824, a factor of 39.
+      #
+      # check_currency() refits over all studies, which is the better estimate
+      # and the caller's own model. Under a non-fixed-effect fit that is no
+      # longer the published arithmetic, so it is flagged rather than
+      # silently substituted -- the same principle as effect_unstable.
+      reproduces_published = identical(prev$method, "FE")
     )
   )
 }
