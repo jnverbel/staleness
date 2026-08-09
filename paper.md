@@ -124,6 +124,42 @@ N, on which the sufficiency half rests, has been discredited [@becker2005] and
 is implemented for fidelity to the published method rather than as an
 endorsement.
 
+# Scope: a measuring instrument, not an updating strategy
+
+Deciding when to update a review is not, in practice, a statistical question
+alone. The consensus checklist for updating [@garner2016] treats the pooled
+estimate as one input among several — whether the question is still relevant,
+whether new methods or outcomes have appeared, whether the evidence would
+change a recommendation — and living systematic reviews [@elliott2014;
+@elliott2017] replace the discrete update with continuous surveillance,
+supported increasingly by machine-assisted screening [@marshall2019]. Those
+are multi-component workflows whose first step is finding and screening new
+studies.
+
+`staleness` does none of that, deliberately. It takes evidence that has
+already been found and screened, and asks what five published statistical
+signals say about it. So it is not an alternative to those strategies and
+cannot be benchmarked against them: comparing a single statistical signal with
+a surveillance workflow compares two different things, and a favourable result
+either way would mean nothing.
+
+What it can do is measure the component those strategies contain. Every
+updating strategy that consults a pooled estimate is using one of these
+signals or something like it, and until now no one could say how any of them
+behaves on real history, because no implementation existed to run. The
+applicability sweep in `inst/applicability/` is an example of what becomes
+answerable: across the 17 reviews in `metadat` that carry a backtest, 168 of
+185 cuts had an already-significant prior meta-analysis, so `barrowman()` and
+`simulation()` — both of which require a non-significant prior — can be asked
+in only 4 and 5 of the 17. That is not a finding about those methods being
+wrong. It is a finding about when they can be used at all, and it was
+invisible to the one published comparison because its 80 reviews were selected
+for having a non-significant pooled result.
+
+The honest positioning, then, is that this is a reproducible platform for
+studying updating signals, not an engine that decides when to update. The
+package title says `Apply and Calibrate` for that reason.
+
 # Acknowledgements
 
 `staleness` builds entirely on `metafor` [@viechtbauer2010] for model fitting.
