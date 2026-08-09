@@ -72,16 +72,20 @@ than of contract. Two are breaking changes, and the version reflects that.
   `"final"` remains the default and the historical behaviour. `"horizon"`
   scores each cut against the review as it stood at `cut + horizon`, which is
   the question the parameter's name implies. Under it, `horizon` finally moves
-  the answer: on `metadat::dat.bcg`, 7 cuts are out of date at three years and
-  11 at eight.
+  the answer: on `metadat::dat.bcg` fitted with fixed effects, 7 cuts are out
+  of date at three years and 11 at eight.
 
 * The two are different questions, not a correction of one by the other, and
   the contrast is itself a finding — reported by `inst/applicability/`:
 
   - Against the final model, **every one of dat.bcg's 23 cuts counts as out of
-    date**. There are no true negatives, so specificity cannot be computed at
-    all. That explains the 20 rows of the applicability sweep whose
-    specificity is `NA`, which previously had no stated cause.
+    date when it is fitted with fixed effects** -- no true negatives, so
+    specificity cannot be computed at all. Under REML, which is metafor's
+    default, five do. A rate is a joint statement about the detector, the
+    truth target and the estimator, and the estimator was already known to
+    matter here: Lau's turning point moves from 1973 to 1979 between the two.
+    This is also what lies behind the applicability sweep's rows with `NA`
+    specificity, which previously had no stated cause.
   - `rcma()`'s specificity on `metadat::dat.li2007` is **1.00 against the
     final model and 0.56 against a three-year horizon**. Both are true. The
     first says the detector never fired where the evidence would eventually

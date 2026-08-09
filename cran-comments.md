@@ -2,22 +2,30 @@
 
 This is a new submission.
 
+This is version 0.2.0. Version 0.1.0 was prepared but never submitted: a
+methodological review found five problems of validity before it went out, two
+of which required breaking changes to the interface, so the version was raised
+rather than sending an API that would have to change immediately.
+
 ## Test environments
 
-* macOS 26.5 (arm64), R 4.6.1 — local
+* macOS 26.6 (arm64), R 4.6.1 — local
 * macOS latest (arm64), R release — GitHub Actions
 * Windows Server 2022 (ucrt), R release — GitHub Actions
 * Ubuntu 24.04, R devel (4.7.0) — GitHub Actions
 * Ubuntu 24.04, R release (4.6.1) — GitHub Actions
 * Ubuntu 24.04, R 4.5.3, 4.4.3, 4.3.3 and 4.2.3 — GitHub Actions
-* win-builder, R devel (2026-08-08 r90381 ucrt)
-* win-builder, R release (4.6.1 ucrt)
 
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
 The note is the usual `New submission` from the incoming-feasibility check.
+
+The PDF manual is built and checked on one CI job rather than on all of them:
+an earlier version passed eight platforms with `--no-manual` everywhere, so no
+job built the manual at all, and a single Greek letter in an `.Rd` file broke
+LaTeX where only CRAN would have seen it.
 `checking examples ... OK`, `checking tests ... OK` and
 `checking PDF version of manual ... OK` on all of the above.
 

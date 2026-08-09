@@ -65,7 +65,10 @@ es  <- escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos, di = cneg,
               data = dat)
 ma  <- rma(yi, vi, data = es)
 
-stream <- evidence_stream(ma, date = es$year)
+# `study_id` is required, and asked for rather than assumed: without it,
+# several outcomes or time points from one trial would enter as separate
+# studies and be counted twice. Here each row is a distinct trial.
+stream <- evidence_stream(ma, date = es$year, study_id = es$trial)
 prev   <- snapshot_at(stream, 1970)
 new    <- window_between(stream, 1970, 1980)
 

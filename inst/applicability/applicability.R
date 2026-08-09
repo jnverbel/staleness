@@ -257,8 +257,10 @@ cat(sprintf("  reviews where specificity cannot be computed at all: %d of %d\n",
 cat("  Against the final model every earlier cut of a review whose effect kept\n")
 cat("  moving counts as out of date, so there are no true negatives left.\n")
 cat("  Re-run with truth_target = \"horizon\" to ask instead whether each review\n")
-cat("  went out of date within the next HORIZON years; on metadat::dat.bcg that\n")
-cat("  turns 23 positives out of 23 into 7, and specificity becomes computable.\n")
+cat("  went out of date within the next HORIZON years. On metadat::dat.bcg fitted\n")
+cat("  with fixed effects, as this sweep fits every review, that turns 23 out of\n")
+cat("  23 positives into 7 and makes specificity computable. Under REML it would\n")
+cat("  be 5 and 0: the rate depends on the estimator as much as on the target.\n")
 
 cat("\n=== SENSITIVITY WHERE IT IS DEFINED ===\n")
 s <- res[!is.na(res$sensitivity), ]

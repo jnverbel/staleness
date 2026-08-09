@@ -85,6 +85,24 @@ every detector against a chosen truth, and it never lets a reader miss which
 rows are circular: every row carries a `contaminated` column, looked up from
 `CONTAMINATED_PAIRS`, sitting right next to the numbers it warns about.
 
+Two things about every rate in this vignette, both of which change what they
+mean:
+
+**They describe this one series.** `n` counts cuts, and the snapshot at 1970
+and the one at 1971 differ by a single year of publication — nineteen cuts are
+not nineteen observations. Nothing here estimates how a detector behaves in
+general, which is also why no interval is shown: a binomial one computed on
+that denominator would come out far too narrow. For a rate that generalises,
+`pooled_calibration()` takes several independent reviews and resamples *them*.
+
+**They are scored against the final model.** That is `backtest()`'s default,
+`truth_target = "final"`, and it asks whether a review was already superseded
+by what would eventually be known. `truth_target = "horizon"` asks instead
+whether the review was about to go out of date within the next `horizon`
+years. Neither is a correction of the other, but a sensitivity quoted without
+saying which one produced it does not mean much.
+
+
 ```{r contaminated-mark}
 dat <- metadat::dat.bcg
 es  <- escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos, di = cneg,
@@ -96,6 +114,7 @@ bt <- backtest(stream, cuts = "yearly", horizon = 3, window = 5,
               min_k = 3, seed = 42)
 calibration(bt, "conclusion")
 ```
+
 
 `ottawa`'s row above reads `contaminated = TRUE`. Nothing stops a caller from
 using that number — sometimes the circular comparison is exactly what you
@@ -116,6 +135,32 @@ effects. So neither detector's firings are a subset of the other's, and the
 containment this vignette used to declare was an artefact of implementing both
 criteria with one function. See `?ottawa` and
 `vignette("methods", package = "staleness")` for the measured comparison.
+
+How much it matters depends on the estimator, which is worth seeing rather
+than taking on trust — and is the same lesson as section 2, where Lau's
+turning point moves from 1973 to 1979 between fixed effects and REML:
+
+```{r truth-target-estimator}
+counts <- function(method, target) {
+  m  <- rma(yi, vi, data = es, measure = "RR", method = method)
+  s  <- evidence_stream(m, date = es$year, study_id = es$trial)
+  b  <- backtest(s, cuts = "yearly", horizon = 3, window = 5, min_k = 3,
+                 seed = 42, truth_target = target)
+  u  <- unique(b$results[, c("cut", "truth_shift")])
+  sum(u$truth_shift, na.rm = TRUE)
+}
+data.frame(
+  estimator = c("FE", "FE", "REML", "REML"),
+  target    = c("final", "horizon", "final", "horizon"),
+  out_of_date_cuts = c(counts("FE", "final"), counts("FE", "horizon"),
+                       counts("REML", "final"), counts("REML", "horizon"))
+)
+```
+
+Under fixed effects every cut counts as out of date against the final model,
+which leaves no true negatives at all and makes specificity undefined. Under
+REML, which is what this vignette fits, five do. The rate you report is a
+joint statement about the detector, the truth target *and* the estimator.
 
 ## 5. A backtest, executed
 
