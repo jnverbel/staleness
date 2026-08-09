@@ -74,6 +74,7 @@ NULL
 #' @export
 truth_shift <- function(theta_t, theta_final, se_final, threshold = 1.96) {
   check_scalar_input(theta_t, theta_final, se_final, arg = "truth_shift()")
+  check_positive_number(threshold, "threshold")
   # A standard error of zero, negative or non-finite means the distance cannot
   # be judged, not that it is infinite. Dividing anyway returned TRUE, scoring
   # an unknowable truth as a certain event; NA is the honest answer, and the
@@ -86,6 +87,7 @@ truth_shift <- function(theta_t, theta_final, se_final, threshold = 1.96) {
 #' @export
 truth_surprise <- function(theta_t, se_t, theta_final, threshold = 1.96) {
   check_scalar_input(theta_t, se_t, theta_final, arg = "truth_surprise()")
+  check_positive_number(threshold, "threshold")
   if (!is.finite(se_t) || se_t <= 0) return(NA)
   abs(theta_final - theta_t) / se_t > threshold
 }
@@ -95,6 +97,7 @@ truth_surprise <- function(theta_t, se_t, theta_final, threshold = 1.96) {
 truth_conclusion <- function(theta_t, p_t, theta_final, p_final, alpha = 0.05) {
   check_scalar_input(theta_t, p_t, theta_final, p_final,
                      arg = "truth_conclusion()")
+  check_probability(alpha, "alpha")
   sign_flip <- sign(theta_t) != sign(theta_final)
   sig_flip  <- (p_t < alpha) != (p_final < alpha)
   sign_flip || sig_flip

@@ -159,6 +159,36 @@ First public release.
   infinite size is still a fact about the evidence, not the call, and still
   yields `"not_applicable"` with its reason.
 
+## The contract sweep
+
+Four outside reviews in a row found the same shape of defect: a contract
+stated in the documentation and not enforced by the code. None of them can
+surface in a green test suite, because the suite exercises the package
+correctly. So the contract was swept in bulk rather than one round at a time —
+every exported function, every argument, eight malformed inputs each, 384
+combinations, each classified as our error, R's internal error, or no
+complaint at all. It cut the internal errors to zero and found five more
+defects:
+
+* `ottawa()` requires `qualitative` to be a character vector. `nzchar()`
+  coerces, so **any** non-empty value counted as a declared signal:
+  `qualitative = 0` fired, and so did a list.
+
+* `truth_shift()` and `truth_surprise()` validate `threshold`, and
+  `truth_conclusion()` validates `alpha`. A negative threshold made every
+  comparison `TRUE`, an `NA` made every one `NA`, and
+  `truth_conclusion(alpha = NA)` still returned a ground truth — computed from
+  a cut-off that is not one.
+
+* `snapshot_at()` and `window_between()` validate their cut points. `from`,
+  `to` and `cut` went straight into a comparison against the whole date
+  vector, so `NA` made every element `NA`, a character compared lexically, and
+  a length-two vector recycled against thirteen dates with only a warning.
+
+* `window_between()` refuses an interval that runs backwards. It used to
+  return `k = 0`, which reads as "we looked and found nothing" rather than
+  "that window cannot contain anything".
+
 ## Units, scales and unknowns
 
 * `evidence_stream()` requires publication **years** and refuses a `Date`.

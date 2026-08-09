@@ -107,6 +107,13 @@ ottawa <- function(prev, new_ma, alpha = 0.04,
   # nzchar(NA_character_) is TRUE, so an analyst recording "unknown" for a
   # qualitative signal used to get out_of_date. Unknown is not present, and
   # this is an argument rather than a datum, so it is refused.
+  # nzchar() coerces, so any non-empty value of any type counted as a declared
+  # signal: qualitative = 0 fired, and so did a list. This argument carries an
+  # analyst's judgement in words.
+  if (!is.character(qualitative)) {
+    stop("`qualitative` must be a character vector of declared signals; got ",
+         class(qualitative)[1], call. = FALSE)
+  }
   if (anyNA(qualitative)) {
     stop("`qualitative` has missing values; an unknown qualitative signal is ",
          "not a signal. Leave it out, or pass \"\" for one that was checked ",

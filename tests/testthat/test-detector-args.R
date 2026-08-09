@@ -235,3 +235,75 @@ test_that("the truth functions return one logical, as they document", {
   expect_true(truth_conclusion(-0.30, 0.21, -0.75, 0.001))
   expect_true(is.na(truth_shift(-0.30, -0.75, 0)))
 })
+
+# --- Contract sweep -------------------------------------------------------
+#
+# Four outside reviews in a row found the same shape of defect: a contract
+# stated in the documentation and not enforced by the code. None of them can
+# surface in a green suite, because the suite exercises the package correctly.
+#
+# So the contract was swept in bulk instead of one round at a time: every
+# exported function, every argument, eight malformed inputs each, 384
+# combinations, classified as "our error", "R's internal error" or "no
+# complaint at all". These are what the sweep found.
+
+test_that("ottawa's qualitative signals must be text", {
+  # nzchar() coerces, so ANY non-empty value counted as a declared signal:
+  # ottawa(qualitative = 0) fired, and so did a list. The argument carries an
+  # analyst's judgement in words; a number is not one.
+  prev <- metafor::rma(yi = rep(log(0.5), 4), vi = rep(0.05, 4), measure = "RR")
+  upd  <- metafor::rma(yi = c(rep(log(0.5), 4), rep(log(0.52), 3)),
+                       vi = c(rep(0.05, 4), rep(0.02, 3)), measure = "RR")
+  expect_error(ottawa(prev, upd, qualitative = 0), "character")
+  expect_error(ottawa(prev, upd, qualitative = c(1, 2)), "character")
+  expect_error(ottawa(prev, upd, qualitative = list(1)), "character")
+  expect_error(ottawa(prev, upd, qualitative = Inf), "character")
+  expect_equal(ottawa(prev, upd, qualitative = "substantial harm")$verdict,
+               "out_of_date")
+})
+
+test_that("the truth functions validate their thresholds", {
+  # threshold and alpha were never checked. A negative threshold makes every
+  # comparison TRUE, an NA makes every one NA, and truth_conclusion(alpha = NA)
+  # still returned a verdict -- a ground truth computed from a cutoff that is
+  # not one.
+  expect_error(truth_shift(-0.3, -0.75, 0.12, threshold = -1), "positive")
+  expect_error(truth_shift(-0.3, -0.75, 0.12, threshold = NA), "positive")
+  expect_error(truth_shift(-0.3, -0.75, 0.12, threshold = c(1, 2)), "positive")
+  expect_error(truth_surprise(-0.3, 0.3, -0.75, threshold = Inf), "positive")
+  expect_error(truth_conclusion(-0.3, 0.21, -0.75, 0.001, alpha = NA), "0 and 1")
+  expect_error(truth_conclusion(-0.3, 0.21, -0.75, 0.001, alpha = 2), "0 and 1")
+  expect_error(truth_conclusion(-0.3, 0.21, -0.75, 0.001, alpha = c(0.05, 0.1)),
+               "0 and 1")
+  # Defaults and sane values unchanged.
+  expect_true(truth_shift(-0.30, -0.75, 0.12))
+  expect_true(truth_conclusion(-0.30, 0.21, -0.75, 0.001, alpha = 0.05))
+})
+
+test_that("window_between and snapshot_at validate their cut points", {
+  es <- bcg_es()
+  ma <- metafor::rma(yi, vi, data = es, measure = "RR", method = "FE")
+  st <- evidence_stream(ma, date = es$year)
+
+  # from/to went straight into a comparison against the date vector. NA made
+  # every element NA and the subset came back malformed; a character compared
+  # lexically; a length-two vector recycled silently against 13 dates.
+  expect_error(window_between(st, NA, 1970), "single")
+  expect_error(window_between(st, 1960, NA), "single")
+  expect_error(window_between(st, c(1960, 1965), 1970), "single")
+  expect_error(window_between(st, "1960", 1970), "single")
+  expect_error(window_between(st, Inf, 1970), "single")
+  # An interval that runs backwards is empty by construction, and saying so
+  # beats returning k = 0 as though the evidence had been examined.
+  expect_error(window_between(st, 1975, 1970), "before")
+
+  expect_error(snapshot_at(st, NA), "single")
+  expect_error(snapshot_at(st, c(1970, 1975)), "single")
+  expect_error(snapshot_at(st, "1970"), "single")
+  expect_error(snapshot_at(st, Inf), "single")
+
+  # Valid calls still work.
+  expect_equal(window_between(st, 1960, 1970)$k,
+               sum(es$year > 1960 & es$year <= 1970))
+  expect_equal(snapshot_at(st, 1970)$k, sum(es$year <= 1970))
+})

@@ -141,6 +141,18 @@ check_scalar_input <- function(..., arg) {
   invisible(NULL)
 }
 
+# A cut point is one number on the date scale. `from`, `to` and `cut` went
+# straight into a comparison against the whole date vector, so NA made every
+# element NA, a character compared lexically, and a length-two vector recycled
+# against thirteen dates with only a warning.
+check_cut_point <- function(x, arg) {
+  if (!is.numeric(x) || length(x) != 1L || !is.finite(x)) {
+    stop("`", arg, "` must be a single finite number on the same scale as the ",
+         "stream's dates", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 check_positive_number <- function(x, arg) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
     stop("`", arg, "` must be a single positive number", call. = FALSE)

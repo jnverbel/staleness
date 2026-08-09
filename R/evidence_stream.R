@@ -189,6 +189,7 @@ evidence_stream <- function(ma, date, ni = NULL) {
 #' c(tau2_1970 = prev$tau2, tau2_all = snapshot_at(stream, 1980)$tau2)
 #' @export
 snapshot_at <- function(stream, cut) {
+  check_cut_point(cut, "cut")
   keep <- stream$date <= cut
   if (sum(keep) < 2) {
     stop("a snapshot needs at least 2 studies; found ", sum(keep),
@@ -228,6 +229,14 @@ snapshot_at <- function(stream, cut) {
 #' sum(new$ni)
 #' @export
 window_between <- function(stream, from, to) {
+  check_cut_point(from, "from")
+  check_cut_point(to, "to")
+  # A backwards interval is empty by construction. Returning k = 0 for it
+  # reads as "we looked and found nothing", which is not what happened.
+  if (from > to) {
+    stop("`from` must be before `to`; got ", format(from), " and ", format(to),
+         call. = FALSE)
+  }
   keep <- stream$date > from & stream$date <= to
   list(
     yi = stream$yi[keep],
