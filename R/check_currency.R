@@ -44,6 +44,9 @@ check_currency <- function(prev, new, methods = available_methods(),
   if (length(unknown)) {
     stop("unknown method: ", paste(unknown, collapse = ", "), call. = FALSE)
   }
+  # Naming a detector twice is naming it once: `verdicts` is keyed by name,
+  # and duplicates would produce duplicate rows downstream.
+  methods <- unique(methods)
   # `new` is the new evidence alone, but rcma() and ottawa() take the updated
   # model, so passing the updated rma here is the natural mistake. An rma.uni
   # carries $yi, $vi and $k, which is everything the guards below look for, so
@@ -69,11 +72,17 @@ check_currency <- function(prev, new, methods = available_methods(),
     ))
   }
 
+  # Refitted with the same options as `prev`, not just the same method. A
+  # caller who fitted with test = "knha" must not have the updated model --
+  # the one ottawa() reads p-values off -- scored under the default z test.
   updated <- metafor::rma(
-    yi      = c(as.numeric(prev$yi), new$yi),
-    vi      = c(as.numeric(prev$vi), new$vi),
-    measure = prev$measure,
-    method  = prev$method
+    yi       = c(as.numeric(prev$yi), new$yi),
+    vi       = c(as.numeric(prev$vi), new$vi),
+    measure  = prev$measure,
+    method   = prev$method,
+    test     = if (is.null(prev$test)) "z" else prev$test,
+    weighted = if (is.null(prev$weighted)) TRUE else isTRUE(prev$weighted),
+    tau2     = if (isTRUE(prev$tau2.fix)) prev$tau2 else NULL
   )
 
   verdicts <- lapply(methods, function(m) {

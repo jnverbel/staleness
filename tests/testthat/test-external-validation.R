@@ -543,3 +543,46 @@ test_that("ottawa's instability on null reviews shows up in real data too", {
   expect_equal(cal$specificity[cal$method == "rcma"], 1)
   expect_equal(cal$specificity[cal$method == "sufficiency"], 1)
 })
+
+# --- Every refit in the package must honour the same options ---------------
+
+test_that("all three refit sites propagate the caller's model options", {
+  # snapshot_at() was fixed to carry test/weighted/tau2. Two other places
+  # refit: backtest() builds the `final` model that every truth column is
+  # scored against, and check_currency() builds the `updated` model handed to
+  # rcma, ottawa and sufficiency. Fixing one and not the others leaves the
+  # verdicts and the truth computed under different models.
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
+                        di = cneg, data = metadat::dat.bcg)
+  kn <- metafor::rma(yi, vi, data = es, test = "knha")
+  ni <- es$tpos + es$tneg + es$cpos + es$cneg
+  st <- evidence_stream(kn, date = es$year, ni = ni)
+
+  # 1. snapshot_at
+  expect_equal(snapshot_at(st, 1970)$test, "knha")
+
+  # 2. check_currency's updated model, reached through its verdicts: with the
+  #    Knapp-Hartung adjustment the updated p-value is much larger, and
+  #    ottawa() decides on p-values.
+  prev <- snapshot_at(st, 1970)
+  new  <- window_between(st, 1970, 1980)
+  chk  <- check_currency(prev, new, methods = "ottawa")
+  direct <- metafor::rma(yi = c(as.numeric(prev$yi), new$yi),
+                         vi = c(as.numeric(prev$vi), new$vi),
+                         measure = prev$measure, method = prev$method,
+                         test = prev$test)
+  expect_equal(chk$updated$test, "knha")
+  expect_equal(chk$updated$pval, direct$pval, tolerance = 1e-10)
+
+  # 3. backtest's final model, which every truth column is scored against.
+  bt <- suppressWarnings(backtest(st, cuts = "yearly", horizon = 3,
+                                  window = 3, seed = 1))
+  fin <- metafor::rma(yi = st$yi, vi = st$vi, measure = st$measure,
+                      method = st$method, test = st$test)
+  # truth_shift divides by se_final; recompute it and require a match.
+  prev70 <- snapshot_at(st, 1970)
+  expected <- truth_shift(as.numeric(prev70$beta), as.numeric(fin$beta), fin$se)
+  got <- unique(bt$results$truth_shift[bt$results$cut == 1970])
+  expect_equal(got, expected)
+})

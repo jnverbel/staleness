@@ -161,9 +161,31 @@ calibration <- function(bt, truth = "shift") {
 #' that was `not_applicable` at every cut and therefore has no eligible rows
 #' at all.
 #'
+#' @section How long a warning stays relevant:
+#' A firing counts as advance warning for an event if it happened at or before
+#' that event and no earlier than `within` units before it. The default,
+#' `Inf`, keeps the definition above: the earliest firing at or before the
+#' event, however distant.
+#'
+#' That default is generous, and worth seeing plainly. With events at 2005,
+#' 2007 and 2009, a detector that fires once in 2000 and stays silent for nine
+#' years scores a median lead of 7 -- the same as one that fires at every
+#' single cut -- while its sensitivity is 0, because it flagged none of those
+#' events at their own cut. A warning that old is not advance notice of
+#' anything in particular.
+#'
+#' Set `within` to bound it. `within = bt$horizon` restricts a warning to the
+#' span over which the backtest considers truth evaluable, and turns that
+#' 7 into `NA`. Nothing here picks a value for you, because the right one
+#' depends on how fast the field moves; the default is stated rather than
+#' hidden, and `calibration()`'s sensitivity should always be read alongside
+#' this column.
+#'
 #' @param bt A `staleness_backtest`, see [backtest()].
 #' @param truth One of `"shift"`, `"surprise"`, `"conclusion"`, see
 #'   [available_truths()].
+#' @param within Maximum age of a firing for it to count as advance warning of
+#'   an event, in the same units as the cuts. `Inf` by default.
 #' @return A data frame, one row per method in `bt$methods`, with columns
 #'   `method`, `median_lead` and `n_events`.
 #' @examples
@@ -187,8 +209,12 @@ calibration <- function(bt, truth = "shift") {
 #' # `n_events` still says how many it had the chance to catch.
 #' lead_time(bt)
 #' @export
-lead_time <- function(bt, truth = "shift") {
+lead_time <- function(bt, truth = "shift", within = Inf) {
   truth <- match.arg(truth, available_truths())
+  if (!is.numeric(within) || length(within) != 1L || is.na(within) ||
+      within <= 0) {
+    stop("`within` must be a single positive number, or Inf", call. = FALSE)
+  }
   col <- paste0("truth_", truth)
 
   # This is the one metric that relates DIFFERENT rows -- an event in one row,
@@ -221,7 +247,10 @@ lead_time <- function(bt, truth = "shift") {
     # must never contribute a numeric lead (e.g. 0), or it would be
     # indistinguishable from genuine same-period detection.
     leads <- vapply(events, function(event_cut) {
-      on_time <- fired[fired <= event_cut]
+      # `within` bounds how long a firing stays relevant. With the default of
+      # Inf a single early firing counts as advance warning for every later
+      # event, however distant -- see the note in the documentation.
+      on_time <- fired[fired <= event_cut & (event_cut - fired) <= within]
       if (length(on_time)) event_cut - min(on_time) else NA_real_
     }, numeric(1))
 

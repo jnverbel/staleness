@@ -57,6 +57,13 @@ rcma <- function(prev, new_ma, lower = 0.5, upper = 1.5) {
     se_prev    = prev$se
   )
   if (is.na(r$ratio)) return(verdict_na("rcma", r$reason))
+  # exp(theta_new - theta_prev) overflows once the prior effect underflows to
+  # zero on the natural scale. Inf survives is.na(), and comparing it against
+  # the thresholds yields out_of_date with a signal nobody can act on.
+  if (!is.finite(r$ratio)) {
+    return(verdict_na("rcma",
+      "the effect ratio is not finite; the prior effect underflowed on its natural scale"))
+  }
 
   out <- if (r$ratio <= lower || r$ratio >= upper) "out_of_date" else "current"
   new_verdict("rcma", out, signal = r$ratio,

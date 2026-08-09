@@ -4,13 +4,16 @@
 \alias{lead_time}
 \title{How early a detector fired before the evidence actually changed}
 \usage{
-lead_time(bt, truth = "shift")
+lead_time(bt, truth = "shift", within = Inf)
 }
 \arguments{
 \item{bt}{A `staleness_backtest`, see [backtest()].}
 
 \item{truth}{One of `"shift"`, `"surprise"`, `"conclusion"`, see
 [available_truths()].}
+
+\item{within}{Maximum age of a firing for it to count as advance warning of
+an event, in the same units as the cuts. `Inf` by default.}
 }
 \value{
 A data frame, one row per method in `bt$methods`, with columns
@@ -67,6 +70,28 @@ it missed (visible in detail via `calibration()`'s sensitivity). As in
 [calibration()], every method in `bt$methods` gets a row, including one
 that was `not_applicable` at every cut and therefore has no eligible rows
 at all.
+}
+
+\section{How long a warning stays relevant}{
+
+A firing counts as advance warning for an event if it happened at or before
+that event and no earlier than `within` units before it. The default,
+`Inf`, keeps the definition above: the earliest firing at or before the
+event, however distant.
+
+That default is generous, and worth seeing plainly. With events at 2005,
+2007 and 2009, a detector that fires once in 2000 and stays silent for nine
+years scores a median lead of 7 -- the same as one that fires at every
+single cut -- while its sensitivity is 0, because it flagged none of those
+events at their own cut. A warning that old is not advance notice of
+anything in particular.
+
+Set `within` to bound it. `within = bt$horizon` restricts a warning to the
+span over which the backtest considers truth evaluable, and turns that
+7 into `NA`. Nothing here picks a value for you, because the right one
+depends on how fast the field moves; the default is stated rather than
+hidden, and `calibration()`'s sensitivity should always be read alongside
+this column.
 }
 
 \examples{

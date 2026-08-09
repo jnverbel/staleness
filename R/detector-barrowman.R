@@ -46,6 +46,10 @@ barrowman <- function(prev, n_prev, n_new, alpha = 0.05, z_crit = 1.96) {
     return(verdict_na("barrowman",
       "sample size is missing or not a finite number; the participant ratio cannot be computed"))
   }
+  if (!is.finite(prev$pval)) {
+    return(verdict_na("barrowman",
+      "the prior meta-analysis has no usable p-value; applicability cannot be decided"))
+  }
   if (prev$pval < alpha) {
     return(verdict_na("barrowman",
       "prior meta-analysis was already significant; the method does not apply"))

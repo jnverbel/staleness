@@ -64,3 +64,14 @@ test_that("omitting a sample size altogether is still an error", {
   expect_error(barrowman(prev, n_prev = NULL, n_new = 500), "needs the sample size")
   expect_error(barrowman(prev, n_prev = 500, n_new = NULL), "needs the sample size")
 })
+
+test_that("a non-finite prior p-value is declined, not fatal", {
+  # `if (prev$pval < alpha)` died with "missing value where TRUE/FALSE needed"
+  # -- an error about an if(), naming nothing the caller can act on.
+  prev <- metafor::rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+                       vi = c(0.16, 0.20, 0.18, 0.15, 0.22))
+  prev$pval <- NA_real_
+  res <- barrowman(prev, n_prev = 555, n_new = 2265)
+  expect_equal(res$verdict, "not_applicable")
+  expect_match(res$reason, "p-value")
+})

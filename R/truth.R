@@ -55,12 +55,18 @@ NULL
 #' @rdname truth
 #' @export
 truth_shift <- function(theta_t, theta_final, se_final, threshold = 1.96) {
+  # A standard error of zero, negative or non-finite means the distance cannot
+  # be judged, not that it is infinite. Dividing anyway returned TRUE, scoring
+  # an unknowable truth as a certain event; NA is the honest answer, and the
+  # metrics already drop NA rows for exactly this reason.
+  if (!is.finite(se_final) || se_final <= 0) return(NA)
   abs(theta_final - theta_t) / se_final > threshold
 }
 
 #' @rdname truth
 #' @export
 truth_surprise <- function(theta_t, se_t, theta_final, threshold = 1.96) {
+  if (!is.finite(se_t) || se_t <= 0) return(NA)
   abs(theta_final - theta_t) / se_t > threshold
 }
 

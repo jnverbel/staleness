@@ -186,3 +186,32 @@ test_that("duplicate cuts are collapsed, not counted twice", {
                        window = 2, seed = 1)
   expect_equal(unique(shuffled$results$cut), c(2003, 2005, 2007))
 })
+
+test_that("a repeated method is collapsed, like a repeated cut", {
+  # Same defect as duplicate cuts, on the other axis: naming a detector twice
+  # gave it two rows in calibration() and doubled its n, silently.
+  st <- evidence_stream(
+    suppressWarnings(metafor::rma(yi = seq(-1, 1, length.out = 12),
+                                  vi = rep(0.05, 12), measure = "RR")),
+    date = 2000:2011, ni = rep(100, 12))
+
+  once <- backtest(st, cuts = 2003:2008, methods = c("rcma", "ottawa"),
+                   horizon = 2, window = 2, seed = 1)
+  twice <- backtest(st, cuts = 2003:2008,
+                    methods = c("rcma", "rcma", "ottawa"),
+                    horizon = 2, window = 2, seed = 1)
+
+  expect_equal(twice$methods, once$methods)
+  expect_equal(nrow(twice$results), nrow(once$results))
+  expect_equal(nrow(calibration(twice, "shift")), 2L)
+  expect_equal(calibration(twice, "shift")$n, calibration(once, "shift")$n)
+})
+
+test_that("check_currency also collapses a repeated method", {
+  prev <- metafor::rma(yi = rep(log(0.5), 6), vi = rep(0.02, 6),
+                       measure = "RR")
+  new  <- list(yi = rep(log(0.9), 4), vi = rep(0.02, 4), k = 4)
+  res  <- check_currency(prev, new, methods = c("rcma", "rcma", "ottawa"))
+  expect_equal(length(res$verdicts), 2L)
+  expect_equal(nrow(as.data.frame(res)), 2L)
+})

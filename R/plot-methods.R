@@ -44,10 +44,17 @@ plot.staleness_backtest <- function(x, truth = "shift", ...) {
   op <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(op), add = TRUE)
 
-  graphics::barplot(vals, beside = TRUE, ylim = c(0, 1),
-                    ylab = "rate", legend.text = rownames(vals),
-                    main = paste0("Detector calibration (truth: ", truth, ")"),
-                    ...)
+  # Defaults, but only where the caller has not spoken. Setting them here AND
+  # forwarding `...` meant that supplying main, ylab or ylim -- the three most
+  # obvious things to want to change -- failed on R's argument matching.
+  dots <- list(...)
+  args <- list(height = vals, beside = TRUE, legend.text = rownames(vals))
+  if (is.null(dots$ylim)) args$ylim <- c(0, 1)
+  if (is.null(dots$ylab)) args$ylab <- "rate"
+  if (is.null(dots$main)) {
+    args$main <- paste0("Detector calibration (truth: ", truth, ")")
+  }
+  do.call(graphics::barplot, c(args, dots))
   if (any(cal$contaminated)) {
     graphics::mtext(
       paste("contaminated (shares logic with this truth):",

@@ -425,3 +425,27 @@ test_that("min_k gates the updated evidence only, and that is load-bearing", {
   new3 <- metafor::rma(yi = rep(0.5, 3), vi = rep(0.05, 3))
   expect_equal(sufficiency(prev2, new3)$verdict, "not_applicable")
 })
+
+test_that("an undeterminable index is resolved, not left to break the if()", {
+  # The code already carries this lesson in a comment, for p_stability: a
+  # non-finite value "must be resolved deliberately, never left to turn
+  # `if (sufficient && !stable)` into `if (NA)`". The same reasoning was never
+  # applied to `sufficient` itself, one line above. With a degenerate prior
+  # the fail-safe N is NaN, so sufficient is NA; NA && TRUE is NA, and the
+  # detector died with "missing value where TRUE/FALSE needed" -- but only
+  # when the evidence also happened to be unstable, which is why it survived.
+  prev <- metafor::rma(yi = rep(log(0.5), 6), vi = rep(0.02, 6))
+  prev$yi <- rep(0, 6)
+  prev$vi <- rep(0, 6)                       # fail-safe N -> NaN
+  unstable <- metafor::rma(yi = c(rep(log(0.5), 6), rep(log(1.4), 6)),
+                           vi = rep(0.02, 12))
+
+  res <- sufficiency(prev, unstable)
+  expect_equal(res$verdict, "not_applicable")
+  expect_match(res$reason, "sufficiency")
+
+  # And a stable one takes the same path, rather than reaching "current" by
+  # the accident of NA && FALSE being FALSE.
+  stable <- metafor::rma(yi = rep(log(0.5), 12), vi = rep(0.02, 12))
+  expect_equal(sufficiency(prev, stable)$verdict, "not_applicable")
+})

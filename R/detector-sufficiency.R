@@ -449,6 +449,16 @@ sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
   vi_prev <- as.numeric(prev$vi)
   k_prev  <- length(yi_prev)
   index <- failsafe_n(yi_prev, vi_prev) / (5 * k_prev + 10)
+  # Resolved here for the same reason p_stability is resolved below: an index
+  # that is not finite makes `sufficient` NA, and `NA && !stable` is NA
+  # whenever the evidence is unstable, which turns the verdict's `if ()` into
+  # an error. Half the method cannot be evaluated, so the answer is that it
+  # does not apply -- not a "current" arrived at by NA && FALSE being FALSE.
+  if (!is.finite(index)) {
+    return(verdict_na("sufficiency",
+      paste0("the sufficiency index is not finite (a degenerate prior ",
+             "meta-analysis?); sufficiency cannot be assessed")))
+  }
   sufficient <- index > 1
 
   # Stability, by contrast, is read off the updated evidence: the cumulative

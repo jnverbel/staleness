@@ -120,3 +120,25 @@ test_that("a method with no eligible rows is drawn as a gap, not dropped or fata
   on.exit(grDevices::dev.off(), add = TRUE)
   expect_no_error(plot(bt, truth = "shift"))
 })
+
+test_that("graphical arguments the caller supplies override the defaults", {
+  # ?plot.staleness_backtest says `...` is passed to barplot(), but main, ylab
+  # and ylim were also set inside the call, so supplying any of them failed
+  # with "formal argument matched by multiple actual arguments" -- a message
+  # about R's argument matching, not about anything the caller did wrong.
+  st <- evidence_stream(
+    suppressWarnings(metafor::rma(yi = seq(-1, 1, length.out = 12),
+                                  vi = rep(0.05, 12), measure = "RR")),
+    date = 2000:2011, ni = rep(100, 12))
+  bt <- backtest(st, cuts = 2003:2008, horizon = 2, window = 2, seed = 1)
+
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+
+  expect_silent(plot(bt, main = "my title"))
+  expect_silent(plot(bt, ylab = "my label"))
+  expect_silent(plot(bt, ylim = c(0, 2)))
+  expect_silent(plot(bt, col = "red"))
+  # And the defaults still apply when nothing is supplied.
+  expect_silent(plot(bt))
+})

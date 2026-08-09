@@ -114,6 +114,10 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
     stop("`methods` is empty; name at least one of: ",
          paste(available_methods(), collapse = ", "), call. = FALSE)
   }
+  # A detector named twice is the same detector. Left in, it got a row per
+  # repetition and doubled its own n in every metric -- the duplicate-cut
+  # defect on the other axis.
+  methods <- unique(methods)
 
   dates <- as.numeric(stream$date)
   if (identical(cuts, "yearly")) {
@@ -144,8 +148,14 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
   }
 
   # final state, used only to evaluate truth, never fed back into a snapshot
+  # Every truth column is scored against this model, so it has to be the
+  # model the caller fitted. Same options the snapshots get; anything less
+  # and the verdicts and the truth are computed under different models.
   final <- metafor::rma(yi = stream$yi, vi = stream$vi,
-                        measure = stream$measure, method = stream$method)
+                        measure  = stream$measure, method = stream$method,
+                        test     = if (is.null(stream$test)) "z" else stream$test,
+                        weighted = if (is.null(stream$weighted)) TRUE else stream$weighted,
+                        tau2     = stream$tau2_fix)
   theta_final <- as.numeric(final$beta)
   se_final    <- final$se
   p_final     <- final$pval

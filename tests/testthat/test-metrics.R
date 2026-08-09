@@ -295,3 +295,33 @@ test_that("an unknown truth still cannot manufacture an event", {
   expect_equal(lt$n_events, 0)
   expect_true(is.na(lt$median_lead))
 })
+
+test_that("an ancient firing counts as warning only when `within` allows it", {
+  # With the default of Inf, a single firing nine years before an event counts
+  # as advance warning of it. That is the documented definition, and it is
+  # generous enough that the documentation says so with this example.
+  mk <- function(v, t) structure(list(
+    results = data.frame(cut = 2000:2009, method = "rcma", verdict = v,
+                         signal = NA_real_, reason = "", truth_shift = t,
+                         truth_surprise = t, truth_conclusion = t,
+                         censored = FALSE, stringsAsFactors = FALSE),
+    methods = "rcma", horizon = 3, window = 1, n_cuts = 10, n_censored = 0),
+    class = "staleness_backtest")
+  ev <- c(rep(FALSE, 5), TRUE, FALSE, TRUE, FALSE, TRUE)  # 2005, 2007, 2009
+
+  once  <- mk(c("out_of_date", rep("current", 9)), ev)   # fires only in 2000
+  always <- mk(rep("out_of_date", 10), ev)
+
+  # Default: the lone 2000 firing scores the same as firing at every cut...
+  expect_equal(lead_time(once)$median_lead, 7)
+  expect_equal(lead_time(always)$median_lead, 7)
+  # ...while its sensitivity is zero, which is why the two must be read together.
+  expect_equal(calibration(once)$sensitivity, 0)
+
+  # Bounded, the stale warning stops counting.
+  expect_true(is.na(lead_time(once, within = 3)$median_lead))
+  expect_equal(lead_time(always, within = 3)$median_lead, 3)
+
+  expect_error(lead_time(once, within = 0), "within")
+  expect_error(lead_time(once, within = -1), "within")
+})

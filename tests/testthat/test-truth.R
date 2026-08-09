@@ -38,3 +38,21 @@ test_that("an effect of exactly zero counts as a sign change, deliberately", {
   # Two zeros do not flip: sign(0) == sign(0).
   expect_false(truth_conclusion(0, 0.9, 0, 0.9))
 })
+
+test_that("a degenerate standard error makes truth unknown, not certain", {
+  # ?backtest promises these columns are NA when the standard error they
+  # divide by is degenerate, and calibration()/lead_time() drop NA rows for
+  # exactly that reason. Division by zero was returning TRUE instead: an
+  # unknowable truth scored as a certain event, silently inflating every
+  # detector's apparent miss rate at that cut.
+  expect_true(is.na(truth_shift(0.5, 1.0, 0)))
+  expect_true(is.na(truth_shift(0.5, 1.0, -1)))
+  expect_true(is.na(truth_shift(0.5, 1.0, NA_real_)))
+  expect_true(is.na(truth_shift(0.5, 1.0, Inf)))
+  expect_true(is.na(truth_surprise(0.5, 0, 1.0)))
+  expect_true(is.na(truth_surprise(0.5, NA_real_, 1.0)))
+
+  # A usable standard error still answers.
+  expect_true(truth_shift(0.5, 1.0, 0.1))
+  expect_false(truth_shift(0.5, 0.51, 0.1))
+})
