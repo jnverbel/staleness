@@ -159,6 +159,32 @@ First public release.
   infinite size is still a fact about the evidence, not the call, and still
   yields `"not_applicable"` with its reason.
 
+## Validation against real reviews, with the criterion matched to the detector
+
+* Two further historical cases, both scored against what Cochrane went on to
+  publish, read from the raw abstracts of the successive versions rather than
+  from a summarising fetch.
+
+  `metadat::dat.damico2009` is the evidence behind CD000022.pub3 (2009). The
+  review was updated as .pub4 in 2021 and its conclusion did not change. No
+  detector fires on any of its 12 cuts, and the pooled effect moves 7% across
+  the whole series. Twelve years and a full update later, silence was right.
+
+  `metadat::dat.lee2004` is CD003281.pub2 (2004). Its conclusion never changed
+  either — P6 still works in .pub3 and .pub5 — but the pooled odds ratio moves
+  from 0.38 to 0.60 inside the window the dataset covers, a 55% shift past
+  `rcma()`'s threshold, and `rcma()` fires. `ottawa()` stays quiet on the same
+  evidence, because significance never changed. **Both are correct.**
+
+* That pair carries a lesson worth stating, because it invalidates the obvious
+  way to score these detectors: **a criterion only validates the detector whose
+  object it measures.** Cochrane declares whether CONCLUSIONS changed, which
+  judges `ottawa()` and `truth_conclusion()`. It cannot judge `rcma()`, which
+  measures magnitude — scoring `dat.lee2004` against the conclusion would have
+  recorded a correct firing as a false positive. The earlier `dat.lau1992` and
+  `dat.li2007` cases did not expose this because magnitude and conclusion moved
+  together in both.
+
 ## The claim that nothing like this existed
 
 * `inst/cran-search/` turns that claim into evidence: a runnable search, the

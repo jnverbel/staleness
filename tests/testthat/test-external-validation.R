@@ -593,3 +593,93 @@ test_that("all three refit sites propagate the caller's model options", {
   got <- unique(bt$results$truth_shift[bt$results$cut == 1970])
   expect_equal(got, expected)
 })
+
+# --- Two more real cases, with the criterion matched to the detector -------
+#
+# The four cases above all validate against what happened to a review's
+# CONCLUSION. That works when magnitude and conclusion move together, as they
+# do in dat.li2007. When they come apart, a conclusion-level criterion cannot
+# judge rcma(), which measures the size of the pooled effect and nothing else.
+#
+# These two are a pair on purpose: in the first the correct behaviour is
+# silence, in the second it is to fire. Neither case alone separates a working
+# detector from one that is simply mute, or simply noisy.
+#
+# Both criteria were read from the raw abstracts of the successive Cochrane
+# versions via Europe PMC, not from a summarising fetch.
+
+test_that("damico2009: the detectors stay silent on a review that held up", {
+  # metadat::dat.damico2009 is the evidence behind Cochrane CD000022.pub3
+  # (2009): topical plus systemic antibiotics to prevent respiratory tract
+  # infections in intensive care. The review was updated as .pub4 in 2021 and
+  # its conclusion did not change -- combined prophylaxis reduces both RTIs
+  # and mortality, topical alone reduces RTIs but not mortality, in both
+  # versions. Twelve years and a full update later, staying quiet was right.
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = xt, n1i = nt, ci = xc, n2i = nc,
+                        data = metadat::dat.damico2009)
+  keep <- is.finite(es$yi) & is.finite(es$vi) & es$vi > 0
+  es <- es[keep, ]
+  yr <- metadat::dat.damico2009$year[keep]
+  ni <- (metadat::dat.damico2009$nt + metadat::dat.damico2009$nc)[keep]
+
+  ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
+  st <- evidence_stream(ma, date = yr, ni = ni)
+  bt <- suppressWarnings(backtest(st, cuts = "yearly", horizon = 3,
+                                  window = 5, min_k = 3, seed = 42))
+  r <- bt$results[!bt$results$censored, ]
+
+  for (m in c("rcma", "ottawa", "sufficiency")) {
+    d <- r[r$method == m, ]
+    expect_equal(nrow(d), 12, info = m)
+    expect_equal(sum(d$verdict == "out_of_date"), 0, info = m)
+  }
+  # The effect barely moves, which is why: a 7% shift over the whole series.
+  last <- r[r$method == "rcma" & r$cut == max(r$cut), ]
+  expect_equal(round(last$signal, 3), 1.069)
+})
+
+test_that("lee2004: rcma fires on a real change of magnitude, and is right", {
+  # metadat::dat.lee2004 is P6 acupoint stimulation for postoperative nausea,
+  # the evidence behind Cochrane CD003281.pub2 (2004).
+  #
+  # The conclusion never changed: P6 still works in .pub3 (2009) and .pub5
+  # (2025). The MAGNITUDE did, inside the window this dataset covers -- the
+  # pooled odds ratio goes from 0.38 up to 0.60, a 55% move, past rcma's 50%
+  # threshold. rcma measures magnitude, so it fires, and it is correct to.
+  #
+  # A conclusion-level criterion would have scored this as a false positive.
+  # It is not one: the two Cochrane versions either side report RR 0.72 and
+  # RR 0.71, so the effect settled AFTER the period this dataset ends in,
+  # which is exactly the story the firing tells.
+  skip_if_not_installed("metadat")
+  es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.lee2004)
+  keep <- is.finite(es$yi) & is.finite(es$vi) & es$vi > 0
+  es <- es[keep, ]
+  yr <- metadat::dat.lee2004$year[keep]
+
+  early <- metafor::rma(yi, vi, data = es[yr <= 1996, ], method = "FE")
+  whole <- metafor::rma(yi, vi, data = es, method = "FE")
+  expect_equal(round(exp(as.numeric(early$beta)), 3), 0.385)
+  expect_equal(round(exp(as.numeric(whole$beta)), 3), 0.598)
+  # The move that rcma is built to see, computed here independently of it.
+  expect_gt(exp(as.numeric(whole$beta)) / exp(as.numeric(early$beta)), 1.5)
+
+  ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
+  st <- evidence_stream(ma, date = yr,
+                        ni = (metadat::dat.lee2004$n1i +
+                              metadat::dat.lee2004$n2i)[keep])
+  bt <- suppressWarnings(backtest(st, cuts = "yearly", horizon = 3,
+                                  window = 5, min_k = 3, seed = 42))
+  r <- bt$results[!bt$results$censored, ]
+
+  rc <- r[r$method == "rcma", ]
+  expect_equal(rc$cut[rc$verdict == "out_of_date"], c(1995, 1996, 1997))
+
+  # And ottawa stays quiet on the same evidence, because significance never
+  # changed. The two disagree here and both are right -- which is the whole
+  # reason a criterion has to match the detector it judges.
+  ot <- r[r$method == "ottawa", ]
+  expect_equal(sum(ot$verdict == "out_of_date"), 0)
+})
