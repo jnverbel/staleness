@@ -307,3 +307,99 @@ test_that("window_between and snapshot_at validate their cut points", {
                sum(es$year > 1960 & es$year <= 1970))
   expect_equal(snapshot_at(st, 1970)$k, sum(es$year <= 1970))
 })
+
+test_that("evidence_stream refuses infinite years at the entry point", {
+  # anyNA() catches NA and NaN but not the infinities. An infinite year used to
+  # reach backtest() before seq() rejected it with "'to' must be a finite
+  # number" -- R's complaint about its own argument, three functions from the
+  # call that caused it. In between, the stream looked usable:
+  # snapshot_at(st, 2003) returned a k as though nothing were wrong.
+  #
+  # This one escaped the contract sweep because the sweep mutated arguments
+  # with SCALARS, and for a vector argument the length check fires first and
+  # hides the content. Mutating in place, keeping the length, is what finds it.
+  ma <- metafor::rma(yi = rnorm(6, -0.3, 0.1), vi = runif(6, 0.02, 0.05),
+                     measure = "RR")
+  expect_error(evidence_stream(ma, date = c(2001:2005, Inf)), "infinite")
+  expect_error(evidence_stream(ma, date = c(-Inf, 2002:2006)), "infinite")
+  # NA and NaN keep their own message, which says something different.
+  expect_error(evidence_stream(ma, date = c(NA, 2002:2006)), "missing")
+  expect_error(evidence_stream(ma, date = c(NaN, 2002:2006)), "missing")
+  expect_silent(evidence_stream(ma, date = 2001:2006))
+})
+
+test_that("supplied sample sizes and cut points must be real numbers", {
+  # Found by mutating vector arguments IN PLACE, keeping their length -- the
+  # blind spot the scalar sweep had, since for a vector argument the length
+  # check fires first and hides the content.
+  es <- bcg_es()
+  ma <- metafor::rma(yi, vi, data = es, measure = "RR", method = "FE")
+  ni <- with(es, tpos + tneg + cpos + cneg)
+
+  # barrowman() sums ni across a snapshot, so a negative element silently
+  # shrinks the total it divides by and an infinite one makes it Inf.
+  expect_error(evidence_stream(ma, date = es$year, ni = replace(ni, 1, Inf)),
+               "finite")
+  expect_error(evidence_stream(ma, date = es$year, ni = replace(ni, 1, -5)),
+               "positive")
+  expect_error(evidence_stream(ma, date = es$year, ni = replace(ni, 1, 0)),
+               "positive")
+
+  # But a DERIVED ni is a fact about the dataset, not about the call, and must
+  # still not take down the four detectors that never read it. That line was
+  # drawn deliberately for NA and holds here too.
+  st <- evidence_stream(ma, date = es$year)
+  expect_s3_class(st, "staleness_stream")
+
+  # An infinite cut used to surface as "needs at least 3 uncensored cuts":
+  # the error named a consequence and never the Inf that caused it.
+  st2 <- evidence_stream(ma, date = es$year, ni = ni)
+  expect_error(backtest(st2, cuts = c(1960, 1965, Inf), horizon = 3,
+                        window = 5, min_k = 3), "infinite")
+  expect_silent(suppressWarnings(
+    backtest(st2, cuts = c(1960, 1965, 1970), horizon = 3, window = 5,
+             min_k = 3, seed = 1)))
+})
+
+test_that("the exported detectors require the model class they document", {
+  # Every one of them documents an rma.uni and none checked for it. Four died
+  # with R's own "argument is of length zero" or "missing value where
+  # TRUE/FALSE needed", and sufficiency() was worse: it returned a verdict of
+  # not_applicable from an empty list, as though it had examined something.
+  for (f in list(rcma, ottawa, sufficiency)) {
+    expect_error(f(list(), list()), "rma.uni")
+  }
+  expect_error(barrowman(list(), 100, 50), "rma.uni")
+  expect_error(simulation(list(), list(k = 1, yi = 0.1, vi = 0.1), B = 5),
+               "rma.uni")
+  expect_error(check_currency(list(), list(yi = 0.1, vi = 0.1, k = 1),
+                              methods = "rcma"), "rma.uni")
+})
+
+test_that("metafor subclasses are refused by the detectors, as by the stream", {
+  # evidence_stream() has always refused rma.mh with a reasoned message: it
+  # refits each snapshot with rma(), which needs yi and vi, and a
+  # Mantel-Haenszel fit cannot be reproduced from those. The detectors accepted
+  # the same object and returned "current".
+  #
+  # That inconsistency matters here specifically. Reproducing a Cochrane review
+  # to the digit requires Mantel-Haenszel, so rma.mh is what a user arrives
+  # with -- and they got a reasoned refusal from the stream and a silent
+  # verdict from the detectors.
+  skip_if_not_installed("metadat")
+  mh <- metafor::rma.mh(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
+                        data = metadat::dat.lau1992)
+  expect_false(inherits(mh, "rma.uni"))
+  expect_error(rcma(mh, mh), "rma.mh")
+  expect_error(ottawa(mh, mh), "rma.mh")
+  expect_error(sufficiency(mh, mh), "rma.mh")
+  # The stream's message is the one being made consistent, not replaced.
+  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year), "rma.mh")
+
+  # And what the package builds internally is still rma.uni, so nothing in the
+  # engine trips over this.
+  es <- bcg_es()
+  st <- evidence_stream(metafor::rma(yi, vi, data = es, measure = "RR",
+                                     method = "FE"), date = es$year)
+  expect_s3_class(snapshot_at(st, 1970), "rma.uni")
+})

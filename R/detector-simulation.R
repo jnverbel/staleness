@@ -71,6 +71,7 @@
 #' @export
 simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
                        power_threshold = 0.80, seed = NULL) {
+  check_rma_uni(prev, "prev")
   check_count(B, "B")
   check_probability(alpha, "alpha")
   # Closed here and open for alpha: a threshold of 0 means every power fires

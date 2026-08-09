@@ -40,6 +40,7 @@
 #' barrowman(decided, n_prev = 555, n_new = 2265)
 #' @export
 barrowman <- function(prev, n_prev, n_new, alpha = 0.05, z_crit = 1.96) {
+  check_rma_uni(prev, "prev")
   check_probability(alpha, "alpha")
   check_positive_number(z_crit, "z_crit")
   if (is.null(n_prev) || is.null(n_new)) {

@@ -119,6 +119,15 @@ evidence_stream <- function(ma, date, ni = NULL) {
     stop("`date` must be numeric, giving the publication year of each study; ",
          "got ", class(date)[1], call. = FALSE)
   }
+  # anyNA() above catches NA and NaN but not the infinities, and an infinite
+  # year used to travel all the way into backtest() before seq() rejected it
+  # with "'to' must be a finite number" -- R's message about its own argument,
+  # raised three functions away from the call that caused it. Worse, the stream
+  # was usable in between: snapshot_at() happily returned a k.
+  if (!all(is.finite(date))) {
+    stop("`date` has infinite values; every study needs a real publication ",
+         "year", call. = FALSE)
+  }
   ni_supplied <- !is.null(ni)
   if (is.null(ni)) ni <- ma$ni
   if (!is.null(ni) && length(ni) != k) {
@@ -136,6 +145,15 @@ evidence_stream <- function(ma, date, ni = NULL) {
   if (ni_supplied && anyNA(ni)) {
     stop("`ni` has missing values; sample sizes are never imputed",
          call. = FALSE)
+  }
+  # Same side of the line, and for the same reason: an infinite or negative
+  # sample size someone typed is a malformed argument. barrowman() sums these
+  # over a snapshot, so a negative one silently shrinks the total it divides
+  # by, and an infinite one makes it Inf. Checked only when supplied, so a
+  # derived `ni` still cannot take down the four detectors that never read it.
+  if (ni_supplied && (!all(is.finite(ni)) || any(ni <= 0))) {
+    stop("`ni` must be finite and positive: it is a count of participants, ",
+         "and barrowman() sums it across a snapshot", call. = FALSE)
   }
 
   ord <- order(date, seq_along(date))  # stable: ties keep input order

@@ -102,6 +102,8 @@ ottawa <- function(prev, new_ma, alpha = 0.04,
                    qualitative = character()) {
   # An NA alpha made both significance comparisons NA, which the code below
   # read as a change: the detector returned out_of_date without a warning.
+  check_rma_uni(prev, "prev")
+  check_rma_uni(new_ma, "new_ma")
   check_probability(alpha, "alpha")
   check_same_measure(prev, new_ma)
   # nzchar(NA_character_) is TRUE, so an analyst recording "unknown" for a

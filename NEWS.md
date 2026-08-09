@@ -159,6 +159,43 @@ First public release.
   infinite size is still a fact about the evidence, not the call, and still
   yields `"not_applicable"` with its reason.
 
+## The model class every detector documents
+
+* `rcma()`, `ottawa()`, `barrowman()`, `sufficiency()`, `simulation()` and
+  `check_currency()` require the `rma.uni` they have always documented. Four
+  used to die with R's own "argument is of length zero" or "missing value
+  where TRUE/FALSE needed"; `sufficiency()` was worse and returned a verdict
+  of `not_applicable` from an empty list, as though it had examined something.
+
+* The subclass case is the one that matters in practice, and it was an
+  inconsistency inside the package. `evidence_stream()` has always refused
+  `rma.mh` with a reasoned message — it refits each snapshot with `rma()`,
+  which needs `yi` and `vi`, and a Mantel-Haenszel fit cannot be reproduced
+  from those — while the detectors took the same object and answered
+  `"current"`. **Reproducing a Cochrane review to the digit requires
+  Mantel-Haenszel**, so `rma.mh` is exactly what a user arrives with: they got
+  a reasoned refusal from the stream and a silent verdict from the detectors.
+  Both now refuse, each explaining its own reason.
+
+* `evidence_stream()` also refuses infinite years. `anyNA()` catches `NA` and
+  `NaN` but not the infinities, so an infinite year reached `backtest()`
+  before `seq()` rejected it with `'to' must be a finite number` — R's
+  complaint about its own argument, three functions from the call that caused
+  it. In between the stream looked usable: `snapshot_at()` returned a `k`.
+
+* A supplied `ni` must be finite and positive, and `cuts` finite.
+  `barrowman()` sums `ni` across a snapshot, so a negative element silently
+  shrank the total it divides by. An infinite cut used to surface as "needs at
+  least 3 uncensored cuts", naming a consequence and never the cause. A
+  *derived* `ni` is still left alone, as it has been for `NA`: it is a fact
+  about the dataset, and refusing to build the stream over it would take down
+  the four detectors that never read it.
+
+  These three escaped the contract sweep below because it mutated arguments
+  with **scalars**, and for a vector argument the length check fires first and
+  hides the content. Mutating elements in place, keeping the length, is what
+  found them.
+
 ## The contract sweep
 
 Four outside reviews in a row found the same shape of defect: a contract

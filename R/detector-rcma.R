@@ -58,6 +58,8 @@
 #' rcma(prev, mild)
 #' @export
 rcma <- function(prev, new_ma, lower = 0.5, upper = 1.5) {
+  check_rma_uni(prev, "prev")
+  check_rma_uni(new_ma, "new_ma")
   check_same_measure(prev, new_ma)
   check_positive_number(lower, "lower")
   check_positive_number(upper, "upper")

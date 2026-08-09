@@ -153,6 +153,29 @@ check_cut_point <- function(x, arg) {
   invisible(NULL)
 }
 
+# Every exported detector documents an `rma.uni` and none of them checked.
+# Four died with R's own "argument is of length zero"; sufficiency() was worse
+# and returned a verdict of not_applicable from an empty list.
+#
+# The subclass case is the one that matters in practice. evidence_stream() has
+# always refused rma.mh with a reasoned message -- it refits each snapshot with
+# rma(), which needs yi and vi, and a Mantel-Haenszel fit cannot be reproduced
+# from those -- while the detectors took the same object and answered
+# "current". Reproducing a Cochrane review to the digit requires
+# Mantel-Haenszel, so rma.mh is exactly what a user arrives with.
+check_rma_uni <- function(x, arg) {
+  if (inherits(x, "rma.uni")) return(invisible(NULL))
+  if (inherits(x, "rma")) {
+    stop("`", arg, "` is a ", class(x)[1], " fit; the detectors are defined on ",
+         "the pooled effect and its standard error as `rma.uni` reports them. ",
+         "Convert the data first -- `escalc()` then `rma()` -- and note that ",
+         "the pooled estimates will be inverse-variance, not ", class(x)[1],
+         ".", call. = FALSE)
+  }
+  stop("`", arg, "` must be an rma.uni object from metafor; got ",
+       class(x)[1], call. = FALSE)
+}
+
 check_positive_number <- function(x, arg) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
     stop("`", arg, "` must be a single positive number", call. = FALSE)

@@ -128,6 +128,13 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
     stop("`cuts` must be \"yearly\" or a numeric vector with no missing values",
          call. = FALSE)
   }
+  # An infinite cut used to survive this and become an uncensored-cut shortage
+  # further down, so the error named a consequence ("needs at least 3
+  # uncensored cuts") and never the Inf that caused it.
+  if (!all(is.finite(cuts))) {
+    stop("`cuts` has infinite values; every cut must be a real point on the ",
+         "date scale", call. = FALSE)
+  }
   # A repeated cut is the same point in time. Left in, it entered the results
   # once per repetition and inflated the denominator of every metric.
   cuts <- sort(unique(cuts))

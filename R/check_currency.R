@@ -73,6 +73,7 @@ check_currency <- function(prev, new, methods = available_methods(),
          "meta-analysis. Passing the updated model here would count every ",
          "prior study twice.", call. = FALSE)
   }
+  check_rma_uni(prev, "prev")
   check_new_evidence(new)
   check_seed(seed)
   if (new$k < 1) {
