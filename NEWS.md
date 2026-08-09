@@ -1,4 +1,116 @@
+# staleness 0.2.0
+
+A methodological review by proxy -- what a metafor author and a synthesis
+methodologist would each object to -- found five problems of validity rather
+than of contract. Two are breaking changes, and the version reflects that.
+
+## Effect measures the detectors are defined on
+
+* `PLO` and `IRLN` are no longer treated as comparative ratio measures. The
+  list that decided this was documented as "measures that metafor stores on
+  the log scale" and used to decide which measures a detector could act on --
+  two different questions answered by one list. `PLO` is a proportion on the
+  logit scale and `IRLN` an incidence rate on the log scale: neither compares
+  a treated arm against a control, so Ottawa's `1 - exp(theta)` is not a risk
+  reduction of anything. On a pooled proportion of 0.24 it returned 0.68, and
+  a verdict was issued on it. Single-group summaries now yield
+  `not_applicable` with a reason.
+
+* `PLO` was wrong on the storage question too, which the review did not
+  mention: a logit is inverted by `plogis()`, not `exp()`, so `to_natural()`
+  returned the **odds** (0.3216) where the pooled proportion was 0.2434.
+
+## What each simulated replicate is tested under
+
+* `simulation()` honours the prior model's `test` and `weighted`, and holds
+  `tau^2` at the value that prior estimated. It used to pool fixed-effect with
+  a normal p-value regardless, so a prior fitted with `test = "knha"` returned
+  the same power as one fitted with `test = "z"` -- measured at 0.396 and
+  0.773 on the same data, with prior p-values of 0.33 and 0.06.
+
+* It was also incoherent with itself: each replicate is drawn with
+  `sd = sqrt(vi_new + tau^2)`, under heterogeneity, and was then pooled
+  without it. Simulated in one world, tested in another.
+
+* Holding `tau^2` rather than re-estimating it per replicate is the reading
+  coherent with that draw, and it pays for itself twice: the closed form is
+  then exact -- equal to `rma()`'s p-value to twelve digits, verified -- so
+  metafor's own default keeps the fast path, and there is no iterative
+  estimation left to fail. Refitting with REML had not converged on roughly
+  one replicate in ten, and discarding those would have biased the power.
+  Only a non-`z` test refits: 0.02s against 3s for B = 2000.
+
+## Independence between estimates (breaking)
+
+* `evidence_stream()` requires `study_id`, one identifier per row, and refuses
+  duplicates unless `allow_dependence = TRUE`. Every row used to be treated as
+  an independent study with nothing able to tell otherwise, so several
+  outcomes, time points or arms of one trial entered as separate studies:
+  participants summed twice in `barrowman()`, weights counted twice in every
+  pooled estimate.
+
+* An identifier rather than a flag promising independence, because a promise
+  cannot be checked and an identifier can. This was known before it was
+  reported: the metadat sweep in `inst/applicability/` had been excluding
+  datasets with nested effects **by hand**. Having to do that by hand was the
+  defect. The sweep now passes the identifier and the package refuses,
+  naming the studies responsible.
+
+* Allowed dependence is recorded on the stream and announced by `print()`,
+  since metrics computed from it are optimistic.
+
+
+## What a cut's truth is measured against
+
+* `backtest()` gains `truth_target`. It was documented that `horizon` is the
+  time a cut's truth needs to materialise, and every truth column was scored
+  against the model fitted over the **whole** stream regardless — so `horizon`
+  governed censoring alone. Changing it from 3 to 8 left the shared cuts
+  identical, and a run described as "performance at three years" was scored
+  against evidence published three decades later.
+
+  `"final"` remains the default and the historical behaviour. `"horizon"`
+  scores each cut against the review as it stood at `cut + horizon`, which is
+  the question the parameter's name implies. Under it, `horizon` finally moves
+  the answer: on `metadat::dat.bcg`, 7 cuts are out of date at three years and
+  11 at eight.
+
+* The two are different questions, not a correction of one by the other, and
+  the contrast is itself a finding — reported by `inst/applicability/`:
+
+  - Against the final model, **every one of dat.bcg's 23 cuts counts as out of
+    date**. There are no true negatives, so specificity cannot be computed at
+    all. That explains the 20 rows of the applicability sweep whose
+    specificity is `NA`, which previously had no stated cause.
+  - `rcma()`'s specificity on `metadat::dat.li2007` is **1.00 against the
+    final model and 0.56 against a three-year horizon**. Both are true. The
+    first says the detector never fired where the evidence would eventually
+    settle unchanged; the second says it fired several times on reviews that
+    had three quiet years ahead of them.
+
+  `"final"` is the more forgiving of the two, because almost everything counts
+  as a positive. Anyone quoting a sensitivity from this package should say
+  which target produced it; `backtest()` records it in the returned object for
+  that reason.
+
+
+## Calibration describes a series; inference needs reviews
+
+* `calibration()` is documented as descriptive, and deliberately returns no
+  interval. Its `n` counts **cuts**, and consecutive cuts of one review share
+  almost every study -- the snapshot at 1970 and the one at 1971 differ by a
+  single year of publication. Nineteen cuts are not nineteen observations, and
+  a binomial interval on that denominator would come out far too narrow.
+
+* `pooled_calibration()` is new. Independence is available between **reviews**,
+  which share no studies, so it pools across them and bootstraps by resampling
+  whole reviews. With fewer than two reviews contributing a defined rate the
+  bounds are withheld rather than printed narrow: an interval from one review
+  describes that review. Backtests with different `truth_target` values are
+  refused, since they answer different questions.
+
 # staleness 0.1.0
+
 
 First public release.
 

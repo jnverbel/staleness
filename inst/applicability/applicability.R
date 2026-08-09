@@ -22,14 +22,16 @@
 #   2. a two-group effect measure this script can build with escalc(), which
 #      takes eight different column conventions for the same 2x2 table
 #   3. at least 8 studies, so that yearly cuts exist
-#   4. one effect per study-year. Datasets with several effects per study --
-#      an explicit esid column, or repeated (study, year) pairs -- are
-#      EXCLUDED: evidence_stream() treats each row as an independent study and
-#      would count the same one more than once at a cut.
+#   4. one effect per study. This script passes each row's study identifier to
+#      evidence_stream(), which refuses a stream whose estimates are dependent
+#      and names the studies responsible. It used to detect nesting with a
+#      heuristic of its own and drop those datasets before building anything --
+#      having to do that by hand was the defect that requiring `study_id`
+#      fixed, and the check now lives where every caller gets it.
 #
 #      Note that repeated AUTHOR names are not nesting. dat.bcg has Comstock
 #      three times, in three different years: three trials, not three effects
-#      from one.
+#      from one. The identifier is therefore study-and-year, not study alone.
 #
 #   5. the backtest must produce at least three uncensored cuts
 #
@@ -124,13 +126,24 @@ PRECOMPUTED <- c(
   dat.raudenbush1985      = "SMD"
 )
 
-nested <- function(d) {
-  if (any(grepl("^esid$|^es\\.id$", names(d), ignore.case = TRUE))) return(TRUE)
+# The identifier of the study each row came from, so that evidence_stream()
+# can refuse dependence itself. This script used to detect nesting with a
+# heuristic of its own and drop those datasets before building the stream --
+# and having to do that by hand was the defect the requirement now fixes.
+#
+# A study-and-year pair rather than the study column alone: repeated AUTHOR
+# names are not nesting. dat.bcg has Comstock three times, in three different
+# years, which is three trials.
+study_ids <- function(d) {
+  if (any(grepl("^esid$|^es\\.id$", names(d), ignore.case = TRUE))) {
+    ids <- intersect(c("study", "studyid", "trial", "id", "author"), names(d))
+    if (length(ids)) return(as.character(d[[ids[1]]]))
+  }
   y <- year_col(d)
   ids <- intersect(c("study", "studyid", "trial", "id", "author",
                      "Study", "StudyID", "district"), names(d))
-  if (!length(ids) || is.na(y)) return(FALSE)
-  any(duplicated(paste(d[[ids[1]]], d[[y]])))
+  if (!length(ids) || is.na(y)) return(as.character(seq_len(nrow(d))))
+  paste(d[[ids[1]]], d[[y]])
 }
 
 datasets <- sub("\\s.*", "", utils::data(package = "metadat")$results[, "Item"])
@@ -150,17 +163,20 @@ for (nm in datasets) {
     b$measure <- PRECOMPUTED[[nm]]
   }
   if (nrow(d) < 8)       { excluded[[nm]] <- "fewer than 8 studies";   next }
-  if (nested(d))         { excluded[[nm]] <- "several effects per study"; next }
+  sid <- study_ids(d)
 
   keep <- is.finite(b$es$yi) & is.finite(b$es$vi) & b$es$vi > 0 &
     is.finite(d[[y]])
-  es <- b$es[keep, ]; yr <- d[[y]][keep]
+  es <- b$es[keep, ]; yr <- d[[y]][keep]; sid <- sid[keep]
   ni <- if (is.null(b$ni)) NULL else b$ni[keep]
   if (nrow(es) < 8)      { excluded[[nm]] <- "fewer than 8 usable studies"; next }
 
   out <- tryCatch({
     ma <- rma(yi, vi, data = es, measure = b$measure, method = "FE")
-    st <- evidence_stream(ma, date = yr, ni = ni)
+    # No allow_dependence: a review whose rows are not independent studies is
+    # refused here, by the package, and reported below as an exclusion. This
+    # replaces the hand-rolled nesting heuristic this script used to carry.
+    st <- evidence_stream(ma, date = yr, study_id = sid, ni = ni)
     bt <- suppressWarnings(backtest(st, cuts = "yearly", horizon = HORIZON,
                                     window = WINDOW, min_k = MIN_K, seed = SEED))
     cal <- calibration(bt, "shift")
@@ -168,7 +184,14 @@ for (nm in datasets) {
     cal$k <- nrow(es)
     cal$measure <- b$measure
     cal
-  }, error = function(e) { excluded[[nm]] <<- conditionMessage(e); NULL })
+  }, error = function(e) {
+    m <- conditionMessage(e)
+    # The dependence refusal names every offending study, which is right in a
+    # call and too long for a tally. Shortened here, not there.
+    if (grepl("more than one estimate", m)) m <- "several estimates per study"
+    excluded[[nm]] <<- m
+    NULL
+  })
   if (!is.null(out)) rows[[nm]] <- out
 }
 
@@ -215,6 +238,27 @@ cat(sprintf("  %d of %d cuts had an already-significant prior: %.0f%%\n",
             sig, tot, 100 * sig / tot))
 cat("  barrowman() and simulation() require a NON-significant prior, so they\n")
 cat("  are inapplicable at those cuts by construction.\n")
+
+# --- What the truth was measured against ----------------------------------
+#
+# The sweep above scores every cut against the model fitted over the whole
+# stream (truth_target = "final"). That is the package default and it answers
+# a real question -- was this review already superseded by what would
+# eventually be known -- but it is the more forgiving of the two, because
+# almost everything counts as a positive.
+cat("\n=== HOW MANY CUTS HAVE NO NEGATIVE TO SCORE AGAINST ===\n")
+no_neg <- 0
+for (nm in reviews) {
+  rows_nm <- res[res$dataset == nm, ]
+  if (all(is.na(rows_nm$specificity))) no_neg <- no_neg + 1
+}
+cat(sprintf("  reviews where specificity cannot be computed at all: %d of %d\n",
+            no_neg, length(reviews)))
+cat("  Against the final model every earlier cut of a review whose effect kept\n")
+cat("  moving counts as out of date, so there are no true negatives left.\n")
+cat("  Re-run with truth_target = \"horizon\" to ask instead whether each review\n")
+cat("  went out of date within the next HORIZON years; on metadat::dat.bcg that\n")
+cat("  turns 23 positives out of 23 into 7, and specificity becomes computable.\n")
 
 cat("\n=== SENSITIVITY WHERE IT IS DEFINED ===\n")
 s <- res[!is.na(res$sensitivity), ]

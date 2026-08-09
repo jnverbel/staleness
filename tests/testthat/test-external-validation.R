@@ -57,7 +57,7 @@ test_that("the snapshot at a cut equals metafor refitted on the same studies", {
   # No-look-ahead rests on this: a snapshot must be exactly what you would
   # have got by fitting only the studies published by then, tau^2 included.
   es <- bcg()
-  st <- evidence_stream(metafor::rma(yi, vi, data = es), date = es$year)
+  st <- evidence_stream(metafor::rma(yi, vi, data = es), date = es$year, study_id = seq_along(es$year))
   for (cut in c(1960, 1970, 1975)) {
     keep <- es$year <= cut
     direct <- metafor::rma(yi = es$yi[keep], vi = es$vi[keep])
@@ -297,7 +297,7 @@ test_that("the backtest puts the turning point in 1973 and stays quiet after", {
   es <- metafor::escalc(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
                         data = metadat::dat.lau1992)
   ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
-  st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
+  st <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year), ni = es$n1i + es$n2i)
   bt <- backtest(st, cuts = "yearly", horizon = 3, window = 5, min_k = 3,
                  seed = 42)
   r <- bt$results[!bt$results$censored, ]
@@ -356,9 +356,9 @@ test_that("a Mantel-Haenszel fit is refused with a usable explanation", {
   skip_if_not_installed("metadat")
   mh <- metafor::rma.mh(measure = "OR", ai = ai, n1i = n1i, ci = ci, n2i = n2i,
                         data = metadat::dat.lau1992)
-  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year),
+  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year, study_id = seq_along(metadat::dat.lau1992$year)),
                "rma.mh")
-  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year),
+  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year, study_id = seq_along(metadat::dat.lau1992$year)),
                "inverse-variance")
 })
 
@@ -412,7 +412,7 @@ test_that("ISIS-4 removes the effect, and rcma saw it coming", {
   expect_equal(round(after$pval, 4), 0.4948)
 
   ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
-  st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
+  st <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year), ni = es$n1i + es$n2i)
   bt <- backtest(st, cuts = "yearly", horizon = 3, window = 5, min_k = 3,
                  seed = 42)
   r <- bt$results[!bt$results$censored, ]
@@ -455,9 +455,9 @@ test_that("difference measures take the other branch, and the guard fires", {
   d <- metadat::dat.bangertdrowns2004
   d <- d[!is.na(d$yi) & !is.na(d$vi) & !is.na(d$year), ]
   ma <- metafor::rma(yi, vi, data = d, measure = "SMD")
-  st <- evidence_stream(ma, date = d$year, ni = d$ni)
+  st <- evidence_stream(ma, date = d$year, study_id = seq_along(d$year), ni = d$ni)
 
-  expect_false(is_ratio_measure(st$measure))
+  expect_false(is_comparative_ratio(st$measure))
 
   bt <- backtest(st, cuts = "yearly", horizon = 3, window = 5, min_k = 5,
                  seed = 42)
@@ -484,7 +484,7 @@ test_that("ottawa still works when its effect half cannot be computed", {
   d <- metadat::dat.bangertdrowns2004
   d <- d[!is.na(d$yi) & !is.na(d$vi) & !is.na(d$year), ]
   ma <- metafor::rma(yi, vi, data = d, measure = "SMD")
-  st <- evidence_stream(ma, date = d$year, ni = d$ni)
+  st <- evidence_stream(ma, date = d$year, study_id = seq_along(d$year), ni = d$ni)
 
   prev <- snapshot_at(st, 1985)
   new  <- snapshot_at(st, 1990)
@@ -513,7 +513,7 @@ test_that("barrowman and simulation answer on every cut of a null review", {
   ma <- metafor::rma(yi, vi, data = es, measure = "OR")
   expect_gt(ma$pval, 0.05)                      # the precondition both need
 
-  st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
+  st <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year), ni = es$n1i + es$n2i)
   bt <- backtest(st, cuts = "yearly", horizon = 2, window = 3, min_k = 3,
                  seed = 42)
   r <- bt$results[!bt$results$censored, ]
@@ -539,7 +539,7 @@ test_that("ottawa's instability on null reviews shows up in real data too", {
                         data = metadat::dat.laopaiboon2015)
   es <- es[!is.na(es$yi) & !is.na(es$vi) & es$vi > 0, ]
   ma <- metafor::rma(yi, vi, data = es, measure = "OR")
-  st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
+  st <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year), ni = es$n1i + es$n2i)
   bt <- backtest(st, cuts = "yearly", horizon = 2, window = 3, min_k = 3,
                  seed = 42)
   cal <- calibration(bt, "shift")
@@ -564,7 +564,7 @@ test_that("all three refit sites propagate the caller's model options", {
   es <- bcg_es()
   kn <- metafor::rma(yi, vi, data = es, test = "knha")
   ni <- es$tpos + es$tneg + es$cpos + es$cneg
-  st <- evidence_stream(kn, date = es$year, ni = ni)
+  st <- evidence_stream(kn, date = es$year, study_id = seq_along(es$year), ni = ni)
 
   # 1. snapshot_at
   expect_equal(snapshot_at(st, 1970)$test, "knha")
@@ -624,7 +624,7 @@ test_that("damico2009: the detectors stay silent on a review that held up", {
   ni <- (metadat::dat.damico2009$nt + metadat::dat.damico2009$nc)[keep]
 
   ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
-  st <- evidence_stream(ma, date = yr, ni = ni)
+  st <- evidence_stream(ma, date = yr, study_id = seq_along(yr), ni = ni)
   bt <- suppressWarnings(backtest(st, cuts = "yearly", horizon = 3,
                                   window = 5, min_k = 3, seed = 42))
   r <- bt$results[!bt$results$censored, ]
@@ -667,7 +667,7 @@ test_that("lee2004: rcma fires on a real change of magnitude, and is right", {
   expect_gt(exp(as.numeric(whole$beta)) / exp(as.numeric(early$beta)), 1.5)
 
   ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
-  st <- evidence_stream(ma, date = yr,
+  st <- evidence_stream(ma, date = yr, study_id = seq_along(yr),
                         ni = (metadat::dat.lee2004$n1i +
                               metadat::dat.lee2004$n2i)[keep])
   bt <- suppressWarnings(backtest(st, cuts = "yearly", horizon = 3,

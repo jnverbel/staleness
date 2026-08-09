@@ -1,15 +1,74 @@
-# Measures that metafor stores on the log scale. Verified against metafor 4.x:
-# rma() on measure = "RR" returns beta = log(RR).
-RATIO_MEASURES <- c("RR", "OR", "PETO", "IRR", "HR", "ROM", "PLO", "IRLN", "MPRR", "MPOR")
+# Two questions that a single list used to answer, wrongly, as though they were
+# one: HOW a measure is stored, and WHETHER it is a comparative effect at all.
+#
+# The old RATIO_MEASURES was documented as "measures that metafor stores on the
+# log scale" and then used to decide which measures the detectors could act on.
+# It contained PLO and IRLN, which are single-group summaries: PLO is a
+# proportion on the logit scale, IRLN an incidence rate on the log scale.
+# Neither compares a treated arm against a control, so `1 - exp(theta)` -- the
+# Ottawa criterion's relative risk reduction -- is not a risk reduction of
+# anything. On a pooled proportion of 0.24 it returned 0.68 and Ottawa issued a
+# verdict on it.
+#
+# PLO was wrong on the storage question too: logit is inverted by plogis(), not
+# exp(), so exp(beta) returned the ODDS (0.32) where the pooled proportion was
+# 0.24.
+
+# Stored as a natural logarithm; exp() recovers the natural scale.
+LOG_SCALE_MEASURES <- c("RR", "OR", "PETO", "IRR", "HR", "ROM", "MPRR", "MPOR",
+                        "IRLN", "MNLN", "CVLN", "SDLN", "PLN")
+
+# Stored as a logit; plogis() recovers the natural scale.
+LOGIT_SCALE_MEASURES <- c("PLO")
+
+# Comparative effects of one arm against another, on a ratio scale. These, and
+# only these, are what the rCMA and Ottawa effect criteria are defined on: both
+# ask how much a TREATMENT EFFECT moved, and a single-group summary has no
+# treatment effect to move. Every measure outside this list and outside the
+# difference measures is refused with a reason rather than run through a
+# formula that does not apply to it.
+COMPARATIVE_RATIO_MEASURES <- c("RR", "OR", "PETO", "IRR", "HR", "ROM",
+                                "MPRR", "MPOR")
+
+# Single-group summaries: a proportion, a rate, a mean, a correlation. metafor
+# offers many; naming them explicitly is better than inferring, because a
+# measure this package has never heard of should also be refused.
+SINGLE_GROUP_MEASURES <- c("PLO", "PR", "PAS", "PFT", "PLN",
+                           "IR", "IRLN", "IRS", "IRFT",
+                           "MN", "MNLN", "CVLN", "SDLN",
+                           "COR", "UCOR", "ZCOR")
 
 #' Is a metafor effect measure stored on the log scale?
 #'
 #' @param measure Character, the `measure` field of an `rma` object.
-#' @return `TRUE` if the measure is a ratio stored as a logarithm.
+#' @return `TRUE` if `exp()` recovers the natural scale.
 #' @keywords internal
-is_ratio_measure <- function(measure) {
+is_log_scale_measure <- function(measure) {
   if (is.null(measure) || !nzchar(measure)) return(FALSE)
-  measure %in% RATIO_MEASURES
+  measure %in% LOG_SCALE_MEASURES
+}
+
+#' Is this a comparative effect on a ratio scale?
+#'
+#' The question the detectors actually need answered, and the one the old
+#' `is_ratio_measure()` was silently standing in for.
+#'
+#' @param measure Character, the `measure` field of an `rma` object.
+#' @return `TRUE` for a two-arm ratio measure.
+#' @keywords internal
+is_comparative_ratio <- function(measure) {
+  if (is.null(measure) || !nzchar(measure)) return(FALSE)
+  measure %in% COMPARATIVE_RATIO_MEASURES
+}
+
+#' Is this a summary of one group rather than a comparison?
+#'
+#' @param measure Character, the `measure` field of an `rma` object.
+#' @return `TRUE` for a proportion, rate, mean or correlation.
+#' @keywords internal
+is_single_group <- function(measure) {
+  if (is.null(measure) || !nzchar(measure)) return(FALSE)
+  measure %in% SINGLE_GROUP_MEASURES
 }
 
 #' Convert a model coefficient to its natural scale
@@ -23,7 +82,13 @@ is_ratio_measure <- function(measure) {
 #' @return The effect on its natural scale.
 #' @keywords internal
 to_natural <- function(theta, measure) {
-  if (is_ratio_measure(measure)) exp(theta) else theta
+  if (is_log_scale_measure(measure)) return(exp(theta))
+  # A logit is inverted by plogis(), not exp(). PLO used to take the exp()
+  # branch and return the odds where the caller asked for the proportion.
+  if (!is.null(measure) && nzchar(measure) && measure %in% LOGIT_SCALE_MEASURES) {
+    return(stats::plogis(theta))
+  }
+  theta
 }
 
 #' Ratio of an updated effect to a prior effect, on the natural scale
@@ -40,7 +105,18 @@ to_natural <- function(theta, measure) {
 #' @return List with `ratio` (possibly `NA_real_`) and `reason`.
 #' @keywords internal
 effect_ratio <- function(theta_new, theta_prev, measure, se_prev, min_z = 2) {
-  if (is_ratio_measure(measure)) {
+  # Refused before either branch: a proportion, a rate, a mean or a correlation
+  # has no treatment effect for these criteria to compare, and running one
+  # through the difference branch would be as meaningless as the ratio branch.
+  if (is_single_group(measure)) {
+    return(list(
+      ratio  = NA_real_,
+      reason = paste0("`", measure, "` summarises one group rather than ",
+                      "comparing two; this criterion is defined on a ",
+                      "treatment effect")
+    ))
+  }
+  if (is_comparative_ratio(measure)) {
     # exp(a)/exp(b) == exp(a - b), numerically safer
     return(list(ratio = exp(theta_new - theta_prev), reason = ""))
   }
@@ -96,7 +172,10 @@ rrr_ratio <- function(theta_new, theta_prev, measure, se_prev, min_z = 2) {
   # Mean differences: the source defers to the rCMA rule. No RRR exists on
   # that scale, so there is nothing for it to be unstable about -- but the
   # fields are still filled in, so no caller has to test for their absence.
-  if (!is_ratio_measure(measure)) {
+  # Anything that is not a two-arm ratio measure -- a mean difference, or a
+  # single-group summary -- goes to effect_ratio(), which defers to the rCMA
+  # rule for the former and refuses the latter with a reason.
+  if (!is_comparative_ratio(measure)) {
     r <- effect_ratio(theta_new, theta_prev, measure, se_prev, min_z)
     r$rrr_prev <- NA_real_
     r$unstable <- FALSE

@@ -107,7 +107,7 @@ bcg <- data.frame(
            176782, 14776, 3381, 77972, 4839, 34767)
 )
 bt <- backtest(evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-                               date = bcg$year, ni = bcg$ni))
+                               date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni))
 
 # Whether a detector eventually fires is the easy question. This is the
 # one the methods papers never answer: how far ahead of the evidence.

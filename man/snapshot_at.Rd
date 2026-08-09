@@ -28,7 +28,7 @@ bcg <- data.frame(
            1980, 1968, 1961, 1974, 1969, 1976)
 )
 stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-                          date = bcg$year)
+                          date = bcg$year, study_id = seq_along(bcg$year))
 
 # The review as it stood in 1970: 7 of the 13 trials had been published.
 prev <- snapshot_at(stream, 1970)

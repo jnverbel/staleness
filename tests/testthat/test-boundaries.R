@@ -74,7 +74,7 @@ test_that("studies sharing a date keep their input order", {
   # breaker the order would depend on the sort algorithm, and every snapshot
   # boundary with a tie could shift between R versions.
   ma <- fit(c(0.10, 0.20, 0.30, 0.40), rep(0.05, 4))
-  st <- evidence_stream(ma, date = c(2000, 2000, 2000, 2001))
+  st <- evidence_stream(ma, date = c(2000, 2000, 2000, 2001), study_id = seq_along(c(2000, 2000, 2000, 2001)))
   expect_equal(st$yi[1:3], c(0.10, 0.20, 0.30))
   expect_equal(st$date, c(2000, 2000, 2000, 2001))
 })
@@ -106,7 +106,7 @@ test_that("print methods cover their conditional branches", {
   expect_output(print(check_currency(prev, new, methods = "rcma")), "I2")
 
   st <- evidence_stream(fit(seq(0.10, 0.60, length.out = 12), rep(0.05, 12)),
-                        date = 2000:2011, ni = rep(100, 12))
+                        date = 2000:2011, study_id = seq_along(2000:2011), ni = rep(100, 12))
   bt <- backtest(st, cuts = 2003:2008, horizon = 2, window = 2, seed = 3)
   expect_output(print(bt), "staleness_backtest")
   expect_output(print(st), "staleness_stream")
@@ -117,7 +117,7 @@ test_that("the plot marks contaminated methods on the axis", {
   # to say so under the bars. Without this the warning exists only in the
   # data frame, where a reader looking at the picture never sees it.
   st <- evidence_stream(fit(seq(0.10, 0.70, length.out = 14), rep(0.05, 14)),
-                        date = 2000:2013, ni = rep(100, 14))
+                        date = 2000:2013, study_id = seq_along(2000:2013), ni = rep(100, 14))
   bt <- backtest(st, cuts = 2003:2010, horizon = 2, window = 2, seed = 5)
   expect_true(any(calibration(bt, "conclusion")$contaminated))
 
@@ -132,7 +132,7 @@ test_that("the plot marks contaminated methods on the axis", {
 test_that("a missing measure is not a ratio measure", {
   # rma objects built from yi/vi alone carry measure = "GEN" or nothing at
   # all, and effect_ratio() has to decide without one.
-  expect_false(is_ratio_measure(NULL))
-  expect_false(is_ratio_measure(""))
-  expect_true(is_ratio_measure("RR"))
+  expect_false(is_comparative_ratio(NULL))
+  expect_false(is_comparative_ratio(""))
+  expect_true(is_comparative_ratio("RR"))
 })

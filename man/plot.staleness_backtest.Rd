@@ -31,7 +31,7 @@ bcg <- data.frame(
            1980, 1968, 1961, 1974, 1969, 1976)
 )
 bt <- backtest(evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-                               date = bcg$year))
+                               date = bcg$year, study_id = seq_along(bcg$year)))
 
 op <- graphics::par(no.readonly = TRUE)
 plot(bt)

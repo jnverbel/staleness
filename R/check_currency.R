@@ -31,7 +31,7 @@
 #'            176782, 14776, 3381, 77972, 4839, 34767)
 #' )
 #' stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-#'                           date = bcg$year, ni = bcg$ni)
+#'                           date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni)
 #' prev <- snapshot_at(stream, 1970)
 #' new  <- window_between(stream, 1970, 1980)
 #'

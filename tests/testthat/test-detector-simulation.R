@@ -96,7 +96,7 @@ test_that("a whole backtest leaves the caller's random stream untouched", {
   yi <- c(0.05, 0.08, -0.02, 0.10, 0.04, 0.12, 0.15, 0.20, 0.18, 0.25,
           0.30, 0.35, 0.40, 0.45, 0.50)
   s <- evidence_stream(metafor::rma(yi = yi, vi = rep(0.05, length(yi))),
-                       date = 2000:2014, ni = rep(100, length(yi)))
+                       date = 2000:2014, study_id = seq_along(2000:2014), ni = rep(100, length(yi)))
   set.seed(123); expected <- runif(3)
   set.seed(123); invisible(backtest(s, horizon = 5, seed = 4))
   got <- runif(3)
@@ -170,4 +170,91 @@ test_that("the power threshold is strict, as the source states", {
   below <- simulation(prev, new_ev, B = 200, seed = 7,
                       power_threshold = observed - 1 / 200)
   expect_equal(below$verdict, "out_of_date")
+})
+
+test_that("simulation tests each replicate under the model it was handed", {
+  # It used to pool fixed-effect with a normal p-value whatever the prior was,
+  # which made it the one detector that ignored what evidence_stream() and
+  # check_currency() carry with such care. Measured: a prior fitted with
+  # test = "knha" has p = 0.06 where the same data under "z" has p = 0.33, and
+  # simulation() returned the identical power for both.
+  #
+  # It was also incoherent with itself: the replicate is drawn with
+  # sd = sqrt(vi_new + tau2), under heterogeneity, and was pooled without it.
+  yi <- c(-0.20, -0.35, 0.05, -0.30, -0.10)
+  vi <- c(0.16, 0.20, 0.18, 0.15, 0.22)
+  ne <- list(yi = c(-0.9, -0.8, -0.85), vi = rep(0.05, 3), k = 3)
+
+  p_z    <- metafor::rma(yi, vi, measure = "RR", method = "REML", test = "z")
+  p_knha <- metafor::rma(yi, vi, measure = "RR", method = "REML", test = "knha")
+  expect_false(isTRUE(all.equal(p_z$pval, p_knha$pval)))   # the models differ
+
+  s_z <- simulation(p_z, ne, B = 400, seed = 7)
+  s_k <- simulation(p_knha, ne, B = 400, seed = 7)
+  expect_false(isTRUE(all.equal(s_z$signal, s_k$signal)))  # so must the power
+  expect_equal(s_z$detail$test, "z")
+  expect_equal(s_k$detail$test, "knha")
+
+  # The closed form is kept exactly where it is exact. With tau^2 held at the
+  # prior's value, inverse-variance pooling and a z test ARE rma()'s answer,
+  # whatever the estimator that produced tau^2 -- so REML with test = "z",
+  # metafor's own default, keeps the fast path. Only a non-z test refits.
+  fe <- metafor::rma(yi, vi, measure = "RR", method = "FE", test = "z")
+  expect_true(simulation(fe, ne, B = 100, seed = 7)$detail$closed_form)
+  expect_true(s_z$detail$closed_form)
+  expect_false(s_k$detail$closed_form)
+
+  # And it really is exact: the same replicate scored both ways agrees to
+  # every digit, which is why the fast path costs nothing in fidelity.
+  ya <- c(yi, -0.5); va <- c(vi, 0.05)
+  w <- 1 / va
+  closed <- 2 * stats::pnorm(-abs((sum(w * ya) / sum(w)) / sqrt(1 / sum(w))))
+  expect_equal(closed, metafor::rma(ya, va, method = "FE", test = "z")$pval,
+               tolerance = 1e-12)
+})
+
+test_that("tau2 is held at the prior's value, which is what was simulated", {
+  # The first attempt at this refitted each replicate with method = "REML",
+  # re-estimating tau^2 from the draw. Two things went wrong and both are
+  # recorded here, because both shaped the design.
+  #
+  # It was incoherent: the replicate is generated with
+  # sd = sqrt(vi_new + tau2), so tau^2 is a parameter of the simulated world,
+  # and re-estimating it tests in a different world from the one drawn.
+  #
+  # And it did not converge. Roughly one draw in ten failed Fisher scoring, so
+  # a tenth of the replicates would have had to be discarded or counted as
+  # non-significant, either of which biases the power. Holding tau^2 removes
+  # the iteration and the failures with it.
+  yi <- c(-0.20, -0.35, 0.05, -0.30, -0.10)
+  vi <- c(0.16, 0.20, 0.18, 0.15, 0.22)
+  ne <- list(yi = c(-0.9, -0.8, -0.85), vi = rep(0.05, 3), k = 3)
+  for (test in c("z", "knha")) {
+    s <- simulation(metafor::rma(yi, vi, measure = "RR", method = "REML",
+                                 test = test), ne, B = 200, seed = 7)
+    expect_equal(s$detail$n_nonconverged, 0, info = test)
+    expect_equal(s$detail$n_evaluable, 200, info = test)
+  }
+  # tau^2 enters the weights, which the old fixed-effect pooling left out:
+  # drawn under heterogeneity, pooled without it. With a real tau^2 the two
+  # give different answers, and the one that uses it is the coherent one.
+  # Heterogeneous AND inconclusive, since simulation() only speaks to a prior
+  # that was not significant.
+  het <- c(-0.9, 0.7, -0.8, 0.9, -0.7)
+  hv  <- rep(0.10, 5)
+  ph  <- metafor::rma(het, hv, measure = "RR", method = "REML")
+  expect_gt(ph$tau2, 0)
+  expect_gt(ph$pval, 0.05)
+  s <- simulation(ph, list(yi = rep(-0.5, 3), vi = rep(0.05, 3), k = 3),
+                  B = 200, seed = 3)
+  ignoring_tau2 <- {
+    w <- 1 / hv
+    2 * stats::pnorm(-abs((sum(w * het) / sum(w)) / sqrt(1 / sum(w))))
+  }
+  with_tau2 <- {
+    w <- 1 / (hv + ph$tau2)
+    2 * stats::pnorm(-abs((sum(w * het) / sum(w)) / sqrt(1 / sum(w))))
+  }
+  expect_false(isTRUE(all.equal(ignoring_tau2, with_tau2)))
+  expect_gte(s$signal, 0); expect_lte(s$signal, 1)
 })

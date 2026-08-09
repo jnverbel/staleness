@@ -48,6 +48,24 @@
 #' @param min_k Minimum studies required in a snapshot. At least 2, since a
 #'   meta-analysis cannot be fitted from fewer.
 #' @param seed Integer seed for [simulation()].
+#' @param truth_target What each cut's truth is scored against.
+#'
+#'   `"final"`, the default and the historical behaviour, uses the model fitted
+#'   over the whole stream. Note what that implies: `horizon` then governs
+#'   **censoring only**, and changing it from 3 to 8 leaves every truth column
+#'   identical on the cuts they share. A run described as "performance at three
+#'   years" is scored against every study ever published, which on
+#'   `metadat::dat.bcg` means evidence three decades later.
+#'
+#'   `"horizon"` scores each cut against the review as it stood at
+#'   `cut + horizon`, so the question becomes the one the parameter's name
+#'   implies: did this meta-analysis go out of date **within the next
+#'   `horizon` years**. Cuts whose target date has no snapshot that can be fitted get
+#'   `NA` truths, which the metrics drop.
+#'
+#'   The two answer different questions and neither is a correction of the
+#'   other. `"final"` asks whether a review was already superseded by what
+#'   would eventually be known; `"horizon"` asks whether it was about to be.
 #' @return An object of class `staleness_backtest` with elements `results` (a
 #'   data.frame with columns `cut`, `method`, `verdict`, `signal`, `reason`,
 #'   `truth_shift`, `truth_surprise`, `truth_conclusion`, `censored`),
@@ -73,7 +91,7 @@
 #'            176782, 14776, 3381, 77972, 4839, 34767)
 #' )
 #' stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-#'                           date = bcg$year, ni = bcg$ni)
+#'                           date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni)
 #'
 #' bt <- backtest(stream, cuts = "yearly")
 #' bt
@@ -87,7 +105,8 @@
 #' head(bt$results[, c("cut", "method", "verdict", "censored")])
 #' @export
 backtest <- function(stream, cuts = "yearly", methods = available_methods(),
-                     horizon = 5, window = 3, min_k = 3, seed = NULL) {
+                     horizon = 5, window = 3, min_k = 3, seed = NULL,
+                     truth_target = c("final", "horizon")) {
   if (!inherits(stream, "staleness_stream")) {
     stop("`stream` must come from evidence_stream()", call. = FALSE)
   }
@@ -115,6 +134,7 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
          call. = FALSE)
   }
   check_seed(seed)
+  truth_target <- match.arg(truth_target)
   if (!length(methods)) {
     stop("`methods` is empty; name at least one of: ",
          paste(available_methods(), collapse = ", "), call. = FALSE)
@@ -206,10 +226,33 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
     # calibration metric computed downstream. Consumers of `results` should
     # treat an NA truth column the same way they treat `censored == TRUE`:
     # excluded from accuracy metrics, not counted as a miss.
-    df$truth_shift      <- truth_shift(theta_t, theta_final, se_final)
-    df$truth_surprise   <- truth_surprise(theta_t, prev$se, theta_final)
-    df$truth_conclusion <- truth_conclusion(theta_t, prev$pval,
-                                            theta_final, p_final)
+    # What the cut is scored against. Under "final" it is the model fitted
+    # over the whole stream, which is what this always did -- and which made
+    # `horizon` govern censoring alone: changing it from 3 to 8 left every
+    # truth column identical on the cuts they share. A run described as
+    # "performance at three years" was scored against evidence published
+    # decades later.
+    #
+    # Under "horizon" the target is the review as it stood at cut + horizon,
+    # so the question becomes the one the parameter's name implies: did this
+    # meta-analysis go out of date WITHIN the next `horizon` years.
+    if (truth_target == "final") {
+      tgt_theta <- theta_final; tgt_se <- se_final; tgt_p <- p_final
+    } else {
+      at <- tryCatch(snapshot_at(stream, cut + horizon), error = function(e) NULL)
+      if (is.null(at)) {
+        # No fittable snapshot at the target date: the truth is unknown here,
+        # not false. NA travels and the metrics drop the row.
+        tgt_theta <- NA_real_; tgt_se <- NA_real_; tgt_p <- NA_real_
+      } else {
+        tgt_theta <- as.numeric(at$beta); tgt_se <- at$se; tgt_p <- at$pval
+      }
+    }
+    df$truth_shift      <- truth_shift(theta_t, tgt_theta, tgt_se)
+    df$truth_surprise   <- truth_surprise(theta_t, prev$se, tgt_theta)
+    df$truth_conclusion <- if (is.na(tgt_p)) NA else {
+      truth_conclusion(theta_t, prev$pval, tgt_theta, tgt_p)
+    }
     rows[[length(rows) + 1L]] <- df
   }
 
@@ -222,6 +265,9 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
     list(results = results, stream = stream, methods = methods,
          horizon = horizon, window = window,
          n_cuts = length(cuts),
+         # Recorded because the two targets answer different questions, and a
+         # table of rates is indistinguishable between them otherwise.
+         truth_target = truth_target,
          n_censored = sum(results$censored) / length(methods)),
     class = "staleness_backtest"
   )

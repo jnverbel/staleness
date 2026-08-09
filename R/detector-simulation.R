@@ -109,31 +109,88 @@ simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
   # the source leaves implicit.
   df <- max(1L, length(yi_prev) - 1L)
 
-  # The whole simulation runs inside with_preserved_seed(): both the optional
-  # set.seed() and the B * k_new draws it consumes are invisible to the
-  # caller's stream, which is put back exactly as it was found.
-  hits <- with_preserved_seed(seed = seed, {
-    h <- 0L
+  # Each replicate must be tested under the model the caller actually fitted.
+  # It used to be pooled fixed-effect with a normal p-value regardless, which
+  # made simulation() the one detector that ignored what evidence_stream() and
+  # check_currency() go to some trouble to carry: a prior fitted with
+  # test = "knha" got the same power as one fitted with test = "z", though
+  # their p-values differ by a factor of two.
+  #
+  # It was also incoherent with itself. The replicate is drawn with
+  # sd_new = sqrt(vi_new + tau2) -- under heterogeneity -- and was then pooled
+  # without it. Simulated in one world, tested in another.
+  prev_test     <- if (is.null(prev$test)) "z" else prev$test
+  prev_weighted <- if (is.null(prev$weighted)) TRUE else isTRUE(prev$weighted)
+  # tau^2 is treated as KNOWN, at the value the prior meta-analysis estimated.
+  # That is not a shortcut, it is the only reading coherent with the draw: the
+  # replicate is generated with sd = sqrt(vi_new + tau2), so tau^2 is already
+  # a parameter of the simulated world. Re-estimating it from each replicate
+  # would test in a different world from the one drawn.
+  #
+  # With tau^2 held, inverse-variance pooling and a z test have a closed form
+  # that IS rma()'s answer -- verified equal to twelve digits against
+  # rma(tau2 = ), and against rma(method = "FE") in the tau^2 = 0 case. So the
+  # fast path is exact wherever it is used, and it covers metafor's own
+  # default (REML with test = "z"). Only a non-z test needs a refit.
+  closed_form_exact <- identical(prev_test, "z") && prev_weighted
+
+  out <- with_preserved_seed(seed = seed, {
+    h <- 0L; nonconv <- 0L
     for (b in seq_len(B)) {
       yi_sim <- theta + stats::rt(1L, df = df) * sd_new
       yi_all <- c(yi_prev, yi_sim)
       vi_all <- c(vi_prev, vi_new)
-      # Fixed-effect pooling: fast and adequate for a significance count.
-      w      <- 1 / vi_all
-      est    <- sum(w * yi_all) / sum(w)
-      se     <- sqrt(1 / sum(w))
-      p      <- 2 * stats::pnorm(-abs(est / se))
+      if (closed_form_exact) {
+        # tau^2 enters the weights, which is what the fixed-effect pooling
+        # used to leave out: drawn under heterogeneity, pooled without it.
+        w   <- 1 / (vi_all + tau2)
+        est <- sum(w * yi_all) / sum(w)
+        se  <- sqrt(1 / sum(w))
+        p   <- 2 * stats::pnorm(-abs(est / se))
+      } else {
+        fit <- tryCatch(suppressWarnings(metafor::rma(
+          yi       = yi_all,
+          vi       = vi_all,
+          measure  = prev$measure,
+          test     = prev_test,
+          weighted = prev_weighted,
+          tau2     = tau2
+        )), error = function(e) NULL)
+        # REML does not always converge on a simulated draw -- measured at
+        # roughly one replicate in ten. Counted rather than swept up: dividing
+        # by B would score every failure as "not significant" and bias power
+        # downwards, so the denominator is the replicates that could be
+        # evaluated, and the count travels in the verdict.
+        if (is.null(fit) || !is.finite(fit$pval)) { nonconv <- nonconv + 1L; next }
+        p <- fit$pval
+      }
       if (p < alpha) h <- h + 1L
     }
-    h
+    list(hits = h, nonconv = nonconv)
   })
 
-  power <- hits / B
+  evaluable <- B - out$nonconv
+  # A power estimated from a small remnant is not an estimate. One replicate in
+  # five failing means the model cannot be fitted to this kind of draw, which
+  # is a fact about the analysis, not a number to report.
+  if (evaluable < 1L || out$nonconv > B / 5) {
+    return(verdict_na("simulation", paste0(
+      "the prior model could not be refitted on ", out$nonconv, " of ", B,
+      " simulated replicates; the power estimate would rest on too few")))
+  }
+  power <- out$hits / evaluable
   new_verdict("simulation",
               # Strictly above: the source reads "Power >80%".
               if (power > power_threshold) "out_of_date" else "current",
               signal = power,
               detail = list(B = B, k_new = k_new, k_simulated = 1L,
                             vi_new = vi_new, df = df,
-                            power_threshold = power_threshold, seed = seed))
+                            power_threshold = power_threshold, seed = seed,
+                            # What each replicate was tested under, and how
+                            # many could not be. A caller comparing two runs
+                            # needs to see that these differed.
+                            model = prev$method, test = prev_test,
+                            closed_form = closed_form_exact,
+                            n_evaluable = evaluable,
+                            n_nonconverged = out$nonconv))
 }

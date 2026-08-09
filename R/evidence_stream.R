@@ -40,6 +40,22 @@
 #'   `as.numeric()` becomes days since 1970, so `"yearly"` would cut once per
 #'   *day* and both windows would silently become days. Convert explicitly with
 #'   `as.numeric(format(date, "\%Y"))`.
+#' @param study_id Identifier of the study each estimate came from, one per
+#'   row. **Required.** Every row used to be treated as an independent study
+#'   and nothing in the stream could tell otherwise, so several outcomes, time
+#'   points or arms from one trial entered as separate studies: their
+#'   participants summed twice in [barrowman()], their weights counted twice in
+#'   every pooled estimate, and the cumulative series moved on evidence that had
+#'   not been collected twice.
+#'
+#'   It is an identifier rather than a promise of independence because a
+#'   promise cannot be checked. If every row really is a distinct study, pass
+#'   the study labels or `seq_len(k)` — the point is that the choice is made
+#'   deliberately.
+#' @param allow_dependence Set `TRUE` to build a stream whose `study_id` has
+#'   duplicates. Refused by default: dependent estimates make one trial look
+#'   like several. When allowed, the stream records it, and every metric
+#'   computed from it should be read as optimistic.
 #' @param ni Optional numeric vector of sample sizes per study, needed by
 #'   [barrowman()]. Defaults to `ma$ni` when `metafor` recorded it.
 #' @return An object of class `staleness_stream`.
@@ -60,10 +76,11 @@
 #' ma <- rma(yi, vi, data = bcg, measure = "RR")
 #'
 #' # The stream sorts by date; the meta-analysis itself is order-blind.
-#' stream <- evidence_stream(ma, date = bcg$year, ni = bcg$ni)
+#' stream <- evidence_stream(ma, date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni)
 #' stream
 #' @export
-evidence_stream <- function(ma, date, ni = NULL) {
+evidence_stream <- function(ma, date, study_id, ni = NULL,
+                            allow_dependence = FALSE) {
   if (!inherits(ma, "rma.uni")) {
     # Other metafor fits -- rma.mh, rma.peto -- carry every field read here,
     # but snapshot_at() refits each cut with rma.uni, and silently returning
@@ -128,6 +145,45 @@ evidence_stream <- function(ma, date, ni = NULL) {
     stop("`date` has infinite values; every study needs a real publication ",
          "year", call. = FALSE)
   }
+  # Every row was treated as an independent study, and nothing in the stream
+  # could tell otherwise: it carried yi, vi, a date and optionally ni, with no
+  # identity attached. Several outcomes, time points or arms from one trial
+  # therefore entered as separate studies -- their participants summed twice
+  # in barrowman(), their weights counted twice in every pooled estimate, and
+  # the cumulative series moved on evidence that had not been collected twice.
+  #
+  # The package cannot detect that without being told who is who, so it asks.
+  # A required argument rather than an optional one, and rather than a boolean
+  # promising independence: a promise cannot be checked, and an identifier can.
+  if (missing(study_id)) {
+    stop("`study_id` is required: one identifier per row, naming the study ",
+         "each estimate came from. Without it, several outcomes or time ",
+         "points from one trial enter as separate studies and are counted ",
+         "twice. If every row really is a distinct study, pass the study ",
+         "labels or seq_len(k).", call. = FALSE)
+  }
+  if (length(study_id) != k) {
+    stop("`study_id` has length ", length(study_id), " but the meta-analysis ",
+         "has ", k, " studies", call. = FALSE)
+  }
+  if (anyNA(study_id)) {
+    stop("`study_id` has missing values; an estimate of unknown provenance ",
+         "cannot be checked for independence", call. = FALSE)
+  }
+  dup <- duplicated(study_id)
+  if (any(dup) && !allow_dependence) {
+    n_dup <- length(unique(study_id[dup]))
+    stop(n_dup, " stud", if (n_dup == 1) "y contributes" else "ies contribute",
+         " more than one estimate (", paste(utils::head(unique(study_id[dup]), 3),
+         collapse = ", "), if (n_dup > 3) ", ..." else "", "). Those estimates ",
+         "are dependent: pooling them treats one trial as several, and ",
+         "barrowman() would count its participants more than once. Select one ",
+         "estimate per study before building the stream, or pass ",
+         "`allow_dependence = TRUE` to proceed knowing the metrics will be ",
+         "optimistic.", call. = FALSE)
+  }
+  dependent <- any(dup)
+
   ni_supplied <- !is.null(ni)
   if (is.null(ni)) ni <- ma$ni
   if (!is.null(ni) && length(ni) != k) {
@@ -163,6 +219,11 @@ evidence_stream <- function(ma, date, ni = NULL) {
       vi      = as.numeric(ma$vi)[ord],
       ni      = if (is.null(ni)) NULL else as.numeric(ni)[ord],
       date    = date[ord],
+      study_id = study_id[ord],
+      # TRUE only when the caller opted into dependent estimates. It travels
+      # with the stream so that print(), backtest() and the metrics can say
+      # so, rather than reporting rates that quietly assume independence.
+      dependent = dependent,
       measure = ma$measure,
       method  = ma$method,
       # Carried so every snapshot is tested the way the caller asked. The
@@ -196,7 +257,7 @@ evidence_stream <- function(ma, date, ni = NULL) {
 #'            1980, 1968, 1961, 1974, 1969, 1976)
 #' )
 #' stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-#'                           date = bcg$year)
+#'                           date = bcg$year, study_id = seq_along(bcg$year))
 #'
 #' # The review as it stood in 1970: 7 of the 13 trials had been published.
 #' prev <- snapshot_at(stream, 1970)
@@ -239,7 +300,7 @@ snapshot_at <- function(stream, cut) {
 #'            176782, 14776, 3381, 77972, 4839, 34767)
 #' )
 #' stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-#'                           date = bcg$year, ni = bcg$ni)
+#'                           date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni)
 #'
 #' # The interval is half-open, (from, to], so a trial published exactly in
 #' # 1970 would belong to the snapshot, never to the new evidence.
@@ -272,5 +333,15 @@ print.staleness_stream <- function(x, ...) {
   cat("  studies :", x$k, "\n")
   cat("  measure :", x$measure, "\n")
   cat("  span    :", format(min(x$date)), "to", format(max(x$date)), "\n")
+  # Said out loud, every time. A stream built with allow_dependence = TRUE
+  # produces metrics that assume independent studies over evidence that is
+  # not, and the only place a reader might notice is here.
+  if (isTRUE(x$dependent)) {
+    n_studies <- length(unique(x$study_id))
+    cat("  NOTE    :", x$k, "estimates from", n_studies, "studies;",
+        "dependence was allowed.\n")
+    cat("            Rates computed from this stream are optimistic:",
+        "one trial\n            counts as several.\n")
+  }
   invisible(x)
 }

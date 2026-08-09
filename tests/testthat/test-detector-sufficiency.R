@@ -289,7 +289,7 @@ test_that("a constant cumulative series does not take down a whole backtest", {
   # succeeded as soon as "sufficiency" was dropped from `methods`.
   stream <- evidence_stream(
     metafor::rma(yi = rep(0.5, 20), vi = rep(0.02, 20), measure = "MD"),
-    date = 2000:2019)
+    date = 2000:2019, study_id = seq_along(2000:2019))
   bt <- expect_no_error(
     backtest(stream, methods = c("rcma", "ottawa", "sufficiency"),
              horizon = 3, window = 3))

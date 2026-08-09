@@ -15,7 +15,7 @@ calibration(bt, truth = "shift")
 \value{
 A data frame, one row per method in `bt$methods`, with columns
   `method`, `truth`, `sensitivity`, `specificity`, `false_alarm`, `n` and
-  `contaminated`.
+  `contaminated`. Descriptive of this series; see the section above.
 }
 \description{
 Turns a backtest's raw results into sensitivity, specificity and false
@@ -52,6 +52,30 @@ metrics. "This detector never applied to this evidence" is itself a result
 about the detector, and belongs in the table as a row rather than as an
 absence the reader has to notice.
 }
+\section{These rates describe one series; they do not estimate a rate}{
+
+`n` counts **cuts**, and consecutive cuts of one review share almost every
+study — the snapshot at 1970 and the one at 1971 differ by whatever appeared
+in a single year. Nineteen cuts are not nineteen observations, so what comes
+back is a description of this body of evidence and not an estimate of how a
+detector behaves in general.
+
+That is also why no interval is returned. A binomial one computed on `n`
+would treat overlapping snapshots as independent draws and come out far too
+narrow: the honest answer on a single series is no interval, not a
+confident-looking one.
+
+For a rate that generalises, use [pooled_calibration()] over several
+independent reviews. Reviews share no studies, so resampling *them* gives an
+interval that means something.
+
+A second caution, measured rather than theoretical: against
+`truth_target = "final"` a review whose effect kept moving has **no true
+negatives at all** — every earlier cut counts as out of date — so its
+specificity is `NA` rather than perfect. That is the case in 6 of the 17
+reviews swept in `inst/applicability/`.
+}
+
 \examples{
 library(metafor)
 bcg <- data.frame(
@@ -65,7 +89,7 @@ bcg <- data.frame(
            176782, 14776, 3381, 77972, 4839, 34767)
 )
 bt <- backtest(evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-                               date = bcg$year, ni = bcg$ni))
+                               date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni))
 
 # Every requested method gets a row. barrowman and simulation never apply
 # to this evidence -- the prior review is significant throughout -- so they

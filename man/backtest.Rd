@@ -11,7 +11,8 @@ backtest(
   horizon = 5,
   window = 3,
   min_k = 3,
-  seed = NULL
+  seed = NULL,
+  truth_target = c("final", "horizon")
 )
 }
 \arguments{
@@ -33,6 +34,25 @@ censored and excluded from metrics — see the note on censoring above.}
 meta-analysis cannot be fitted from fewer.}
 
 \item{seed}{Integer seed for [simulation()].}
+
+\item{truth_target}{What each cut's truth is scored against.
+
+  `"final"`, the default and the historical behaviour, uses the model fitted
+  over the whole stream. Note what that implies: `horizon` then governs
+  **censoring only**, and changing it from 3 to 8 leaves every truth column
+  identical on the cuts they share. A run described as "performance at three
+  years" is scored against every study ever published, which on
+  `metadat::dat.bcg` means evidence three decades later.
+
+  `"horizon"` scores each cut against the review as it stood at
+  `cut + horizon`, so the question becomes the one the parameter's name
+  implies: did this meta-analysis go out of date **within the next
+  `horizon` years**. Cuts whose target date has no snapshot that can be fitted get
+  `NA` truths, which the metrics drop.
+
+  The two answer different questions and neither is a correction of the
+  other. `"final"` asks whether a review was already superseded by what
+  would eventually be known; `"horizon"` asks whether it was about to be.}
 }
 \value{
 An object of class `staleness_backtest` with elements `results` (a
@@ -99,7 +119,7 @@ bcg <- data.frame(
            176782, 14776, 3381, 77972, 4839, 34767)
 )
 stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-                          date = bcg$year, ni = bcg$ni)
+                          date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni)
 
 bt <- backtest(stream, cuts = "yearly")
 bt

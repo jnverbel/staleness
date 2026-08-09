@@ -15,7 +15,7 @@ test_that("no detector sees a step change before it happens", {
   dates <- c(1998:2009, 2010:2021)
 
   ma <- metafor::rma(yi = yi, vi = vi, measure = "MD")
-  s  <- evidence_stream(ma, date = dates)
+  s  <- evidence_stream(ma, date = dates, study_id = seq_along(dates))
 
   bt <- backtest(s, methods = c("rcma", "ottawa", "sufficiency"),
                  horizon = 3, window = 3, seed = 1)
@@ -42,7 +42,7 @@ test_that("ottawa and sufficiency do fire after the change, proving test 1 has t
   dates <- c(1998:2009, 2010:2021)
 
   ma <- metafor::rma(yi = yi, vi = vi, measure = "MD")
-  s  <- evidence_stream(ma, date = dates)
+  s  <- evidence_stream(ma, date = dates, study_id = seq_along(dates))
 
   bt <- backtest(s, methods = c("rcma", "ottawa", "sufficiency"),
                  horizon = 3, window = 3, seed = 1)
@@ -64,7 +64,7 @@ test_that("snapshot_at never uses a study published after the cut", {
   set.seed(7)
   yi <- rnorm(20, 0.3, 0.05); vi <- rep(0.01, 20)
   ma <- metafor::rma(yi = yi, vi = vi, measure = "MD")
-  s  <- evidence_stream(ma, date = 2000:2019)
+  s  <- evidence_stream(ma, date = 2000:2019, study_id = seq_along(2000:2019))
 
   for (cut in c(2005, 2010, 2015)) {
     snap <- snapshot_at(s, cut)

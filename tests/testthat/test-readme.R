@@ -21,7 +21,7 @@ test_that("the README's worked example still produces what it claims", {
 
   es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
                         di = cneg, data = metadat::dat.bcg)
-  st <- evidence_stream(metafor::rma(yi, vi, data = es), date = es$year)
+  st <- evidence_stream(metafor::rma(yi, vi, data = es), date = es$year, study_id = seq_along(es$year))
   chk <- check_currency(snapshot_at(st, 1970), window_between(st, 1970, 1980),
                         methods = c("rcma", "ottawa", "sufficiency"))
   actual <- vapply(chk$verdicts, function(v) round(as.numeric(v$signal), 2),

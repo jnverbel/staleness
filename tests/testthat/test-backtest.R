@@ -7,7 +7,7 @@
 make_bcg_stream <- function() {
     es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
-  evidence_stream(ma, date = es$year)
+  evidence_stream(ma, date = es$year, study_id = seq_along(es$year))
 }
 
 test_that("backtest returns one row per usable cut and method", {
@@ -32,7 +32,7 @@ test_that("cuts too close to the end of the series are censored, not counted", {
 
 test_that("backtest refuses a series with fewer than three usable cuts", {
   ma <- metafor::rma(yi = rep(log(0.5), 3), vi = rep(0.04, 3), measure = "RR")
-  s  <- evidence_stream(ma, date = c(2000, 2001, 2002))
+  s  <- evidence_stream(ma, date = c(2000, 2001, 2002), study_id = seq_along(c(2000, 2001, 2002)))
   expect_error(backtest(s, horizon = 5), "at least 3")
 })
 
@@ -66,9 +66,9 @@ make_ni_stream <- function(with_ni = TRUE) {
     # sample size barrowman requires, producing real out_of_date/current
     # verdicts rather than a wall of not_applicable.
     ni <- c(rep(50, 8), rep(2000, 7))
-    evidence_stream(ma, date = date, ni = ni)
+    evidence_stream(ma, date = date, study_id = seq_along(date), ni = ni)
   } else {
-    evidence_stream(ma, date = date)
+    evidence_stream(ma, date = date, study_id = seq_along(date))
   }
 }
 
@@ -141,7 +141,7 @@ test_that("backtest validates its arguments instead of failing obscurely", {
   st <- evidence_stream(
     suppressWarnings(metafor::rma(yi = seq(-1, 1, length.out = 12),
                                   vi = rep(0.05, 12), measure = "RR")),
-    date = 2000:2011, ni = rep(100, 12))
+    date = 2000:2011, study_id = seq_along(2000:2011), ni = rep(100, 12))
 
   # A negative horizon means "look backwards to see the future". It used to be
   # accepted and produced a censoring rule that cannot be interpreted.
@@ -168,7 +168,7 @@ test_that("duplicate cuts are collapsed, not counted twice", {
   st <- evidence_stream(
     suppressWarnings(metafor::rma(yi = seq(-1, 1, length.out = 12),
                                   vi = rep(0.05, 12), measure = "RR")),
-    date = 2000:2011, ni = rep(100, 12))
+    date = 2000:2011, study_id = seq_along(2000:2011), ni = rep(100, 12))
 
   once <- backtest(st, cuts = c(2003, 2005, 2007), horizon = 2, window = 2,
                    seed = 1)
@@ -191,7 +191,7 @@ test_that("a repeated method is collapsed, like a repeated cut", {
   st <- evidence_stream(
     suppressWarnings(metafor::rma(yi = seq(-1, 1, length.out = 12),
                                   vi = rep(0.05, 12), measure = "RR")),
-    date = 2000:2011, ni = rep(100, 12))
+    date = 2000:2011, study_id = seq_along(2000:2011), ni = rep(100, 12))
 
   once <- backtest(st, cuts = 2003:2008, methods = c("rcma", "ottawa"),
                    horizon = 2, window = 2, seed = 1)
@@ -212,4 +212,66 @@ test_that("check_currency also collapses a repeated method", {
   res  <- check_currency(prev, new, methods = c("rcma", "rcma", "ottawa"))
   expect_equal(length(res$verdicts), 2L)
   expect_equal(nrow(as.data.frame(res)), 2L)
+})
+
+test_that("horizon governed censoring only, and truth_target fixes that", {
+  # `horizon` is documented as the time a cut's truth needs to materialise,
+  # and every truth column was scored against the model fitted over the WHOLE
+  # stream regardless. Changing it from 3 to 8 left the shared cuts identical:
+  # a run described as "performance at three years" was scored against
+  # evidence published three decades later on dat.bcg.
+  skip_if_not_installed("metadat")
+  es <- bcg_es()
+  st <- evidence_stream(metafor::rma(yi, vi, data = es, measure = "RR",
+                                     method = "FE"),
+                        date = es$year, study_id = seq_len(nrow(es)))
+
+  truths <- function(h, tt) {
+    bt <- suppressWarnings(backtest(st, cuts = "yearly", horizon = h,
+                                    window = 5, min_k = 3, seed = 1,
+                                    truth_target = tt))
+    u <- unique(bt$results[, c("cut", "truth_shift")])
+    u[!is.na(u$truth_shift), ]
+  }
+
+  # Under "final", the historical behaviour: identical on the shared cuts.
+  a <- truths(3, "final"); b <- truths(8, "final")
+  shared <- intersect(a$cut, b$cut)
+  expect_equal(a$truth_shift[a$cut %in% shared], b$truth_shift[b$cut %in% shared])
+
+  # Under "horizon", the parameter changes the question, and the answers.
+  expect_equal(sum(truths(3, "horizon")$truth_shift), 7)
+  expect_equal(sum(truths(8, "horizon")$truth_shift), 11)
+})
+
+test_that("scoring against the final model leaves dat.bcg with no negatives", {
+  # Worth pinning because it explains a pattern in inst/applicability/: 20 of
+  # 60 rows there have an incalculable specificity. Against the state of the
+  # evidence in 1980, EVERY earlier cut of dat.bcg counts as out of date --
+  # 23 of 23 -- so there are no true negatives for specificity to be computed
+  # from. Under "horizon" there are 7, and it can.
+  skip_if_not_installed("metadat")
+  es <- bcg_es()
+  st <- evidence_stream(metafor::rma(yi, vi, data = es, measure = "RR",
+                                     method = "FE"),
+                        date = es$year, study_id = seq_len(nrow(es)))
+
+  fin <- suppressWarnings(backtest(st, cuts = "yearly", horizon = 3,
+                                   window = 5, min_k = 3, seed = 1,
+                                   truth_target = "final"))
+  hor <- suppressWarnings(backtest(st, cuts = "yearly", horizon = 3,
+                                   window = 5, min_k = 3, seed = 1,
+                                   truth_target = "horizon"))
+  uf <- unique(fin$results[, c("cut", "truth_shift")])
+  uh <- unique(hor$results[, c("cut", "truth_shift")])
+  expect_equal(sum(uf$truth_shift), nrow(uf))          # every cut is TRUE
+  expect_lt(sum(uh$truth_shift), nrow(uh))             # not under horizon
+
+  expect_true(is.na(calibration(fin, "shift")$specificity[1]))
+  expect_false(is.na(calibration(hor, "shift")$specificity[1]))
+
+  # And the target is recorded, because a table of rates cannot be told apart
+  # between the two otherwise.
+  expect_equal(fin$truth_target, "final")
+  expect_equal(hor$truth_target, "horizon")
 })

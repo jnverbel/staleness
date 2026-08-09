@@ -1,7 +1,7 @@
 Package: staleness
 Type: Package
 Title: Apply and Calibrate Published Signals for Updating Meta-Analyses
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: person("Javier", "Núñez", email = "jnverbel@gmail.com", role = c("aut", "cre"))
 Description: Implements the five published statistical methods for detecting whether a
     systematic review or meta-analysis has gone out of date, and provides a

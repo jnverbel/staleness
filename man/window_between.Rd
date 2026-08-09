@@ -30,7 +30,7 @@ bcg <- data.frame(
            176782, 14776, 3381, 77972, 4839, 34767)
 )
 stream <- evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-                          date = bcg$year, ni = bcg$ni)
+                          date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni)
 
 # The interval is half-open, (from, to], so a trial published exactly in
 # 1970 would belong to the snapshot, never to the new evidence.

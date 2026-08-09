@@ -1,7 +1,7 @@
 make_bcg_stream <- function() {
     es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
-  evidence_stream(ma, date = es$year)
+  evidence_stream(ma, date = es$year, study_id = seq_along(es$year))
 }
 
 test_that("a stream is built from an rma object and sorted by date", {
@@ -18,14 +18,14 @@ test_that("missing dates are an explicit error, never imputed", {
     es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
   bad <- es$year; bad[3] <- NA
-  expect_error(evidence_stream(ma, date = bad), "missing")
+  expect_error(evidence_stream(ma, date = bad, study_id = seq_along(bad)), "missing")
 })
 
 test_that("date length must match the number of studies", {
   skip_if_not_installed("metadat")
     es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
-  expect_error(evidence_stream(ma, date = c(1950, 1960)), "length")
+  expect_error(evidence_stream(ma, date = c(1950, 1960), study_id = seq_along(c(1950, 1960))), "length")
 })
 
 test_that("snapshot_at refits using only studies up to the cut", {
@@ -62,19 +62,19 @@ test_that("a snapshot with fewer than 2 studies is refused", {
 test_that("evidence_stream refuses missing sample sizes, with a message that says so", {
   ma <- metafor::rma(yi = rep(log(0.5), 6), vi = rep(0.02, 6), measure = "RR")
   expect_error(
-    evidence_stream(ma, date = 2000:2005, ni = c(100, 100, NA, 100, 100, 100)),
+    evidence_stream(ma, date = 2000:2005, study_id = seq_along(2000:2005), ni = c(100, 100, NA, 100, 100, 100)),
     "missing values"
   )
   # And the same stream with a complete `ni` is accepted, so the check is not
   # rejecting the shape of the input.
-  expect_s3_class(evidence_stream(ma, date = 2000:2005, ni = rep(100, 6)),
+  expect_s3_class(evidence_stream(ma, date = 2000:2005, study_id = seq_along(2000:2005), ni = rep(100, 6)),
                   "staleness_stream")
 })
 
 test_that("an NA in an explicitly supplied ni is still refused", {
   ma <- metafor::rma(yi = c(0.1, 0.2, 0.15, 0.05), vi = rep(0.05, 4))
   expect_error(
-    evidence_stream(ma, date = 2001:2004, ni = c(100, NA, 120, 130)),
+    evidence_stream(ma, date = 2001:2004, study_id = seq_along(2001:2004), ni = c(100, NA, 120, 130)),
     "never imputed"
   )
 })
@@ -93,8 +93,8 @@ test_that("an NA in metafor's own ni does not block the whole stream", {
   ma <- metafor::rma(yi, vi, data = es)
   ma$ni[2] <- NA                      # one study never reported its n
 
-  expect_no_error(evidence_stream(ma, date = 2001:2004))
-  stream <- evidence_stream(ma, date = 2001:2004)
+  expect_no_error(evidence_stream(ma, date = 2001:2004, study_id = seq_along(2001:2004)))
+  stream <- evidence_stream(ma, date = 2001:2004, study_id = seq_along(2001:2004))
   expect_s3_class(stream, "staleness_stream")
   expect_true(anyNA(stream$ni))
 
@@ -114,7 +114,7 @@ test_that("a meta-regression is refused rather than silently flattened", {
   es <- bcg_es()
   mr <- metafor::rma(yi, vi, mods = ~ ablat, data = es)
   expect_gt(length(mr$beta), 1)
-  expect_error(evidence_stream(mr, date = es$year), "moderator")
+  expect_error(evidence_stream(mr, date = es$year, study_id = seq_along(es$year)), "moderator")
 })
 
 test_that("the test statistic the caller chose survives into every snapshot", {
@@ -123,7 +123,7 @@ test_that("the test statistic the caller chose survives into every snapshot", {
   # score the caller's evidence under a test they did not ask for.
   es <- bcg_es()
   kn <- metafor::rma(yi, vi, data = es, test = "knha")
-  st <- evidence_stream(kn, date = es$year)
+  st <- evidence_stream(kn, date = es$year, study_id = seq_along(es$year))
   expect_equal(st$test, "knha")
 
   snap <- snapshot_at(st, 1975)
@@ -133,7 +133,7 @@ test_that("the test statistic the caller chose survives into every snapshot", {
   expect_equal(snap$pval, direct$pval, tolerance = 1e-10)
 
   # And the default is untouched for callers who never asked for anything.
-  plain <- evidence_stream(metafor::rma(yi, vi, data = es), date = es$year)
+  plain <- evidence_stream(metafor::rma(yi, vi, data = es), date = es$year, study_id = seq_along(es$year))
   expect_equal(snapshot_at(plain, 1975)$test, "z")
 })
 
@@ -145,13 +145,13 @@ test_that("options that change the estimator survive into the snapshots", {
   keep <- es$year <= 1975
 
   unw <- metafor::rma(yi, vi, data = es, weighted = FALSE)
-  s1  <- snapshot_at(evidence_stream(unw, date = es$year), 1975)
+  s1  <- snapshot_at(evidence_stream(unw, date = es$year, study_id = seq_along(es$year)), 1975)
   d1  <- metafor::rma(yi, vi, data = es[keep, ], weighted = FALSE)
   expect_false(s1$weighted)
   expect_equal(as.numeric(s1$beta), as.numeric(d1$beta), tolerance = 1e-10)
 
   fx <- metafor::rma(yi, vi, data = es, tau2 = 0.1)
-  s2 <- snapshot_at(evidence_stream(fx, date = es$year), 1975)
+  s2 <- snapshot_at(evidence_stream(fx, date = es$year, study_id = seq_along(es$year)), 1975)
   d2 <- metafor::rma(yi, vi, data = es[keep, ], tau2 = 0.1)
   expect_equal(s2$tau2, 0.1)
   expect_equal(as.numeric(s2$beta), as.numeric(d2$beta), tolerance = 1e-10)
@@ -159,5 +159,60 @@ test_that("options that change the estimator survive into the snapshots", {
   # Custom per-study weights cannot be carried through a subset sensibly, so
   # they are refused rather than dropped.
   wt <- metafor::rma(yi, vi, data = es, weights = rep(1, nrow(es)))
-  expect_error(evidence_stream(wt, date = es$year), "weights")
+  expect_error(evidence_stream(wt, date = es$year, study_id = seq_along(es$year)), "weights")
+})
+
+test_that("evidence_stream requires an identifier and refuses dependence", {
+  # Every row was treated as an independent study, and nothing in the stream
+  # could tell otherwise: it held yi, vi, a date and optionally ni, with no
+  # identity attached. Several outcomes, time points or arms from one trial
+  # entered as separate studies -- their participants summed twice in
+  # barrowman(), their weights counted twice in every pooled estimate.
+  #
+  # This was known before it was reported: the metadat sweep in
+  # inst/applicability/ had to exclude seven datasets with several effects per
+  # study BY HAND. Having to do that by hand was the defect.
+  es <- bcg_es()
+  ma <- metafor::rma(yi, vi, data = es, measure = "RR", method = "FE")
+
+  expect_error(evidence_stream(ma, date = es$year), "study_id")
+  expect_error(evidence_stream(ma, date = es$year,
+                               study_id = seq_len(3)), "length")
+  expect_error(evidence_stream(ma, date = es$year,
+                               study_id = c(NA, seq_len(nrow(es) - 1))),
+               "missing")
+
+  # Duplicates are refused by default, and the message says which studies and
+  # what it would have cost.
+  dup <- c("trial A", "trial A", seq_len(nrow(es) - 2))
+  expect_error(evidence_stream(ma, date = es$year, study_id = dup),
+               "more than one estimate")
+  expect_error(evidence_stream(ma, date = es$year, study_id = dup),
+               "barrowman")
+
+  # An identifier rather than a boolean promising independence, because a
+  # promise cannot be checked and an identifier can. Distinct ids pass.
+  st <- evidence_stream(ma, date = es$year, study_id = seq_len(nrow(es)))
+  expect_s3_class(st, "staleness_stream")
+  expect_false(st$dependent)
+  expect_equal(length(st$study_id), nrow(es))
+})
+
+test_that("allowed dependence is recorded and announced, not forgotten", {
+  es <- bcg_es()
+  ma <- metafor::rma(yi, vi, data = es, measure = "RR", method = "FE")
+  dup <- c("trial A", "trial A", seq_len(nrow(es) - 2))
+
+  st <- evidence_stream(ma, date = es$year, study_id = dup,
+                        allow_dependence = TRUE)
+  expect_true(st$dependent)
+  # print() is the one place a reader might notice, so it says so there.
+  out <- utils::capture.output(print(st))
+  expect_true(any(grepl("dependence was allowed", out)))
+  expect_true(any(grepl("optimistic", out)))
+
+  # And the ids travel in the stream, sorted with everything else, so a caller
+  # can check what got pooled with what.
+  expect_equal(length(st$study_id), nrow(es))
+  expect_equal(length(unique(st$study_id)), nrow(es) - 1)
 })

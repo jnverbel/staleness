@@ -31,7 +31,7 @@ bcg <- data.frame(
            1980, 1968, 1961, 1974, 1969, 1976)
 )
 bt <- backtest(evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-                               date = bcg$year))
+                               date = bcg$year, study_id = seq_along(bcg$year)))
 
 # All three truth definitions at once, stacked. Reading them side by side
 # is the point: a detector that looks good under one and bad under another

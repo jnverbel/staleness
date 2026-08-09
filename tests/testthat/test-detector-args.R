@@ -180,14 +180,14 @@ test_that("evidence_stream requires dates it can cut yearly", {
   # conversion. Mutation showed the difference -- dropping the Date branch left
   # the tests green while the user lost the only sentence that tells them what
   # to do about it.
-  expect_error(evidence_stream(ma, date = d), "as\\.numeric\\(format\\(")
-  expect_error(evidence_stream(ma, date = as.POSIXct(d)),
+  expect_error(evidence_stream(ma, date = d, study_id = seq_along(d)), "as\\.numeric\\(format\\(")
+  expect_error(evidence_stream(ma, date = as.POSIXct(d), study_id = seq_along(as.POSIXct(d))),
                "as\\.numeric\\(format\\(")
-  expect_error(evidence_stream(ma, date = factor(2001:2006)), "numeric")
-  expect_error(evidence_stream(ma, date = as.character(2001:2006)), "numeric")
+  expect_error(evidence_stream(ma, date = factor(2001:2006), study_id = seq_along(factor(2001:2006))), "numeric")
+  expect_error(evidence_stream(ma, date = as.character(2001:2006), study_id = seq_along(as.character(2001:2006))), "numeric")
   # Years still work, including fractional ones.
-  expect_silent(evidence_stream(ma, date = 2001:2006))
-  expect_silent(evidence_stream(ma, date = seq(2001, 2003.5, length.out = 6)))
+  expect_silent(evidence_stream(ma, date = 2001:2006, study_id = seq_along(2001:2006)))
+  expect_silent(evidence_stream(ma, date = seq(2001, 2003.5, length.out = 6), study_id = seq_along(seq(2001, 2003.5, length.out = 6))))
 })
 
 test_that("rcma and ottawa refuse models on different scales", {
@@ -283,7 +283,7 @@ test_that("the truth functions validate their thresholds", {
 test_that("window_between and snapshot_at validate their cut points", {
   es <- bcg_es()
   ma <- metafor::rma(yi, vi, data = es, measure = "RR", method = "FE")
-  st <- evidence_stream(ma, date = es$year)
+  st <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year))
 
   # from/to went straight into a comparison against the date vector. NA made
   # every element NA and the subset came back malformed; a character compared
@@ -320,12 +320,12 @@ test_that("evidence_stream refuses infinite years at the entry point", {
   # hides the content. Mutating in place, keeping the length, is what finds it.
   ma <- metafor::rma(yi = rnorm(6, -0.3, 0.1), vi = runif(6, 0.02, 0.05),
                      measure = "RR")
-  expect_error(evidence_stream(ma, date = c(2001:2005, Inf)), "infinite")
-  expect_error(evidence_stream(ma, date = c(-Inf, 2002:2006)), "infinite")
+  expect_error(evidence_stream(ma, date = c(2001:2005, Inf), study_id = seq_along(c(2001:2005, Inf))), "infinite")
+  expect_error(evidence_stream(ma, date = c(-Inf, 2002:2006), study_id = seq_along(c(-Inf, 2002:2006))), "infinite")
   # NA and NaN keep their own message, which says something different.
-  expect_error(evidence_stream(ma, date = c(NA, 2002:2006)), "missing")
-  expect_error(evidence_stream(ma, date = c(NaN, 2002:2006)), "missing")
-  expect_silent(evidence_stream(ma, date = 2001:2006))
+  expect_error(evidence_stream(ma, date = c(NA, 2002:2006), study_id = seq_along(c(NA, 2002:2006))), "missing")
+  expect_error(evidence_stream(ma, date = c(NaN, 2002:2006), study_id = seq_along(c(NaN, 2002:2006))), "missing")
+  expect_silent(evidence_stream(ma, date = 2001:2006, study_id = seq_along(2001:2006)))
 })
 
 test_that("supplied sample sizes and cut points must be real numbers", {
@@ -338,22 +338,22 @@ test_that("supplied sample sizes and cut points must be real numbers", {
 
   # barrowman() sums ni across a snapshot, so a negative element silently
   # shrinks the total it divides by and an infinite one makes it Inf.
-  expect_error(evidence_stream(ma, date = es$year, ni = replace(ni, 1, Inf)),
+  expect_error(evidence_stream(ma, date = es$year, study_id = seq_along(es$year), ni = replace(ni, 1, Inf)),
                "finite")
-  expect_error(evidence_stream(ma, date = es$year, ni = replace(ni, 1, -5)),
+  expect_error(evidence_stream(ma, date = es$year, study_id = seq_along(es$year), ni = replace(ni, 1, -5)),
                "positive")
-  expect_error(evidence_stream(ma, date = es$year, ni = replace(ni, 1, 0)),
+  expect_error(evidence_stream(ma, date = es$year, study_id = seq_along(es$year), ni = replace(ni, 1, 0)),
                "positive")
 
   # But a DERIVED ni is a fact about the dataset, not about the call, and must
   # still not take down the four detectors that never read it. That line was
   # drawn deliberately for NA and holds here too.
-  st <- evidence_stream(ma, date = es$year)
+  st <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year))
   expect_s3_class(st, "staleness_stream")
 
   # An infinite cut used to surface as "needs at least 3 uncensored cuts":
   # the error named a consequence and never the Inf that caused it.
-  st2 <- evidence_stream(ma, date = es$year, ni = ni)
+  st2 <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year), ni = ni)
   expect_error(backtest(st2, cuts = c(1960, 1965, Inf), horizon = 3,
                         window = 5, min_k = 3), "infinite")
   expect_silent(suppressWarnings(
@@ -394,13 +394,13 @@ test_that("metafor subclasses are refused by the detectors, as by the stream", {
   expect_error(ottawa(mh, mh), "rma.mh")
   expect_error(sufficiency(mh, mh), "rma.mh")
   # The stream's message is the one being made consistent, not replaced.
-  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year), "rma.mh")
+  expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year, study_id = seq_along(metadat::dat.lau1992$year)), "rma.mh")
 
   # And what the package builds internally is still rma.uni, so nothing in the
   # engine trips over this.
   es <- bcg_es()
   st <- evidence_stream(metafor::rma(yi, vi, data = es, measure = "RR",
-                                     method = "FE"), date = es$year)
+                                     method = "FE"), date = es$year, study_id = seq_along(es$year))
   expect_s3_class(snapshot_at(st, 1970), "rma.uni")
 })
 
@@ -425,7 +425,7 @@ test_that("a factor cannot run one detector and be labelled another", {
 
   es <- bcg_es()
   st <- evidence_stream(metafor::rma(yi, vi, data = es, measure = "RR",
-                                     method = "FE"), date = es$year)
+                                     method = "FE"), date = es$year, study_id = seq_along(es$year))
   expect_error(backtest(st, methods = factor("ottawa")), "character")
   expect_error(backtest(st, methods = c("rcma", NA)), "missing")
 
@@ -466,7 +466,7 @@ test_that("min_k counts studies, so it is a whole number", {
   # numbers got the same backtest and neither could tell which from the object.
   es <- bcg_es()
   st <- evidence_stream(metafor::rma(yi, vi, data = es, measure = "RR",
-                                     method = "FE"), date = es$year)
+                                     method = "FE"), date = es$year, study_id = seq_along(es$year))
   for (bad in c(2.1, 2.5, 2.9)) {
     expect_error(backtest(st, min_k = bad), "whole number", info = bad)
   }

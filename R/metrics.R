@@ -52,12 +52,34 @@ eligible_rows <- function(bt, truth) {
 #' about the detector, and belongs in the table as a row rather than as an
 #' absence the reader has to notice.
 #'
+#' @section These rates describe one series; they do not estimate a rate:
+#' `n` counts **cuts**, and consecutive cuts of one review share almost every
+#' study — the snapshot at 1970 and the one at 1971 differ by whatever appeared
+#' in a single year. Nineteen cuts are not nineteen observations, so what comes
+#' back is a description of this body of evidence and not an estimate of how a
+#' detector behaves in general.
+#'
+#' That is also why no interval is returned. A binomial one computed on `n`
+#' would treat overlapping snapshots as independent draws and come out far too
+#' narrow: the honest answer on a single series is no interval, not a
+#' confident-looking one.
+#'
+#' For a rate that generalises, use [pooled_calibration()] over several
+#' independent reviews. Reviews share no studies, so resampling *them* gives an
+#' interval that means something.
+#'
+#' A second caution, measured rather than theoretical: against
+#' `truth_target = "final"` a review whose effect kept moving has **no true
+#' negatives at all** — every earlier cut counts as out of date — so its
+#' specificity is `NA` rather than perfect. That is the case in 6 of the 17
+#' reviews swept in `inst/applicability/`.
+#'
 #' @param bt A `staleness_backtest`, see [backtest()].
 #' @param truth One of `"shift"`, `"surprise"`, `"conclusion"`, see
 #'   [available_truths()].
 #' @return A data frame, one row per method in `bt$methods`, with columns
 #'   `method`, `truth`, `sensitivity`, `specificity`, `false_alarm`, `n` and
-#'   `contaminated`.
+#'   `contaminated`. Descriptive of this series; see the section above.
 #' @examples
 #' library(metafor)
 #' bcg <- data.frame(
@@ -71,7 +93,7 @@ eligible_rows <- function(bt, truth) {
 #'            176782, 14776, 3381, 77972, 4839, 34767)
 #' )
 #' bt <- backtest(evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-#'                                date = bcg$year, ni = bcg$ni))
+#'                                date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni))
 #'
 #' # Every requested method gets a row. barrowman and simulation never apply
 #' # to this evidence -- the prior review is significant throughout -- so they
@@ -202,7 +224,7 @@ calibration <- function(bt, truth = "shift") {
 #'            176782, 14776, 3381, 77972, 4839, 34767)
 #' )
 #' bt <- backtest(evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-#'                                date = bcg$year, ni = bcg$ni))
+#'                                date = bcg$year, study_id = seq_along(bcg$year), ni = bcg$ni))
 #'
 #' # Whether a detector eventually fires is the easy question. This is the
 #' # one the methods papers never answer: how far ahead of the evidence.
@@ -289,7 +311,7 @@ lead_time <- function(bt, truth = "shift", within = Inf) {
 #'            1980, 1968, 1961, 1974, 1969, 1976)
 #' )
 #' bt <- backtest(evidence_stream(rma(yi, vi, data = bcg, measure = "RR"),
-#'                                date = bcg$year))
+#'                                date = bcg$year, study_id = seq_along(bcg$year)))
 #'
 #' # All three truth definitions at once, stacked. Reading them side by side
 #' # is the point: a detector that looks good under one and bad under another
@@ -298,4 +320,142 @@ lead_time <- function(bt, truth = "shift", within = Inf) {
 #' @export
 summary.staleness_backtest <- function(object, ...) {
   do.call(rbind, lapply(available_truths(), function(t) calibration(object, t)))
+}
+
+#' Calibration pooled across independent reviews, with intervals
+#'
+#' [calibration()] describes one body of evidence. Its `n` counts cuts, and
+#' consecutive cuts of a single review share almost every study: the snapshot
+#' at 1970 and the snapshot at 1971 differ by whatever appeared in one year.
+#' Nineteen cuts are not nineteen observations, so a rate computed from them
+#' is a **description of that series**, not an estimate of how a detector
+#' behaves in general, and it carries no interval for the same reason — a
+#' binomial one would be built on a denominator that is not what it looks
+#' like, and would come out far too narrow.
+#'
+#' Independence is available at the level of **reviews**. Different reviews
+#' share no studies, so this function pools across them and resamples whole
+#' reviews to get an interval. What varies between bootstrap replicates is
+#' which reviews were drawn, which is the variability that matters when asking
+#' whether a result would hold on other evidence.
+#'
+#' @param bts A list of `staleness_backtest` objects, one per independent
+#'   review. Two backtests of the same evidence are not two reviews.
+#' @param truth One of [available_truths()].
+#' @param R Bootstrap replicates.
+#' @param seed Integer seed, or `NULL`. Without one the interval is not
+#'   reproducible; the caller's random stream is restored either way.
+#' @param conf Interval coverage.
+#' @return A data frame with one row per method: `n_reviews`, `n_cuts`, the
+#'   pooled `sensitivity` and `specificity`, and percentile bounds for each.
+#'   Bounds are `NA` when fewer than two reviews contribute a defined rate --
+#'   an interval from one review would describe nothing but that review.
+#' @examples
+#' # Two independent reviews, pooled. The interval comes from resampling the
+#' # reviews, so it says what would happen on other bodies of evidence -- not
+#' # what would happen on other cuts of these two.
+#' library(metafor)
+#' mk <- function(seed) {
+#'   set.seed(seed)
+#'   yi <- cumsum(rnorm(14, -0.05, 0.15)); vi <- runif(14, 0.02, 0.08)
+#'   evidence_stream(rma(yi, vi, method = "FE"), date = 1990:2003,
+#'                   study_id = seq_len(14))
+#' }
+#' bts <- lapply(c(1, 2), function(s) {
+#'   suppressWarnings(backtest(mk(s), cuts = "yearly", horizon = 2,
+#'                             window = 3, min_k = 3, seed = 1,
+#'                             methods = c("rcma", "ottawa")))
+#' })
+#' pooled_calibration(bts, "shift", R = 200, seed = 1)
+#' @export
+pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
+                               conf = 0.95) {
+  if (!is.list(bts) || !length(bts)) {
+    stop("`bts` must be a non-empty list of staleness_backtest objects",
+         call. = FALSE)
+  }
+  for (i in seq_along(bts)) {
+    check_class(bts[[i]], "staleness_backtest", paste0("bts[[", i, "]]"),
+                "backtest()")
+  }
+  truth <- match.arg(truth, available_truths())
+  check_count(R, "R")
+  check_probability(conf, "conf")
+  check_seed(seed)
+
+  targets <- unique(vapply(bts, function(b) {
+    if (is.null(b$truth_target)) "final" else b$truth_target
+  }, character(1)))
+  if (length(targets) > 1) {
+    stop("the backtests use different `truth_target` values (",
+         paste(targets, collapse = ", "), "); they answer different ",
+         "questions and cannot be pooled", call. = FALSE)
+  }
+
+  col <- paste0("truth_", truth)
+  # One 2x2 count per review per method, kept separate so that a bootstrap
+  # replicate can draw whole reviews.
+  counts <- lapply(bts, function(b) {
+    res <- eligible_rows(b, truth)
+    stats::setNames(lapply(b$methods, function(m) {
+      d <- res[res$method == m, ]
+      hit <- d$verdict == "out_of_date"; ev <- d[[col]]
+      c(tp = sum(hit & ev), fn = sum(!hit & ev),
+        tn = sum(!hit & !ev), fp = sum(hit & !ev), n = nrow(d))
+    }), b$methods)
+  })
+  methods <- unique(unlist(lapply(bts, function(b) b$methods)))
+
+  rate <- function(idx, m, num, den) {
+    tot <- c(tp = 0, fn = 0, tn = 0, fp = 0)
+    for (i in idx) {
+      cm <- counts[[i]][[m]]
+      if (!is.null(cm)) tot <- tot + cm[c("tp", "fn", "tn", "fp")]
+    }
+    d <- sum(tot[den])
+    if (d > 0) sum(tot[num]) / d else NA_real_
+  }
+
+  probs <- c((1 - conf) / 2, 1 - (1 - conf) / 2)
+  boot_ci <- with_preserved_seed(seed = seed, {
+    lapply(methods, function(m) {
+      reps <- vapply(seq_len(R), function(r) {
+        idx <- sample(seq_along(bts), replace = TRUE)
+        c(rate(idx, m, "tp", c("tp", "fn")), rate(idx, m, "tn", c("tn", "fp")))
+      }, numeric(2))
+      list(sens = stats::quantile(reps[1, ], probs, na.rm = TRUE),
+           spec = stats::quantile(reps[2, ], probs, na.rm = TRUE))
+    })
+  })
+  names(boot_ci) <- methods
+
+  all_idx <- seq_along(bts)
+  out <- lapply(methods, function(m) {
+    contributing <- vapply(all_idx, function(i) {
+      cm <- counts[[i]][[m]]
+      !is.null(cm) && cm[["n"]] > 0
+    }, logical(1))
+    # An interval drawn from one review describes that review, not a class of
+    # them, so it is withheld rather than printed narrow.
+    enough <- sum(contributing) >= 2
+    ci <- boot_ci[[m]]
+    data.frame(
+      method      = m,
+      truth       = truth,
+      n_reviews   = sum(contributing),
+      n_cuts      = sum(vapply(all_idx, function(i) {
+                      cm <- counts[[i]][[m]]; if (is.null(cm)) 0L else cm[["n"]]
+                    }, numeric(1))),
+      sensitivity = rate(all_idx, m, "tp", c("tp", "fn")),
+      sens_lo     = if (enough) unname(ci$sens[1]) else NA_real_,
+      sens_hi     = if (enough) unname(ci$sens[2]) else NA_real_,
+      specificity = rate(all_idx, m, "tn", c("tn", "fp")),
+      spec_lo     = if (enough) unname(ci$spec[1]) else NA_real_,
+      spec_hi     = if (enough) unname(ci$spec[2]) else NA_real_,
+      contaminated = any(CONTAMINATED_PAIRS$method == m &
+                         CONTAMINATED_PAIRS$truth  == truth),
+      stringsAsFactors = FALSE
+    )
+  })
+  do.call(rbind, out)
 }

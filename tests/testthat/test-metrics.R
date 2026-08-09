@@ -325,3 +325,74 @@ test_that("an ancient firing counts as warning only when `within` allows it", {
   expect_error(lead_time(once, within = 0), "within")
   expect_error(lead_time(once, within = -1), "within")
 })
+
+# --- Rates from one series describe it; they do not estimate anything -------
+
+mk_stream <- function(seed) {
+  set.seed(seed)
+  yi <- cumsum(stats::rnorm(14, -0.05, 0.15))
+  vi <- stats::runif(14, 0.02, 0.08)
+  evidence_stream(metafor::rma(yi, vi, method = "FE"), date = 1990:2003,
+                  study_id = seq_len(14))
+}
+mk_bt <- function(seed) {
+  suppressWarnings(backtest(mk_stream(seed), cuts = "yearly", horizon = 2,
+                            window = 3, min_k = 3, seed = 1,
+                            methods = c("rcma", "ottawa")))
+}
+
+test_that("pooled_calibration resamples reviews, not cuts", {
+  # calibration()'s n counts cuts, and consecutive cuts of one review share
+  # almost every study, so a binomial interval on that denominator would be
+  # far too narrow. Independence lives at the level of reviews: different
+  # reviews share no studies, so those are what get resampled.
+  bts <- lapply(1:4, mk_bt)
+  p <- pooled_calibration(bts, "shift", R = 200, seed = 1)
+
+  expect_true(all(c("n_reviews", "sens_lo", "sens_hi",
+                    "spec_lo", "spec_hi") %in% names(p)))
+  expect_lte(max(p$n_reviews), length(bts))
+  # The interval brackets the point estimate it belongs to.
+  ok <- !is.na(p$specificity) & !is.na(p$spec_lo)
+  expect_true(all(p$spec_lo[ok] <= p$specificity[ok] + 1e-9))
+  expect_true(all(p$spec_hi[ok] >= p$specificity[ok] - 1e-9))
+
+  # Reproducible under a seed, and the caller's stream survives.
+  expect_equal(pooled_calibration(bts, "shift", R = 200, seed = 1),
+               pooled_calibration(bts, "shift", R = 200, seed = 1))
+  set.seed(5); before <- runif(2)
+  set.seed(5); invisible(pooled_calibration(bts, "shift", R = 100, seed = 2))
+  expect_equal(runif(2), before)
+})
+
+test_that("one review gets a rate but no interval", {
+  # An interval drawn from a single review describes that review and nothing
+  # else, so it is withheld rather than printed narrow. The rate itself is
+  # still reported, and agrees with calibration() on the same series.
+  bts <- lapply(1:4, mk_bt)
+  one <- pooled_calibration(bts[2], "shift", R = 100, seed = 1)
+  expect_true(all(one$n_reviews == 1))
+  expect_true(all(is.na(one$spec_lo)))
+  expect_true(all(is.na(one$sens_lo)))
+
+  solo <- calibration(bts[[2]], "shift")
+  expect_equal(one$specificity[one$method == "rcma"],
+               solo$specificity[solo$method == "rcma"])
+  expect_equal(one$specificity[one$method == "ottawa"],
+               solo$specificity[solo$method == "ottawa"])
+})
+
+test_that("backtests answering different questions are not pooled", {
+  # "final" and "horizon" score a cut against different targets. Pooling them
+  # would average two different questions into one number.
+  a <- mk_bt(1)
+  b <- suppressWarnings(backtest(mk_stream(2), cuts = "yearly", horizon = 2,
+                                 window = 3, min_k = 3, seed = 1,
+                                 methods = c("rcma", "ottawa"),
+                                 truth_target = "horizon"))
+  expect_error(pooled_calibration(list(a, b), "shift", R = 50, seed = 1),
+               "different")
+  expect_error(pooled_calibration(list(), "shift"), "non-empty")
+  expect_error(pooled_calibration(list(a, "not a backtest"), "shift"),
+               "staleness_backtest")
+})

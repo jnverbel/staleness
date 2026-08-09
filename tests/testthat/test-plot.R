@@ -2,7 +2,7 @@ test_that("plotting a backtest runs and returns the object invisibly", {
   skip_if_not_installed("metadat")
     es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
-  s   <- evidence_stream(ma, date = es$year)
+  s   <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year))
   bt  <- backtest(s, methods = c("rcma", "ottawa"), horizon = 5, seed = 1)
 
   f <- tempfile(fileext = ".png")
@@ -127,7 +127,7 @@ test_that("graphical arguments the caller supplies override the defaults", {
   st <- evidence_stream(
     suppressWarnings(metafor::rma(yi = seq(-1, 1, length.out = 12),
                                   vi = rep(0.05, 12), measure = "RR")),
-    date = 2000:2011, ni = rep(100, 12))
+    date = 2000:2011, study_id = seq_along(2000:2011), ni = rep(100, 12))
   bt <- backtest(st, cuts = 2003:2008, horizon = 2, window = 2, seed = 1)
 
   grDevices::pdf(NULL)

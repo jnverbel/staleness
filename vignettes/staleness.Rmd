@@ -24,7 +24,7 @@ dat <- metadat::dat.bcg
 es  <- escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos, di = cneg,
               data = dat)
 ma  <- rma(yi, vi, data = es)
-stream <- evidence_stream(ma, date = es$year)
+stream <- evidence_stream(ma, date = es$year, study_id = seq_along(es$year))
 stream
 ```
 
