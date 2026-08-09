@@ -71,6 +71,10 @@ simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
   # Closed here and open for alpha: a threshold of 0 means every power fires
   # and 1 means none does, and both are coherent requests.
   check_probability(power_threshold, "power_threshold", closed = TRUE)
+  # Checked here rather than only at with_preserved_seed(), which sits past
+  # the early returns below: a not_applicable verdict must not swallow a
+  # malformed seed.
+  check_seed(seed)
   if (prev$pval < alpha) {
     return(verdict_na("simulation",
       "prior meta-analysis was already significant; the method does not apply"))

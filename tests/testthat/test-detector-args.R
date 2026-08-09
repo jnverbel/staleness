@@ -109,3 +109,29 @@ test_that("rcma refuses thresholds that cannot bracket a ratio", {
   expect_error(rcma(prev, upd, lower = -1), "positive")
   expect_error(rcma(prev, upd, lower = 1.5, upper = 0.5), "below")
 })
+
+test_that("seed is validated wherever it enters", {
+  # NEWS claimed all five detectors validated their arguments, and `seed` was
+  # the exception that made the claim false. set.seed() truncates towards
+  # zero, so seed = 1.5 was accepted in silence and produced the *same* stream
+  # as seed = 1: two values a reader would record as different runs, giving
+  # byte-identical results. A vector was accepted too, using its first element.
+  prev <- fit_prev(); upd <- fit_upd()
+  expect_error(simulation(prev, new_ev(), B = 10, seed = 1.5), "whole number")
+  expect_error(simulation(prev, new_ev(), B = 10, seed = c(1, 2)), "whole number")
+  expect_error(sufficiency(prev, upd, seed = 1.5), "whole number")
+  expect_error(backtest(structure(list(), class = "staleness_stream"),
+                        seed = 1.5), "whole number")
+
+  # NULL stays valid: it is the documented way to ask for an unseeded run.
+  expect_silent(simulation(prev, new_ev(), B = 10, seed = NULL))
+
+  # And the check must fire even when the detector never reaches its RNG. Both
+  # of these return not_applicable long before with_preserved_seed() is
+  # called, so validating only at the point of use would miss them.
+  significant <- metafor::rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4),
+                              measure = "RR")
+  expect_error(simulation(significant, new_ev(), B = 10, seed = 1.5),
+               "whole number")
+  expect_error(sufficiency(prev, upd, min_k = 500, seed = 1.5), "whole number")
+})

@@ -106,11 +106,14 @@ should not be read as a literal reproduction:
   construction and convergent by the law of large numbers — and fired on 209
   of 300 samples containing no change at all. The published slope is still
   computed and reported in `detail$slope`.
-- **`simulation`** departs in four ways: it draws from a *t* distribution
-  rather than a normal, simulates one study carrying the combined precision of
-  the recent ones rather than one per study, and uses a strict threshold. The
-  fourth cannot be removed: the source simulates participants, and this package
-  only ever sees effect sizes and their variances.
+- **`simulation`** departs in exactly one way, and it cannot be removed: the
+  source simulates at the level of **participants** and computes an effect from
+  them, while this package never sees participant-level data and simulates the
+  effect directly from `yi` and `vi`. Its other three distinctive choices — a
+  *t* distribution rather than a normal, one simulated study carrying the
+  combined precision of the recent ones rather than one per study, and a strict
+  threshold — are not departures at all: each is what Pattanittum et al. (2012),
+  Appendix S1, specifies. See `?simulation`.
 
 `vignette("methods")` measures each departure and says where it degrades.
 

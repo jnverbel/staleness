@@ -110,6 +110,7 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
     stop("`min_k` must be at least 2: a snapshot cannot be fitted from fewer ",
          "than two studies", call. = FALSE)
   }
+  check_seed(seed)
   if (!length(methods)) {
     stop("`methods` is empty; name at least one of: ",
          paste(available_methods(), collapse = ", "), call. = FALSE)

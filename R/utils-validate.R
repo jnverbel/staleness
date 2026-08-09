@@ -37,6 +37,21 @@ check_count <- function(x, arg) {
   invisible(NULL)
 }
 
+# `NULL` is a valid seed and means "run from wherever the stream is", which is
+# documented behaviour. Anything else must be a whole number: set.seed()
+# truncates towards zero, so seed = 1.5 used to be accepted in silence and
+# produce the identical stream to seed = 1 -- two values a reader would record
+# as different runs, giving the same result.
+check_seed <- function(x, arg = "seed") {
+  if (is.null(x)) return(invisible(NULL))
+  if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x != round(x)) {
+    stop("`", arg, "` must be NULL or a single whole number; `set.seed()` ",
+         "truncates anything else, so two different values can silently give ",
+         "the same stream", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 check_positive_number <- function(x, arg) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
     stop("`", arg, "` must be a single positive number", call. = FALSE)

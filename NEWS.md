@@ -96,12 +96,23 @@ First public release.
   from 3 to 5 in `calibration()` — the denominator of every rate, inflated
   without a warning.
 
-* All five detectors now validate their arguments too. The engine had been
-  swept and they had not, and the same defect was in every one of them. Two
-  were silent, which is the worse failure: `ottawa(alpha = NA)` returned a
-  verdict of `out_of_date`, because both significance comparisons became `NA`
-  and the code read that as a change, and `sufficiency(alpha_stability = NA)`
-  returned `current`. Neither warned.
+* The five detectors validate their scalar arguments too — thresholds,
+  significance levels, replicate and permutation counts, sample sizes and
+  seeds. The engine had been swept and they had not, and the same defect was
+  in every one of them. Two were silent, which is the worse failure:
+  `ottawa(alpha = NA)` returned a verdict of `out_of_date`, because both
+  significance comparisons became `NA` and the code read that as a change, and
+  `sufficiency(alpha_stability = NA)` returned `current`. Neither warned.
+
+* `seed` is validated in `simulation()`, `sufficiency()` and `backtest()`, and
+  is the reason the sentence above says *scalar arguments* rather than *all
+  arguments*. `set.seed()` truncates towards zero, so `seed = 1.5` was accepted
+  in silence and produced the identical stream to `seed = 1` — two values a
+  reader would record as different runs, giving the same numbers. A vector was
+  accepted too, silently using its first element. `NULL` remains valid and
+  still means an unseeded run. The check sits at each entry point rather than
+  only at `with_preserved_seed()`, which the detectors reach after their early
+  returns: a `not_applicable` verdict must not swallow a malformed seed.
 
 * `barrowman()` refuses impossible sample sizes. `n_prev = 0` drove the
   required sample size to zero, so the participant ratio was `Inf` and the

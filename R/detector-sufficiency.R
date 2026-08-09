@@ -438,6 +438,7 @@ sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
   check_count(min_k, "min_k")
   check_probability(alpha_stability, "alpha_stability")
   check_count(n_perm, "n_perm")
+  check_seed(seed)
   yi <- as.numeric(new_ma$yi)
   vi <- as.numeric(new_ma$vi)
   k_new <- length(yi)

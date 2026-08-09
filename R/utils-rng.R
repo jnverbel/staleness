@@ -26,6 +26,7 @@
 #' @return The value of `expr`.
 #' @keywords internal
 with_preserved_seed <- function(expr, seed = NULL) {
+  check_seed(seed)
   # A session that has not drawn yet has no `.Random.seed` at all. Creating
   # one and restoring it would leave a footprint in the very function whose
   # purpose is to leave none, so in that case the exit handler removes it.
