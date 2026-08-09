@@ -8,7 +8,11 @@
 #'   [window_between()]. The three must agree: `yi` and `vi` of the same
 #'   length, and `k` equal to that length. `k` decides whether there is new
 #'   evidence at all and `yi`/`vi` are what the updated model is fitted on, so
-#'   a mismatch is refused rather than resolved in favour of either.
+#'   a mismatch is refused rather than resolved in favour of either. The values
+#'   must also be usable: `yi` finite, `vi` finite and strictly positive. A
+#'   missing or infinite variance is dropped or ignored by the model fit, which
+#'   returns the prior estimate unchanged and so a verdict of `"current"`
+#'   computed from evidence that carried nothing.
 #' @param methods Character vector of detector names, see [available_methods()].
 #' @param n_prev,n_new Sample sizes, required by [barrowman()].
 #' @param qualitative Character vector of qualitative signals, see [ottawa()].

@@ -137,6 +137,15 @@ First public release.
   takes `yi` and `vi` from, so the contract is what the canonical source
   already builds.
 
+* The same objects must also be statistically usable, not merely well shaped:
+  `yi` finite, `vi` finite and strictly positive. Shape alone was not enough,
+  and the gap reached the same wrong answer by another route — `yi = NA`,
+  `vi = NA`, `vi = Inf`, `vi = 0` and `vi = -1` each returned `current` from
+  both `rcma()` and `ottawa()`, because metafor drops or ignores such a study,
+  the updated model comes back identical to the prior one, and every ratio is
+  1. Zero-length vectors stay valid, being vacuously finite and positive, so
+  the empty case still returns its own class.
+
 * `check_currency()` refuses an empty `methods`, as `backtest()` already did.
   It used to return a `staleness_check` holding zero verdicts: an object that
   answers no question.

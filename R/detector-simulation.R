@@ -39,7 +39,8 @@
 #'   length, and `k` equal to that length. `k` decides whether there is any
 #'   new evidence while `yi` and `vi` are what gets used, so a mismatch is
 #'   answered from one and reported from the other; it is refused rather than
-#'   resolved.
+#'   resolved. The values must also be usable: `yi` finite, `vi` finite and
+#'   strictly positive.
 #' @param B Number of simulation replicates.
 #' @param alpha Significance level for each simulated meta-analysis.
 #' @param power_threshold Signal when simulated power *exceeds* this value.

@@ -136,3 +136,45 @@ test_that("check_currency refuses an empty method list, as backtest does", {
   expect_error(check_currency(prev, new, methods = character()), "empty")
   expect_error(check_currency(prev, new, methods = NULL), "empty")
 })
+
+test_that("new evidence must be statistically usable, not just well shaped", {
+  # The structural contract (k == length(yi), matching lengths) said nothing
+  # about the values. Every degenerate case below returned "current" from both
+  # rcma and ottawa -- the same failure mode as k = 1 with an empty yi, which
+  # the previous fix closed: an NA or infinite variance makes metafor drop or
+  # ignore the study, the "updated" model comes back identical to the prior
+  # one, every ratio is 1, and the verdict looks verified.
+  prev <- metafor::rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4),
+                       measure = "RR")
+  expect_error(check_currency(prev, list(yi = NA_real_, vi = 0.03, k = 1)),
+               "finite")
+  expect_error(check_currency(prev, list(yi = Inf, vi = 0.03, k = 1)),
+               "finite")
+  expect_error(check_currency(prev, list(yi = log(0.9), vi = NA_real_, k = 1)),
+               "positive")
+  expect_error(check_currency(prev, list(yi = log(0.9), vi = Inf, k = 1)),
+               "positive")
+  expect_error(check_currency(prev, list(yi = log(0.9), vi = 0, k = 1)),
+               "positive")
+  expect_error(check_currency(prev, list(yi = log(0.9), vi = -1, k = 1)),
+               "positive")
+
+  # simulation() takes the same object directly. Four of these threw R's own
+  # "missing value where TRUE/FALSE needed"; yi = NA returned a verdict of
+  # current with a signal, because simulation reads vi and k but never yi.
+  ns <- metafor::rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+                     vi = c(0.16, 0.20, 0.18, 0.15, 0.22), measure = "RR")
+  expect_error(simulation(ns, list(yi = log(0.9), vi = NA_real_, k = 1), B = 5),
+               "positive")
+  expect_error(simulation(ns, list(yi = log(0.9), vi = 0, k = 1), B = 5),
+               "positive")
+  expect_error(simulation(ns, list(yi = NA_real_, vi = 0.03, k = 1), B = 5),
+               "finite")
+
+  # The empty case is still empty, not invalid: zero-length yi and vi are
+  # vacuously finite and positive, and k = 0 keeps its own class.
+  expect_s3_class(
+    check_currency(prev, list(yi = numeric(), vi = numeric(), k = 0),
+                   methods = "rcma"),
+    "staleness_no_evidence")
+})

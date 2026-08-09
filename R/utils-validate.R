@@ -81,6 +81,22 @@ check_new_evidence <- function(new, arg = "new") {
     stop("`", arg, "$yi` and `", arg, "$vi` must be the same length; got ",
          length(new$yi), " and ", length(new$vi), call. = FALSE)
   }
+  # Shape is not usability. An NA or infinite variance makes metafor drop the
+  # study or ignore it, so the "updated" model comes back identical to the
+  # prior one, every ratio is 1, and the answer is a confident "current" from
+  # evidence that carried nothing -- the same failure the k/yi mismatch above
+  # produced, reached by a different route. Zero-length vectors are vacuously
+  # finite and positive, so the empty case still passes.
+  if (!all(is.finite(new$yi))) {
+    stop("`", arg, "$yi` must be finite; a missing or infinite effect is ",
+         "dropped by the model fit and returns a verdict computed without it",
+         call. = FALSE)
+  }
+  if (!all(is.finite(new$vi)) || any(new$vi <= 0)) {
+    stop("`", arg, "$vi` must be finite and strictly positive; a missing, ",
+         "infinite or non-positive variance gives the study no weight, or ",
+         "none that the model can use", call. = FALSE)
+  }
   if (!is.numeric(new$k) || length(new$k) != 1L || !is.finite(new$k) ||
       new$k < 0 || new$k != round(new$k)) {
     stop("`", arg, "$k` must be a single whole number of 0 or more",
