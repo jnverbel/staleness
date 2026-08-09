@@ -55,14 +55,14 @@ needs a maintainer address that keeps working.
   of its own. `metadat` is used only to supply an example dataset in the
   vignettes and is in `Suggests`.
 
-* `sufficiency()` implements a published method with one declared deviation:
+* `sufficiency_changepoint()` implements a published method with one declared deviation:
   the stability half is tested with a change-point statistic under a
   permutation null rather than with an OLS slope on the cumulative series.
   The reason is that the published test has no valid null distribution — a
   *t*-test on a cumulative mean is autocorrelated by construction — and fired
   on 209 of 300 samples containing no change. The deviation, the measured
   calibration of the replacement, and the regimes where it loses power are
-  documented in `vignette("methods")` and in `?sufficiency`. The published
+  documented in `vignette("methods")` and in `?sufficiency_changepoint`. The published
   slope is still computed and returned.
 
 * No function writes to the user's home filespace, options, or par. The two

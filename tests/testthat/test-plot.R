@@ -63,7 +63,7 @@ test_that("plotting a backtest with no eligible rows fails with a clear message"
     list(
       results = data.frame(
         cut     = c(2000, 2001, 2002),
-        method  = c("rcma", "ottawa", "sufficiency"),
+        method  = c("rcma", "ottawa", "sufficiency_changepoint"),
         verdict = c("not_applicable", "current", "current"),
         signal  = NA_real_,
         reason  = c("insufficient studies", "", ""),
@@ -73,7 +73,7 @@ test_that("plotting a backtest with no eligible rows fails with a clear message"
         censored = c(FALSE, FALSE, TRUE),
         stringsAsFactors = FALSE
       ),
-      methods = c("rcma", "ottawa", "sufficiency"), horizon = 5, window = 3,
+      methods = c("rcma", "ottawa", "sufficiency_changepoint"), horizon = 5, window = 3,
       n_cuts = 3, n_censored = 1
     ),
     class = "staleness_backtest"

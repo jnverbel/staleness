@@ -113,7 +113,10 @@ convergent by the law of large numbers — and on simulated evidence containing
 no change at all it fired on 209 of 300 samples. `staleness` replaces it with a
 change-point statistic, the largest standardised split in the cumulative
 series, assessed against an order-permutation null. The published slope is
-still computed and returned alongside. The substitution, its measured
+still computed and returned alongside, as a diagnostic that decides nothing.
+The detector is named `sufficiency_changepoint()` rather than `sufficiency()`
+so that the substitution is visible at the call site and in every results
+table, not only in the documentation. The substitution, its measured
 calibration across nine variance regimes, and the regimes in which it loses
 power are documented in the package's `methods` vignette. Every figure behind
 that decision is reproducible from the package itself: `inst/calibration/`

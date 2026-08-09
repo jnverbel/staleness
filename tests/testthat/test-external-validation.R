@@ -166,7 +166,7 @@ test_that("sufficiency's benchmark is 5k + 10 on the PRIOR review, as published"
   # Our index is built the same way.
   prev <- metafor::rma(yi = rep(log(0.9), 24), vi = rep(0.05, 24))
   new  <- metafor::rma(yi = rep(log(0.9), 30), vi = rep(0.05, 30))
-  res  <- sufficiency(prev, new)
+  res  <- sufficiency_changepoint(prev, new)
   expect_equal(res$detail$k, 24)
   expect_equal(res$detail$index,
                failsafe_n(as.numeric(prev$yi), as.numeric(prev$vi)) / (5 * 24 + 10))
@@ -563,7 +563,7 @@ test_that("ottawa's instability on null reviews shows up in real data too", {
   # the report cites rather than as "below 0.3".
   expect_equal(cal$specificity[cal$method == "ottawa"], 1 / 7)
   expect_equal(cal$specificity[cal$method == "rcma"], 1)
-  expect_equal(cal$specificity[cal$method == "sufficiency"], 1)
+  expect_equal(cal$specificity[cal$method == "sufficiency_changepoint"], 1)
 })
 
 # --- Every refit in the package must honour the same options ---------------
@@ -643,7 +643,7 @@ test_that("damico2009: the detectors stay silent on a review that held up", {
                                   window = 5, min_k = 3, seed = 42))
   r <- bt$results[!bt$results$censored, ]
 
-  for (m in c("rcma", "ottawa", "sufficiency")) {
+  for (m in c("rcma", "ottawa", "sufficiency_changepoint")) {
     d <- r[r$method == m, ]
     expect_equal(nrow(d), 12, info = m)
     expect_equal(sum(d$verdict == "out_of_date"), 0, info = m)

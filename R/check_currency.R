@@ -38,7 +38,7 @@
 #' # `new` is the new evidence on its own, never the updated model: this
 #' # function refits it internally. Handing it a fitted rma is an error, not
 #' # a quietly doubled dataset.
-#' check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
+#' check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency_changepoint"))
 #'
 #' # barrowman() needs the participant counts, and says so when they are absent.
 #' check_currency(prev, new, methods = "barrowman")
@@ -108,14 +108,23 @@ check_currency <- function(prev, new, methods = available_methods(),
     switch(m,
       rcma        = rcma(prev, updated),
       ottawa      = ottawa(prev, updated, qualitative = qualitative),
-      sufficiency = sufficiency(prev, updated),
+      sufficiency_changepoint = sufficiency_changepoint(prev, updated),
       simulation  = simulation(prev, new, seed = seed),
       barrowman   = if (is.null(n_prev) || is.null(n_new)) {
                       verdict_na("barrowman",
                         "sample size not supplied for prior and new studies")
                     } else {
                       barrowman(prev, n_prev = n_prev, n_new = n_new)
-                    }
+                    },
+      # A name that passed the `unknown` check above and still has no branch
+      # here means the registry and this switch have gone out of step. Without
+      # this, switch() returns NULL for it and the failure surfaces four frames
+      # away as "values must be length 1, but FUN(X[[4]]) result is length 0",
+      # which says nothing about the method that went missing. Caught exactly
+      # this way when sufficiency() was renamed: available_methods() moved and
+      # the branch label, being a name rather than a string, did not.
+      stop("no dispatch branch for method \"", m, "\"; available_methods() ",
+           "and check_currency() have gone out of step", call. = FALSE)
     )
   })
   names(verdicts) <- methods

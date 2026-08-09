@@ -93,7 +93,7 @@ test_that("effect_ratio refuses a prior effect it cannot tell from zero", {
 test_that("disagreement is reported when detectors actually disagree", {
   prev <- fit(rep(log(0.50), 6), rep(0.02, 6))
   new  <- list(yi = rep(log(1.20), 6), vi = rep(0.02, 6), k = 6)
-  res  <- check_currency(prev, new, methods = c("rcma", "sufficiency"))
+  res  <- check_currency(prev, new, methods = c("rcma", "sufficiency_changepoint"))
   calls <- vapply(res$verdicts, function(v) v$verdict, character(1))
   decided <- calls[calls != "not_applicable"]
   expect_equal(res$disagreement, length(unique(decided)) > 1)

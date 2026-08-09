@@ -17,5 +17,5 @@ available_methods()
 
 # The names accepted by check_currency() and backtest().
 identical(available_methods(), c("rcma", "ottawa", "barrowman",
-                                 "sufficiency", "simulation"))
+                                 "sufficiency_changepoint", "simulation"))
 }

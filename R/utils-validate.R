@@ -154,7 +154,7 @@ check_cut_point <- function(x, arg) {
 }
 
 # Every exported detector documents an `rma.uni` and none of them checked.
-# Four died with R's own "argument is of length zero"; sufficiency() was worse
+# Four died with R's own "argument is of length zero"; sufficiency_changepoint() was worse
 # and returned a verdict of not_applicable from an empty list.
 #
 # The subclass case is the one that matters in practice. evidence_stream() has

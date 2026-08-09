@@ -32,7 +32,7 @@ the results are deterministic.
 |---|---|---|---|
 | `ottawa` | 17 of 17 | 0.320 | 8 |
 | `rcma` | 17 of 17 | 0.309 | 9 |
-| `sufficiency` | 17 of 17 | 0.041 | 11 |
+| `sufficiency_changepoint` | 17 of 17 | 0.041 | 11 |
 | `simulation` | **5 of 17** | 0.167 | 2 of 3 |
 | `barrowman` | **4 of 17** | 0.167 | 2 of 3 |
 
@@ -46,7 +46,7 @@ published methods are structurally silent, and the published comparison could
 not see this because its cohort was selected to be exactly the case where they
 are not.
 
-`sufficiency()` is the opposite failure. It answers in all 17 and detects
+`sufficiency_changepoint()` is the opposite failure. It answers in all 17 and detects
 almost nothing: a mean sensitivity of 0.041, and zero in 11 of them.
 
 ## Inclusion criteria

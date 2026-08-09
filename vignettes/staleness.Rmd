@@ -40,7 +40,7 @@ it:
 prev <- snapshot_at(stream, 1970)
 new  <- window_between(stream, 1970, 1980)
 
-check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
+check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency_changepoint"))
 ```
 
 `snapshot_at()` refits the meta-analysis using only studies published on or

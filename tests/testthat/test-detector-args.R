@@ -1,7 +1,7 @@
 # The engine's arguments were validated in an earlier pass; the detectors'
 # were not. Sweeping all five turned up the same defect in every one, and in
 # two of them it is silent: ottawa(alpha = NA) returned a verdict of
-# out_of_date and sufficiency(alpha_stability = NA) returned current, both
+# out_of_date and sufficiency_changepoint(alpha_stability = NA) returned current, both
 # from an argument that means nothing. A wrong verdict that looks valid is
 # worse than an error, which is why these are errors.
 #
@@ -93,14 +93,14 @@ test_that("ottawa refuses an alpha that is not a probability", {
   expect_error(ottawa(prev, upd, alpha = c(0.04, 0.05)), "single")
 })
 
-test_that("sufficiency refuses arguments it cannot honour", {
-  # sufficiency(alpha_stability = NA) returned current, equally silently.
+test_that("sufficiency_changepoint refuses arguments it cannot honour", {
+  # sufficiency_changepoint(alpha_stability = NA) returned current, equally silently.
   prev <- fit_prev(); upd <- fit_upd()
-  expect_error(sufficiency(prev, upd, alpha_stability = NA), "0 and 1")
-  expect_error(sufficiency(prev, upd, min_k = 0), "at least 1")
-  expect_error(sufficiency(prev, upd, min_k = 2.5), "whole number")
-  expect_error(sufficiency(prev, upd, n_perm = 0), "at least 1")
-  expect_error(sufficiency(prev, upd, n_perm = NA), "single")
+  expect_error(sufficiency_changepoint(prev, upd, alpha_stability = NA), "0 and 1")
+  expect_error(sufficiency_changepoint(prev, upd, min_k = 0), "at least 1")
+  expect_error(sufficiency_changepoint(prev, upd, min_k = 2.5), "whole number")
+  expect_error(sufficiency_changepoint(prev, upd, n_perm = 0), "at least 1")
+  expect_error(sufficiency_changepoint(prev, upd, n_perm = NA), "single")
 })
 
 test_that("rcma refuses thresholds that cannot bracket a ratio", {
@@ -119,7 +119,7 @@ test_that("seed is validated wherever it enters", {
   prev <- fit_prev(); upd <- fit_upd()
   expect_error(simulation(prev, new_ev(), B = 10, seed = 1.5), "whole number")
   expect_error(simulation(prev, new_ev(), B = 10, seed = c(1, 2)), "whole number")
-  expect_error(sufficiency(prev, upd, seed = 1.5), "whole number")
+  expect_error(sufficiency_changepoint(prev, upd, seed = 1.5), "whole number")
   expect_error(backtest(structure(list(), class = "staleness_stream"),
                         seed = 1.5), "whole number")
 
@@ -133,7 +133,7 @@ test_that("seed is validated wherever it enters", {
                               measure = "RR")
   expect_error(simulation(significant, new_ev(), B = 10, seed = 1.5),
                "whole number")
-  expect_error(sufficiency(prev, upd, min_k = 500, seed = 1.5), "whole number")
+  expect_error(sufficiency_changepoint(prev, upd, min_k = 500, seed = 1.5), "whole number")
 })
 
 test_that("seed is bounded by the range set.seed() actually accepts", {
@@ -364,9 +364,9 @@ test_that("supplied sample sizes and cut points must be real numbers", {
 test_that("the exported detectors require the model class they document", {
   # Every one of them documents an rma.uni and none checked for it. Four died
   # with R's own "argument is of length zero" or "missing value where
-  # TRUE/FALSE needed", and sufficiency() was worse: it returned a verdict of
+  # TRUE/FALSE needed", and sufficiency_changepoint() was worse: it returned a verdict of
   # not_applicable from an empty list, as though it had examined something.
-  for (f in list(rcma, ottawa, sufficiency)) {
+  for (f in list(rcma, ottawa, sufficiency_changepoint)) {
     expect_error(f(list(), list()), "rma.uni")
   }
   expect_error(barrowman(list(), 100, 50), "rma.uni")
@@ -392,7 +392,7 @@ test_that("metafor subclasses are refused by the detectors, as by the stream", {
   expect_false(inherits(mh, "rma.uni"))
   expect_error(rcma(mh, mh), "rma.mh")
   expect_error(ottawa(mh, mh), "rma.mh")
-  expect_error(sufficiency(mh, mh), "rma.mh")
+  expect_error(sufficiency_changepoint(mh, mh), "rma.mh")
   # The stream's message is the one being made consistent, not replaced.
   expect_error(evidence_stream(mh, date = metadat::dat.lau1992$year, study_id = seq_along(metadat::dat.lau1992$year)), "rma.mh")
 

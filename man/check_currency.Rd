@@ -62,7 +62,7 @@ new  <- window_between(stream, 1970, 1980)
 # `new` is the new evidence on its own, never the updated model: this
 # function refits it internally. Handing it a fitted rma is an error, not
 # a quietly doubled dataset.
-check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
+check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency_changepoint"))
 
 # barrowman() needs the participant counts, and says so when they are absent.
 check_currency(prev, new, methods = "barrowman")

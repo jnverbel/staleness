@@ -18,7 +18,7 @@ The value of \code{expr}.
 }
 \description{
 Detectors that randomise (\code{\link[=simulation]{simulation()}}, and the permutation test inside
-\code{\link[=sufficiency]{sufficiency()}}) must not leave a footprint on the caller's session. A
+\code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}}) must not leave a footprint on the caller's session. A
 script that calls \code{set.seed()} once and then runs \code{\link[=backtest]{backtest()}} would
 otherwise lose the reproducibility of everything it does afterwards, and
 CRAN policy forbids altering global state in any case.

@@ -52,3 +52,20 @@ test_that("a non-scalar reason is refused where it is built, not where it prints
   expect_output(print(new_verdict("rcma", "current", reason = "because")),
                 "because")
 })
+
+# The method column used to be a hard-coded width of 12, chosen when the
+# longest name was "sufficiency" at 11. Renaming that detector to
+# sufficiency_changepoint (23) left its verdict jutting out of a column the
+# other four still respected -- a cosmetic break, but one no test could see
+# because nothing tied the layout to the registry.
+test_that("the printed method column fits the longest name in the registry", {
+  w <- max(nchar(available_methods()))
+  for (m in available_methods()) {
+    line <- utils::capture.output(
+      print(new_verdict(m, "current", signal = 1)))[1]
+    expect_equal(substr(line, 1, w), formatC(m, width = -w),
+                 info = m)
+    # And the label starts one space after the column, for every name.
+    expect_equal(substr(line, w + 1, w + 8), " current")
+  }
+})

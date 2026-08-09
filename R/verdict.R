@@ -45,7 +45,12 @@ print.staleness_verdict <- function(x, ...) {
     current        = "current",
     not_applicable = "not applicable"
   )
-  cat(format(x$method, width = 12), label, "\n")
+  # Width taken from the registry, not written down. It was 12, which fitted
+  # every name until sufficiency_changepoint arrived at 23 and pushed its own
+  # verdict out of the column while the four above it stayed aligned. A layout
+  # constant that has to be edited whenever a detector is renamed is a layout
+  # constant that will not be.
+  cat(format(x$method, width = max(nchar(available_methods()))), label, "\n")
   if (nzchar(x$reason)) cat("  reason:", x$reason, "\n")
   if (!is.na(x$signal)) cat("  signal:", format(x$signal, digits = 3), "\n")
   invisible(x)

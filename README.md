@@ -34,6 +34,14 @@ its `Description` never uses the phrase. See `inst/cran-search/README.md`.
   lead time can be measured with data rather than assumed from the
   methods papers.
 
+Applying a published method is not the same as endorsing it, and the second
+job keeps finding that out. Where a source's own statistic turns out to be
+invalid — not merely weak, but unable to distinguish change from no change —
+the package substitutes a calibrated one, keeps computing and reporting the
+original as a diagnostic, and **renames the detector** so the substitution
+travels with the name instead of hiding behind it. That is why the third
+detector is `sufficiency_changepoint()` and not `sufficiency()`.
+
 The package performs no literature searching, no study screening, and no
 meta-analysis fitting of its own. It is built entirely on `metafor`.
 
@@ -72,17 +80,17 @@ stream <- evidence_stream(ma, date = es$year, study_id = es$trial)
 prev   <- snapshot_at(stream, 1970)
 new    <- window_between(stream, 1970, 1980)
 
-check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency"))
+check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency_changepoint"))
 #> <staleness_check>
 #>   studies: 7 prior + 6 new
 #>   I2 (updated): 92.2 %
 #>   note: heterogeneity above 75%; the pooled estimate is itself debatable
 #>
-#> rcma         current
+#> rcma                    current
 #>   signal: 1.21
-#> ottawa       current
+#> ottawa                  current
 #>   signal: 0.86
-#> sufficiency  current
+#> sufficiency_changepoint current
 #>   signal: 4.24
 
 bt <- backtest(stream, cuts = "yearly")
@@ -97,7 +105,7 @@ plot(bt)
 | `rcma` | Signal when the pooled effect moves by 50% or more. | Undefined for difference measures with a prior effect near zero; returns `not_applicable` rather than a spurious number. |
 | `ottawa` | Change in significance (p < 0.04) or effect size (≥ 50%). | Four qualitative signals in the original method are not automated; supplied by the analyst instead. |
 | `barrowman` | Ratio of participants contributed by new studies to the number needed to reach significance. | Only applies when the prior meta-analysis was not significant. |
-| `sufficiency` | Rosenthal's fail-safe N and the stability of the cumulative effect. | Fail-safe N has been discredited since Becker (2005); implemented for fidelity to the published method, not as an endorsement. |
+| `sufficiency_changepoint` | Rosenthal's fail-safe N and the stability of the cumulative effect. | Fail-safe N has been discredited since Becker (2005); implemented for fidelity to the published method, not as an endorsement. |
 | `simulation` | Simulated power of the next batch of studies. | Flagged none of 80 reviews in the one published comparison of all five methods. |
 
 The two signals above differ because they measure different things:
@@ -110,13 +118,16 @@ The column above lists limitations of the *methods*. Two detectors also depart
 from the *procedure* their sources describe, and the results of those two
 should not be read as a literal reproduction:
 
-- **`sufficiency`** tests stability with a change-point statistic
+- **`sufficiency_changepoint`** tests stability with a change-point statistic
   (`max_m |Z_m|`) under an order-permutation null, not with the ordinary least
   squares slope of the cumulative series the source specifies. That slope has
   no valid null distribution — the cumulative mean is autocorrelated by
   construction and convergent by the law of large numbers — and fired on 209
   of 300 samples containing no change at all. The published slope is still
-  computed and reported in `detail$slope`.
+  computed and reported in `detail$slope`; it decides nothing. The detector
+  carries the substitution in its name for that reason: its sufficiency half
+  is the published one, its stability half is not, and a function called
+  `sufficiency()` would have implied otherwise.
 - **`simulation`** departs in exactly one way, and it cannot be removed: the
   source simulates at the level of **participants** and computes an effect from
   them, while this package never sees participant-level data and simulates the
@@ -135,15 +146,16 @@ detail.
 ## Backtesting
 
 In the one published comparison that ran all five side by side, on 80
-Cochrane reviews, two of them flagged nothing at all: the sufficiency method
+Cochrane reviews, two of them flagged nothing at all: the sufficiency and
+stability method
 and the simulation method each identified zero out-of-date reviews. The three
 that did discriminate — Ottawa (34 reviews), recursive CMA (7) and Barrowman
 (7) — agreed at Kappa = 0.14, essentially chance (Pattanittum et al., 2012). `staleness`
 exists to make that comparison repeatable, on any body of evidence, with a
 design that avoids the trap of defining the evaluation target using the same rule a
-detector is scored against: three independent truth definitions are
-implemented, contaminated detector-truth pairs are marked in the data
-itself, and `lead_time()` measures how far ahead of the evidence a detector
+detector is scored against: three operational targets are implemented and
+described as what they are, contaminated detector-target pairs are marked in
+the data itself, and `lead_time()` measures how far ahead of the evidence a detector
 actually fires, not just whether it eventually fires at all.
 
 See `vignette("backtesting", package = "staleness")` for the full argument

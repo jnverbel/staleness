@@ -210,7 +210,7 @@ cat("\n=== HOW OFTEN EACH DETECTOR CAN ANSWER AT ALL ===\n")
 cov <- aggregate(cbind(answers = n > 0) ~ method, data = res, FUN = sum)
 cov <- cov[order(-cov$answers), ]
 for (i in seq_len(nrow(cov))) {
-  cat(sprintf("  %-12s %2d of %d reviews\n",
+  cat(sprintf("  %-23s %2d of %d reviews\n",
               cov$method[i], cov$answers[i], length(reviews)))
 }
 

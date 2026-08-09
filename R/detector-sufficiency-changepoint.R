@@ -47,7 +47,7 @@ cumulative_effect <- function(yi, vi) {
 #' This slope is **reported** in `detail$slope` for fidelity to the published
 #' rule, so that anyone who wants to apply `|slope| > 0` literally can read it
 #' straight off the verdict. It is not what decides stability — see
-#' [stability_shift_z()] and the roxygen block of [sufficiency()] for why a
+#' [stability_shift_z()] and the roxygen block of [sufficiency_changepoint()] for why a
 #' slope over a cumulative series turned out to be an unusable instrument.
 #'
 #' @param cum_theta Numeric vector, as returned by [cumulative_effect()].
@@ -68,7 +68,7 @@ cum_drift_slope <- function(cum_theta, info) {
 
 #' Largest standardised movement still left in a cumulative series
 #'
-#' The stability statistic actually tested by [sufficiency()]. For every split
+#' The stability statistic actually tested by [sufficiency_changepoint()]. For every split
 #' point `m` it compares the fixed-effect pooled estimate of the studies
 #' accumulated up to `m` against the pooled estimate of everything after `m`,
 #' standardised by the standard error of that difference:
@@ -119,13 +119,13 @@ cum_drift_slope <- function(cum_theta, info) {
 #' The V and Lambda nulls differ with a Kolmogorov-Smirnov `D` of 0.25, and the
 #' flat-schedule 95th percentile delivers 6.1% under V and 3.4% under Lambda.
 #'
-#' So the justification for the order-permutation null in [sufficiency()] is
+#' So the justification for the order-permutation null in [sufficiency_changepoint()] is
 #' that the dependence is **weak**, not that it is absent — quantiles move by a
 #' few percent where the old slope statistic moved by orders of magnitude
 #' (0% to 42% false alarms across the same schedules). Since the null is
 #' rebuilt from each dataset's own studies rather than read off a reference
 #' distribution, most of that residual shows up only where the schedule is
-#' smooth and strongly monotone. See the calibration section of [sufficiency()]
+#' smooth and strongly monotone. See the calibration section of [sufficiency_changepoint()]
 #' for what it costs in practice, and where.
 #'
 #' @param yi,vi Effect sizes and their variances, in the order studies are to
@@ -180,7 +180,23 @@ stability_shift_at <- function(yi, vi) {
   which.max(abs(z))
 }
 
-#' Sufficiency and stability detector
+#' Sufficiency and stability, with a change-point test for stability
+#'
+#' The name carries the substitution rather than hiding it. This is the
+#' sufficiency-and-stability method, and its sufficiency half is the published
+#' one; its stability half is **not** the published statistic. The source tests
+#' stability with the slope of a least-squares line through the cumulative
+#' effects, and that slope proved to be an unusable instrument — the section
+#' *How stability is tested, and why not as published* below gives the three
+#' measurements that established it. What runs instead is a change-point
+#' statistic: the largest standardised difference between the studies before
+#' and after any split of the series. It asks the method's own question and it
+#' is calibrated; it is still a substitution, so the function is not called
+#' `sufficiency()`.
+#'
+#' The published slope is still computed and returned in `detail$slope`, as a
+#' diagnostic and for anyone who wants to apply the source's rule literally. It
+#' decides nothing.
 #'
 #' Sufficiency is the fail-safe N scaled by `5k + 10`; a review is sufficient
 #' when this index exceeds 1, Rosenthal's own rule of thumb for a pooled effect
@@ -422,19 +438,20 @@ stability_shift_at <- function(yi, vi) {
 #'
 #' # Six more studies telling the same story: sufficient and stable.
 #' steady <- rma(yi = rep(log(0.50), 12), vi = rep(0.02, 12), measure = "RR")
-#' sufficiency(prev, steady)
+#' sufficiency_changepoint(prev, steady)
 #'
 #' # Now the later studies break away from the earlier ones. The statistic is
 #' # the largest standardised split in the cumulative series, so a late shift
 #' # is exactly what it is built to catch.
 #' shifted <- rma(yi = c(rep(log(0.50), 6), rep(log(1.30), 6)),
 #'                vi = rep(0.02, 12), measure = "RR")
-#' res <- sufficiency(prev, shifted)
+#' res <- sufficiency_changepoint(prev, shifted)
 #' res
 #' res$detail[c("sufficient", "stable", "p_stability", "split")]
 #' @export
-sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
-                        n_perm = 999, seed = 20260807) {
+sufficiency_changepoint <- function(prev, new_ma, min_k = 5,
+                                    alpha_stability = 0.05,
+                                    n_perm = 999, seed = 20260807) {
   check_rma_uni(prev, "prev")
   check_rma_uni(new_ma, "new_ma")
   check_count(min_k, "min_k")
@@ -445,7 +462,7 @@ sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
   vi <- as.numeric(new_ma$vi)
   k_new <- length(yi)
   if (k_new < min_k) {
-    return(verdict_na("sufficiency",
+    return(verdict_na("sufficiency_changepoint",
       paste0("needs at least ", min_k, " studies; found ", k_new)))
   }
 
@@ -461,7 +478,7 @@ sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
   # an error. Half the method cannot be evaluated, so the answer is that it
   # does not apply -- not a "current" arrived at by NA && FALSE being FALSE.
   if (!is.finite(index)) {
-    return(verdict_na("sufficiency",
+    return(verdict_na("sufficiency_changepoint",
       paste0("the sufficiency index is not finite (a degenerate prior ",
              "meta-analysis?); sufficiency cannot be assessed")))
   }
@@ -473,7 +490,7 @@ sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
   info      <- cumsum(1 / vi)
 
   if (!all(is.finite(cum_theta)) || !all(is.finite(info))) {
-    return(verdict_na("sufficiency",
+    return(verdict_na("sufficiency_changepoint",
       "the cumulative effect is not finite (a study variance of zero?); stability cannot be assessed"))
   }
 
@@ -543,7 +560,7 @@ sufficiency <- function(prev, new_ma, min_k = 5, alpha_stability = 0.05,
   # evidence (index <= 1) never triggers "out_of_date" by itself, regardless
   # of stability.
   out <- if (sufficient && !stable) "out_of_date" else "current"
-  new_verdict("sufficiency", out, signal = index,
+  new_verdict("sufficiency_changepoint", out, signal = index,
               detail = list(index = index, sufficient = sufficient,
                             stable = stable, slope = slope,
                             z_shift = z_shift, split = split,

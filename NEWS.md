@@ -1,5 +1,32 @@
 # staleness 0.2.0
 
+## Breaking: `sufficiency()` is now `sufficiency_changepoint()`
+
+* The detector's sufficiency half is the published one; its stability half is
+  not, and has not been since the ordinary-least-squares slope the source
+  specifies was measured firing on 209 of 300 samples containing no change at
+  all. That departure was documented at length and invisible from the call
+  site. The name now carries it: `sufficiency_changepoint()`, with
+  `"sufficiency_changepoint"` as the method string in `available_methods()`,
+  `check_currency()` and `backtest()`. The published slope is still computed
+  and returned in `detail$slope` as a diagnostic; it decides nothing, and it
+  is not offered as a detector.
+
+* Two bugs found by making that rename, both of the same shape -- a bare NAME
+  where a string was searched for:
+
+  * `check_currency()` dispatches on `switch()`, whose branch labels are names.
+    The registry moved and the label did not, so the renamed detector returned
+    `NULL` and surfaced four frames later as "values must be length 1, but
+    FUN(X[[4]]) result is length 0". `switch()` now has a default branch that
+    names the method, and a test walks every entry of `available_methods()`
+    through `check_currency()` and asserts the verdict comes back under the
+    name that was asked for.
+
+  * `print.staleness_verdict()` padded the method column to a hard-coded 12,
+    chosen when the longest name was 11 characters. The width now comes from
+    `available_methods()`, and a test pins it there.
+
 A methodological review by proxy -- what a metafor author and a synthesis
 methodologist would each object to -- found five problems of validity rather
 than of contract. Two are breaking changes, and the version reflects that.
@@ -121,7 +148,7 @@ First public release.
 ## What the package does
 
 * `check_currency()` applies five published detectors — `rcma()`, `ottawa()`,
-  `barrowman()`, `sufficiency()` and `simulation()` — to decide whether an
+  `barrowman()`, `sufficiency_changepoint()` and `simulation()` — to decide whether an
   existing meta-analysis is still current given the evidence published since.
 
 * `backtest()` replays those detectors over the history of a body of evidence,
@@ -218,9 +245,9 @@ First public release.
   in every one of them. Two were silent, which is the worse failure:
   `ottawa(alpha = NA)` returned a verdict of `out_of_date`, because both
   significance comparisons became `NA` and the code read that as a change, and
-  `sufficiency(alpha_stability = NA)` returned `current`. Neither warned.
+  `sufficiency_changepoint(alpha_stability = NA)` returned `current`. Neither warned.
 
-* `seed` is validated in `simulation()`, `sufficiency()` and `backtest()`, and
+* `seed` is validated in `simulation()`, `sufficiency_changepoint()` and `backtest()`, and
   is the reason the sentence above says *scalar arguments* rather than *all
   arguments*. `set.seed()` truncates towards zero, so `seed = 1.5` was accepted
   in silence and produced the identical stream to `seed = 1` — two values a
@@ -314,10 +341,10 @@ First public release.
 
 ## The model class every detector documents
 
-* `rcma()`, `ottawa()`, `barrowman()`, `sufficiency()`, `simulation()` and
+* `rcma()`, `ottawa()`, `barrowman()`, `sufficiency_changepoint()`, `simulation()` and
   `check_currency()` require the `rma.uni` they have always documented. Four
   used to die with R's own "argument is of length zero" or "missing value
-  where TRUE/FALSE needed"; `sufficiency()` was worse and returned a verdict
+  where TRUE/FALSE needed"; `sufficiency_changepoint()` was worse and returned a verdict
   of `not_applicable` from an empty list, as though it had examined something.
 
 * The subclass case is the one that matters in practice, and it was an
@@ -469,7 +496,7 @@ defects:
   and 5 of the 17 — not wrongly, but unable to be asked at all. The published
   comparison of these methods could not see this: its 80 reviews were selected
   for having a non-significant pooled result, which is precisely the case
-  where those two are applicable. `sufficiency()` fails the other way,
+  where those two are applicable. `sufficiency_changepoint()` fails the other way,
   answering in all 17 with a mean sensitivity of 0.041 and zero in 11 of them.
 
   Sensitivity and specificity there are scored against `truth_shift()`, this
@@ -481,7 +508,7 @@ defects:
 ## Reproducibility
 
 * `inst/calibration/calibration.R` regenerates every calibration figure quoted
-  in `?sufficiency`, `vignette("methods")` and the paper, from the seeds the
+  in `?sufficiency_changepoint`, `vignette("methods")` and the paper, from the seeds the
   original measurements used, and reconstructs both of the statistics that
   were replaced so the before-and-after comparison can be re-derived. Two
   published figures did not survive that check and were corrected: the
@@ -490,7 +517,7 @@ defects:
 
 ## Notes on two published methods
 
-* `sufficiency()` tests stability with a change-point statistic
+* `sufficiency_changepoint()` tests stability with a change-point statistic
   (`max_m |Z_m|`) under an order-permutation null, not with the ordinary least
   squares slope of the cumulative series that the source describes. A *t*-test
   on a cumulative mean has no valid null distribution — it is autocorrelated

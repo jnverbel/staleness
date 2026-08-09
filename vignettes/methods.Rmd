@@ -170,7 +170,18 @@ sig <- rma(yi = rep(log(0.4), 8), vi = rep(0.01, 8), measure = "RR")
 barrowman(sig, n_prev = 400, n_new = 900)
 ```
 
-## `sufficiency()`: sufficiency and stability
+## `sufficiency_changepoint()`: sufficiency and stability
+
+The name is the disclosure. The sufficiency half of this detector is the
+published one; the stability half is not, because the published stability
+statistic could not tell change from no change. Rather than keep the method's
+name and bury the substitution in a documentation section, the function is
+named for what it actually runs — a change-point test — and the published
+quantity is still computed and returned in `detail$slope` for anyone who wants
+to apply the source's rule literally. This is the pattern the package uses
+wherever it evaluates a published method critically and finds the original
+statistic invalid: substitute, calibrate the substitute, keep reporting the
+original as a diagnostic, and rename.
 
 ```
 index = N_fs / (5k + 10)      stability = has the cumulative pooled effect
@@ -205,7 +216,7 @@ out of date only when it is **both sufficient and unstable at once**:
 yi <- seq(log(0.9), log(0.2), length.out = 20)
 vi <- rep(0.01, 20)
 drifting <- rma(yi = yi, vi = vi, measure = "RR")
-sufficiency(drifting, drifting)
+sufficiency_changepoint(drifting, drifting)
 ```
 
 Insufficiency by itself — an index at or below 1 — is **never** grounds for
@@ -215,7 +226,7 @@ Insufficiency by itself — an index at or below 1 — is **never** grounds for
 yi <- rep(log(0.99), 6)
 vi <- rep(0.04, 6)
 weak <- rma(yi = yi, vi = vi, measure = "RR")
-sufficiency(weak, weak)
+sufficiency_changepoint(weak, weak)
 ```
 
 This is the primary source's own reading, confirmed against its data, not
@@ -502,7 +513,7 @@ falsified the original wording.
 fail-safe N has been discredited as a measure of publication bias since
 Becker (2005) — it answers a narrower and less useful question than it is
 usually taken to answer, and better alternatives (trim-and-fill, funnel-plot
-regression) have existed for years. `sufficiency()` implements it
+regression) have existed for years. `sufficiency_changepoint()` implements it
 anyway, faithfully, exactly as the published method specifies it, because
 this package's purpose is not to pre-judge which of the five methods
 deserves to survive contact with data. If Rosenthal's N is as weak a

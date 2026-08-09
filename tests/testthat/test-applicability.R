@@ -51,7 +51,7 @@ test_that("the applicability sweep still produces the figures its README quotes"
   expect_equal(answers("simulation"), 5)
   expect_equal(answers("ottawa"), 17)
   expect_equal(answers("rcma"), 17)
-  expect_equal(answers("sufficiency"), 17)
+  expect_equal(answers("sufficiency_changepoint"), 17)
 
   # 4. And the README must say the same numbers as the run just did.
   md <- readLines(readme, warn = FALSE)

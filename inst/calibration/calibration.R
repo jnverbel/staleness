@@ -1,10 +1,10 @@
-# Reproduces the calibration figures quoted for sufficiency()'s stability test.
+# Reproduces the calibration figures quoted for sufficiency_changepoint()'s stability test.
 #
 # The package departs from the published sufficiency method in one place: the
 # stability half is tested with a change-point statistic under a permutation
 # null instead of the OLS slope of the cumulative series that the source
 # describes. That departure is justified by measurement, and this script is
-# the measurement. Every figure quoted in ?sufficiency, vignette("methods")
+# the measurement. Every figure quoted in ?sufficiency_changepoint, vignette("methods")
 # and the JOSS paper is produced here.
 #
 # Run it with:
@@ -27,11 +27,11 @@ if (!requireNamespace("staleness", quietly = TRUE)) {
 }
 suppressMessages(library(staleness))
 
-ALPHA <- 0.05  # the stability cutoff sufficiency() uses by default
+ALPHA <- 0.05  # the stability cutoff sufficiency_changepoint() uses by default
 
 # Does the stability test fire -- i.e. call this evidence unstable?
 #
-# method = "FE" throughout. sufficiency() reads only $yi and $vi off these
+# method = "FE" throughout. sufficiency_changepoint() reads only $yi and $vi off these
 # objects -- the fail-safe N and the change-point statistic are both computed
 # from the study-level values, never from the fitted model -- so the estimator
 # cannot affect any figure below. Fixing it to FE keeps the script from dying
@@ -41,7 +41,7 @@ fires <- function(yi, vi, prev_idx = NULL) {
   prev_idx <- if (is.null(prev_idx)) seq_along(yi) else prev_idx
   prev <- metafor::rma(yi = yi[prev_idx], vi = vi[prev_idx], method = "FE")
   new  <- metafor::rma(yi = yi, vi = vi, method = "FE")
-  isTRUE(!sufficiency(prev, new)$detail$stable)
+  isTRUE(!sufficiency_changepoint(prev, new)$detail$stable)
 }
 
 report <- function(label, got, published) {
@@ -95,7 +95,7 @@ e4 <- function(vi, seeds = 9001:9300) {
 # same (1 + count) / (n + 1) estimator, but the statistic is the OLS slope of
 # the cumulative series against accumulated information. It is reconstructed
 # here from the package's own cum_drift_slope(), which survives because
-# sufficiency() still reports that slope in detail$slope. Without this the
+# sufficiency_changepoint() still reports that slope in detail$slope. Without this the
 # "before" column of the comparison would be a number nobody can re-derive.
 old_fires <- function(yi, vi, n_perm = 999, seed = 20260807) {
   k <- length(yi)

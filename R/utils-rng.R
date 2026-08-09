@@ -1,7 +1,7 @@
 #' Evaluate an expression without disturbing the caller's random stream
 #'
 #' Detectors that randomise ([simulation()], and the permutation test inside
-#' [sufficiency()]) must not leave a footprint on the caller's session. A
+#' [sufficiency_changepoint()]) must not leave a footprint on the caller's session. A
 #' script that calls `set.seed()` once and then runs [backtest()] would
 #' otherwise lose the reproducibility of everything it does afterwards, and
 #' CRAN policy forbids altering global state in any case.

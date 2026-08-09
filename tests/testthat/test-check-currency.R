@@ -2,7 +2,7 @@ fit_rr <- function(yi, vi) metafor::rma(yi = yi, vi = vi, measure = "RR")
 
 test_that("available_methods lists the five detectors", {
   expect_setequal(available_methods(),
-                  c("rcma", "ottawa", "barrowman", "sufficiency", "simulation"))
+                  c("rcma", "ottawa", "barrowman", "sufficiency_changepoint", "simulation"))
 })
 
 test_that("check_currency runs the requested detectors and returns one row each", {
@@ -177,4 +177,37 @@ test_that("new evidence must be statistically usable, not just well shaped", {
     check_currency(prev, list(yi = numeric(), vi = numeric(), k = 0),
                    methods = "rcma"),
     "staleness_no_evidence")
+})
+
+# The registry and the dispatch are two lists of the same names in two files,
+# and nothing tied them together. Renaming sufficiency() to
+# sufficiency_changepoint() moved available_methods() and left the switch()
+# label behind -- a label is a NAME, not a string, so no search for the old
+# string found it. switch() answered NULL, check_currency() carried the NULL
+# to a vapply four frames later, and the error named a length, not a method.
+test_that("every name in available_methods() actually dispatches to its own detector", {
+  prev <- metafor::rma(yi = rep(log(0.50), 6), vi = rep(0.05, 6), measure = "RR")
+  new  <- list(yi = rep(log(1.20), 6), vi = rep(0.02, 6), k = 6)
+
+  res <- check_currency(prev, new, methods = available_methods(),
+                        n_prev = 600, n_new = 600)
+
+  # One verdict per requested method, each carrying the name it was asked for.
+  expect_named(res$verdicts, available_methods())
+  for (m in available_methods()) {
+    v <- res$verdicts[[m]]
+    expect_s3_class(v, "staleness_verdict")
+    expect_identical(v$method, m)
+  }
+})
+
+test_that("a method with no dispatch branch fails by name, not by length", {
+  prev <- metafor::rma(yi = rep(log(0.50), 6), vi = rep(0.05, 6), measure = "RR")
+  new  <- list(yi = rep(log(1.20), 6), vi = rep(0.02, 6), k = 6)
+
+  # Force the desync the test above exists to prevent: a registry that offers a
+  # name the switch() has never heard of.
+  local_mocked_bindings(available_methods = function() c("rcma", "ghost"))
+  expect_error(check_currency(prev, new, methods = "ghost"),
+               "no dispatch branch for method \"ghost\"")
 })

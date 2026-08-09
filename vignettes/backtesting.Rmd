@@ -30,7 +30,7 @@ evaluation this package cites throughout (Pattanittum et al., 2012, applying
 them to 80 published systematic reviews). Their agreement with each other was
 **Kappa = 0.14** — indistinguishable from chance, and computed over the three
 methods that discriminated at all: `ottawa` flagged 34 of the 80 reviews,
-`rcma` flagged 7 and `barrowman` flagged 7. The other two, `sufficiency` and
+`rcma` flagged 7 and `barrowman` flagged 7. The other two, `sufficiency_changepoint` and
 `simulation`, flagged nothing whatsoever. Only one review was flagged by all
 three of the discriminating methods at once.
 
@@ -121,7 +121,7 @@ using that number — sometimes the circular comparison is exactly what you
 want, if what you are asking is "does `ottawa` reproduce its own rule
 correctly" rather than "does `ottawa` predict the future" — but nobody
 reading this table can mistake it for an independent result. `rcma` and
-`sufficiency`, scored against the same truth, are not marked, because
+`sufficiency_changepoint`, scored against the same truth, are not marked, because
 neither shares `conclusion`'s specific logic.
 
 A relationship between two *detectors* deserves the same care, and earlier
@@ -190,9 +190,9 @@ itself a result about the detector, and a table that simply omitted the two
 would leave a reader to notice the gap, or not. It is the narrow-scope
 critique from `vignette("methods", package = "staleness")`, visible directly
 in real data rather than argued in the abstract. Note also the `n` column:
-`sufficiency` scores 18 cuts where `rcma` and `ottawa` score 19, because at
+`sufficiency_changepoint` scores 18 cuts where `rcma` and `ottawa` score 19, because at
 the earliest cut the updated meta-analysis still had fewer than five studies
-and `sufficiency()` declined that one too.
+and `sufficiency_changepoint()` declined that one too.
 
 Second, this run uses `horizon = 3` with `window = 5`, and the censoring
 follows the *larger* of the two. A cut needs three years of future for its
@@ -206,13 +206,13 @@ That biases exactly those cuts toward `current`, invisibly. `backtest()`
 censors on `max(horizon, window)` for that reason, which is why the
 `censored` count above is larger than the horizon alone would produce.
 
-Third, `sufficiency` is the only detector here with a specificity below 1:
+Third, `sufficiency_changepoint` is the only detector here with a specificity below 1:
 it fires once, at the 1955–1979 cut for 1971, on a year with no true event
 under any of the three truth definitions. That single firing is not a bug,
 and it is worth being precise about why. `rcma()` and `ottawa()` are
 deterministic threshold rules — they fire when a fixed quantity crosses a
 fixed line, so on evidence that is not moving they never fire at all, and a
-specificity of exactly 1 costs them nothing. `sufficiency()`'s stability half
+specificity of exactly 1 costs them nothing. `sufficiency_changepoint()`'s stability half
 is a permutation test at `alpha_stability = 0.05`, and an honest test at the
 5% level is *entitled* to one false positive in twenty; over 18 scored cuts,
 one is the modal outcome. A version of it with specificity 1 on this series
@@ -254,11 +254,11 @@ lead_time(bt, truth = "shift")
 ```
 
 Every `median_lead` above is `NA`, not zero, and the two reasons are
-different. For `rcma`, `ottawa` and `sufficiency`, `n_events = 5`: five true
+different. For `rcma`, `ottawa` and `sufficiency_changepoint`, `n_events = 5`: five true
 shifts happened in this series, per the `shift` definition, and none of the
 three applicable detectors ever flagged one of them as `out_of_date` —
 neither early nor late, which is the sensitivity 0 visible in `summary(bt)`.
-`sufficiency`'s one firing does not change that: it landed on a cut with no
+`sufficiency_changepoint`'s one firing does not change that: it landed on a cut with no
 true event, which is why it shows up in the specificity column and not here.
 `lead_time()` reports `NA` rather than inventing a number for events that
 were never caught at all; a real numeric lead only exists for events a

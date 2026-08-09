@@ -5,9 +5,9 @@ test_that("failsafe_n follows Rosenthal's formula", {
   expect_equal(failsafe_n(yi, vi), expected, tolerance = 1e-8)
 })
 
-test_that("sufficiency refuses fewer than five studies", {
+test_that("sufficiency_changepoint refuses fewer than five studies", {
   prev <- metafor::rma(yi = rep(log(0.5), 4), vi = rep(0.04, 4), measure = "RR")
-  v <- sufficiency(prev, prev)
+  v <- sufficiency_changepoint(prev, prev)
   expect_equal(v$verdict, "not_applicable")
   expect_match(v$reason, "at least 5")
 })
@@ -24,7 +24,7 @@ test_that("a large, stable body of evidence reads as current", {
   set.seed(8)
   yi <- rnorm(30, log(0.5), 0.02); vi <- rep(0.01, 30)
   prev <- metafor::rma(yi = yi, vi = vi, measure = "RR")
-  v <- sufficiency(prev, prev)
+  v <- sufficiency_changepoint(prev, prev)
   expect_equal(v$verdict, "current")
   expect_true(v$detail$sufficient)
   expect_true(v$detail$stable)
@@ -36,7 +36,7 @@ test_that("a drifting cumulative effect reads as out of date", {
   # an out-of-date verdict (sufficient AND unstable).
   yi <- seq(log(0.9), log(0.2), length.out = 20); vi <- rep(0.01, 20)
   prev <- metafor::rma(yi = yi, vi = vi, measure = "RR")
-  v <- sufficiency(prev, prev)
+  v <- sufficiency_changepoint(prev, prev)
   expect_true(v$detail$sufficient)
   expect_false(v$detail$stable)
   expect_equal(v$verdict, "out_of_date")
@@ -45,7 +45,7 @@ test_that("a drifting cumulative effect reads as out of date", {
 test_that("the sufficiency index is Nfs / (5k + 10)", {
   yi <- rep(log(0.5), 10); vi <- rep(0.04, 10)
   prev <- metafor::rma(yi = yi, vi = vi, measure = "RR")
-  v <- sufficiency(prev, prev)
+  v <- sufficiency_changepoint(prev, prev)
   expect_equal(v$detail$index, failsafe_n(yi, vi) / (5 * 10 + 10),
                tolerance = 1e-8)
 })
@@ -57,12 +57,12 @@ test_that("insufficient evidence never reads as out of date, regardless of stabi
   # never trigger "out_of_date".
   yi <- rep(log(0.99), 6); vi <- rep(0.04, 6)  # tiny effect: low index
   prev <- metafor::rma(yi = yi, vi = vi, measure = "RR")
-  v <- sufficiency(prev, prev)
+  v <- sufficiency_changepoint(prev, prev)
   expect_false(v$detail$sufficient)
   expect_equal(v$verdict, "current")
 })
 
-test_that("sufficiency is read off prev, not new_ma; stability off new_ma", {
+test_that("sufficiency_changepoint is read off prev, not new_ma; stability off new_ma", {
   # Per Table 1 of the primary source (Pattanittum et al. 2012), Nfs and its
   # k in "5k+10" are "of the previous meta-analysis"; the stability slope is
   # "of the updated meta-analysis". This is the case where that distinction is
@@ -89,7 +89,7 @@ test_that("sufficiency is read off prev, not new_ma; stability off new_ma", {
     (5 * new_ma$k + 10)
   expect_gt(wrong_index, 1)
 
-  v <- sufficiency(prev, new_ma)
+  v <- sufficiency_changepoint(prev, new_ma)
   expect_false(v$detail$sufficient)     # prev alone: index <= 1
   expect_equal(v$detail$k, prev$k)      # sufficiency's k is prev's k
   expect_equal(v$detail$k_new, new_ma$k) # stability's k is new_ma's k
@@ -98,7 +98,7 @@ test_that("sufficiency is read off prev, not new_ma; stability off new_ma", {
 
 # --- The stability test ----------------------------------------------------
 #
-# Three implementations, each replaced after measurement; see ?sufficiency for
+# Three implementations, each replaced after measurement; see ?sufficiency_changepoint for
 # the full numbers and vignette("methods") for the declaration.
 #
 #   1. summary.lm() t-test on the slope of the cumulative effect against study
@@ -120,8 +120,8 @@ test_that("sufficiency is read off prev, not new_ma; stability off new_ma", {
 test_that("p_stability is a permutation p-value, and the permutation is deterministic", {
   yi <- seq(log(0.9), log(0.2), length.out = 20); vi <- rep(0.01, 20)
   ma <- metafor::rma(yi = yi, vi = vi, measure = "RR")
-  a <- sufficiency(ma, ma)
-  b <- sufficiency(ma, ma)
+  a <- sufficiency_changepoint(ma, ma)
+  b <- sufficiency_changepoint(ma, ma)
   expect_equal(a$detail$p_stability, b$detail$p_stability)  # same answer every call
   # A permutation p-value with 999 draws lives on the grid (1 + j) / 1000.
   expect_equal(a$detail$p_stability * 1000, round(a$detail$p_stability * 1000))
@@ -136,25 +136,25 @@ test_that("alpha_stability is the permutation p-value cutoff", {
   set.seed(8)
   yi <- rnorm(30, log(0.5), 0.02); vi <- rep(0.01, 30)
   ma <- metafor::rma(yi = yi, vi = vi, measure = "RR")
-  p <- sufficiency(ma, ma)$detail$p_stability
-  expect_true(sufficiency(ma, ma, alpha_stability = p - 1e-9)$detail$stable)
-  expect_false(sufficiency(ma, ma, alpha_stability = p + 1e-9)$detail$stable)
+  p <- sufficiency_changepoint(ma, ma)$detail$p_stability
+  expect_true(sufficiency_changepoint(ma, ma, alpha_stability = p - 1e-9)$detail$stable)
+  expect_false(sufficiency_changepoint(ma, ma, alpha_stability = p + 1e-9)$detail$stable)
 })
 
-test_that("sufficiency leaves the caller's random stream untouched", {
+test_that("sufficiency_changepoint leaves the caller's random stream untouched", {
   # The permutation draw must not be visible to the caller: a script that seeds
   # once and then backtests would otherwise lose reproducibility downstream.
   ma <- metafor::rma(yi = seq(log(0.9), log(0.2), length.out = 20),
                      vi = rep(0.01, 20), measure = "RR")
   set.seed(123); expected <- runif(3)
-  set.seed(123); invisible(sufficiency(ma, ma)); got <- runif(3)
+  set.seed(123); invisible(sufficiency_changepoint(ma, ma)); got <- runif(3)
   expect_equal(got, expected)
 })
 
 test_that("detail still carries every documented field", {
   ma <- metafor::rma(yi = seq(log(0.9), log(0.2), length.out = 20),
                      vi = rep(0.01, 20), measure = "RR")
-  d <- sufficiency(ma, ma)$detail
+  d <- sufficiency_changepoint(ma, ma)$detail
   expect_setequal(names(d), c("index", "sufficient", "stable", "slope",
                               "z_shift", "split", "p_stability", "k", "k_new"))
   expect_true(is.numeric(d$slope) && is.finite(d$slope))
@@ -181,7 +181,7 @@ test_that("a shift confined to the last studies reads as out of date", {
   # late cliff ever moves it at high index.
   yi <- c(rep(log(0.5), 15), rep(log(0.05), 5)); vi <- rep(0.01, 20)
   ma <- metafor::rma(yi = yi, vi = vi, measure = "RR")
-  v <- sufficiency(ma, ma)
+  v <- sufficiency_changepoint(ma, ma)
   expect_true(v$detail$sufficient)
   expect_false(v$detail$stable)
   expect_equal(v$verdict, "out_of_date")
@@ -197,7 +197,7 @@ test_that("the shift is caught wherever it falls in the series, early or late", 
   fired <- vapply(c(2, 5, 8, 10, 12, 15, 18), function(s) {
     yi <- c(rep(log(0.5), s), rep(log(0.05), 20 - s)); vi <- rep(0.01, 20)
     ma <- metafor::rma(yi = yi, vi = vi, measure = "RR")
-    sufficiency(ma, ma)$verdict == "out_of_date"
+    sufficiency_changepoint(ma, ma)$verdict == "out_of_date"
   }, logical(1))
   expect_true(all(fired))
 })
@@ -206,7 +206,7 @@ test_that("power against a smaller late batch is not merely non-zero", {
   # 20 prior studies at RR 0.5 plus 10 new at RR 0.30. Implementation 2 caught
   # 1 of 200 such samples, and 0 of 200 once the new studies moved to RR 0.15
   # or beyond -- power that *fell* as the change grew. Ten samples here, all of
-  # which must be caught; the full 200-sample measurement is in ?sufficiency.
+  # which must be caught; the full 200-sample measurement is in ?sufficiency_changepoint.
   caught <- vapply(1:10, function(i) {
     set.seed(5000 + i)
     yi <- rnorm(20, log(0.5), 0.05); vi <- rep(0.01, 20)
@@ -214,7 +214,7 @@ test_that("power against a smaller late batch is not merely non-zero", {
     prev <- metafor::rma(yi = yi, vi = vi, measure = "RR")
     upd  <- metafor::rma(yi = c(yi, more), vi = c(vi, rep(0.01, 10)),
                          measure = "RR")
-    sufficiency(prev, upd)$verdict == "out_of_date"
+    sufficiency_changepoint(prev, upd)$verdict == "out_of_date"
   }, logical(1))
   expect_true(all(caught))
 })
@@ -237,7 +237,7 @@ test_that("the reported slope is fitted against accumulated information", {
   ols <- function(x, y) {
     xc <- x - mean(x); sum(xc * (y - mean(y))) / sum(xc^2)
   }
-  expect_equal(sufficiency(ma, ma)$detail$slope, ols(x_info, y),
+  expect_equal(sufficiency_changepoint(ma, ma)$detail$slope, ols(x_info, y),
                tolerance = 1e-10)
   # The two really are different numbers here, so the assertion above is not
   # satisfied by the index version.
@@ -278,7 +278,7 @@ test_that("the stability statistic is pivotal in the noise scale", {
 test_that("a byte-identical body of evidence returns a verdict instead of erroring", {
   # Reproduction 2 from the review, at exactly min_k.
   prev <- metafor::rma(yi = rep(log(0.4), 5), vi = rep(0.01, 5), measure = "RR")
-  v <- expect_no_error(sufficiency(prev, prev))
+  v <- expect_no_error(sufficiency_changepoint(prev, prev))
   expect_true(v$verdict %in% c("current", "out_of_date"))
   expect_true(v$detail$stable)            # a constant series is maximally stable
   expect_equal(v$verdict, "current")
@@ -286,15 +286,15 @@ test_that("a byte-identical body of evidence returns a verdict instead of errori
 
 test_that("a constant cumulative series does not take down a whole backtest", {
   # Reproduction 1 from the review: this exact call died before the fix, and
-  # succeeded as soon as "sufficiency" was dropped from `methods`.
+  # succeeded as soon as "sufficiency_changepoint" was dropped from `methods`.
   stream <- evidence_stream(
     metafor::rma(yi = rep(0.5, 20), vi = rep(0.02, 20), measure = "MD"),
     date = 2000:2019, study_id = seq_along(2000:2019))
   bt <- expect_no_error(
-    backtest(stream, methods = c("rcma", "ottawa", "sufficiency"),
+    backtest(stream, methods = c("rcma", "ottawa", "sufficiency_changepoint"),
              horizon = 3, window = 3))
   expect_s3_class(bt, "staleness_backtest")
-  suff <- bt$results[bt$results$method == "sufficiency", ]
+  suff <- bt$results[bt$results$method == "sufficiency_changepoint", ]
   expect_true(all(suff$verdict %in% c("current", "not_applicable")))
 })
 
@@ -312,7 +312,7 @@ test_that("a split that carries no information does not swallow the statistic", 
   expect_equal(stability_shift_at(yi, vi), 6L)
 
   ma <- metafor::rma(yi = yi, vi = vi, measure = "RR", method = "FE")
-  v <- expect_no_error(sufficiency(ma, ma))
+  v <- expect_no_error(sufficiency_changepoint(ma, ma))
   expect_true(v$verdict %in% c("current", "out_of_date"))
   expect_true(is.logical(v$detail$stable) && !is.na(v$detail$stable))
 })
@@ -328,7 +328,7 @@ test_that("evidence with no usable split reads as stable rather than unstable", 
   expect_true(is.na(stability_shift_z(yi, vi)))
   expect_true(is.na(stability_shift_at(yi, vi)))
   ma <- metafor::rma(yi = yi, vi = vi, measure = "RR", method = "FE")
-  v <- expect_no_error(sufficiency(ma, ma))
+  v <- expect_no_error(sufficiency_changepoint(ma, ma))
   expect_true(v$detail$stable)
   expect_equal(v$verdict, "current")
 })
@@ -339,7 +339,7 @@ test_that("a non-finite cumulative effect is declined, not guessed at", {
   prev <- metafor::rma(yi = rep(log(0.5), 6), vi = rep(0.02, 6), measure = "RR")
   broken <- prev
   broken$vi <- c(0, rep(0.02, 5))
-  v <- expect_no_error(sufficiency(prev, broken))
+  v <- expect_no_error(sufficiency_changepoint(prev, broken))
   expect_equal(v$verdict, "not_applicable")
   expect_match(v$reason, "not finite")
 })
@@ -356,7 +356,7 @@ test_that("a flat cumulative tail does not hide a split at the first study", {
 
   prev <- metafor::rma(yi = rep(0, 5), vi = rep(1, 5))
   new  <- metafor::rma(yi = yi, vi = vi)
-  res  <- sufficiency(prev, new)
+  res  <- sufficiency_changepoint(prev, new)
   expect_equal(res$detail$z_shift, stability_shift_z(yi, vi), tolerance = 1e-8)
   expect_false(is.na(res$detail$split))
   expect_lt(res$detail$p_stability, 1)
@@ -369,7 +369,7 @@ test_that("byte-identical studies are still maximally stable, with no p-value", 
   vi <- rep(0.02, 12)
   prev <- metafor::rma(yi = rep(log(0.5), 6), vi = rep(0.02, 6))
   new  <- metafor::rma(yi = yi, vi = vi)
-  res  <- sufficiency(prev, new)
+  res  <- sufficiency_changepoint(prev, new)
   expect_true(res$detail$stable)
   expect_equal(res$detail$z_shift, 0)
   expect_equal(res$detail$p_stability, 1)
@@ -380,7 +380,7 @@ test_that("a single new study resolves cleanly instead of warning three times", 
   new  <- metafor::rma(yi = c(log(0.5), log(0.6)), vi = c(0.02, 0.02))
   # min_k = 1 is user-settable, and k_new = 1 used to reach max(numeric(0)).
   one <- metafor::rma(yi = rep(log(0.5), 2), vi = rep(0.02, 2))
-  expect_no_warning(sufficiency(prev, one, min_k = 1))
+  expect_no_warning(sufficiency_changepoint(prev, one, min_k = 1))
 })
 
 test_that("scale pivotality is about yi and vi TOGETHER, not vi alone", {
@@ -416,14 +416,14 @@ test_that("min_k gates the updated evidence only, and that is load-bearing", {
   # sufficiency half. Pinned so the asymmetry stays a documented decision.
   prev2 <- metafor::rma(yi = c(0.5, 0.4), vi = c(0.05, 0.05))
   new8  <- metafor::rma(yi = rep(0.5, 8), vi = rep(0.05, 8))
-  res <- sufficiency(prev2, new8)
+  res <- sufficiency_changepoint(prev2, new8)
   expect_equal(res$detail$k, 2)       # the prior review really is that small
   expect_false(is.na(res$detail$index))
   expect_equal(res$verdict, "current")
 
   # And the gate does fire on the updated side.
   new3 <- metafor::rma(yi = rep(0.5, 3), vi = rep(0.05, 3))
-  expect_equal(sufficiency(prev2, new3)$verdict, "not_applicable")
+  expect_equal(sufficiency_changepoint(prev2, new3)$verdict, "not_applicable")
 })
 
 test_that("an undeterminable index is resolved, not left to break the if()", {
@@ -440,12 +440,12 @@ test_that("an undeterminable index is resolved, not left to break the if()", {
   unstable <- metafor::rma(yi = c(rep(log(0.5), 6), rep(log(1.4), 6)),
                            vi = rep(0.02, 12))
 
-  res <- sufficiency(prev, unstable)
+  res <- sufficiency_changepoint(prev, unstable)
   expect_equal(res$verdict, "not_applicable")
-  expect_match(res$reason, "sufficiency")
+  expect_match(res$reason, "sufficiency index is not finite")
 
   # And a stable one takes the same path, rather than reaching "current" by
   # the accident of NA && FALSE being FALSE.
   stable <- metafor::rma(yi = rep(log(0.5), 12), vi = rep(0.02, 12))
-  expect_equal(sufficiency(prev, stable)$verdict, "not_applicable")
+  expect_equal(sufficiency_changepoint(prev, stable)$verdict, "not_applicable")
 })

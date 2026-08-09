@@ -66,7 +66,7 @@ VERDICTS <- c(
   VegSpecIndex  = "false positive: spectral indices for vegetation",
   CRTSize       = "false positive: 'updated techniques' for cluster-trial sample size",
   metagear      = "adjacent: screens abstracts for systematic reviews; does not assess whether a completed review is out of date",
-  fsn           = "component: Rosenthal's fail-safe N, one half of sufficiency()",
+  fsn           = "component: Rosenthal's fail-safe N, one half of sufficiency_changepoint()",
   meta          = "component: general meta-analysis, computes cumulative meta-analyses",
   metafor       = "component: cumulative meta-analyses and fail-safe N; this package depends on it",
   RTSA          = "component: trial sequential analysis, a different sequential question"

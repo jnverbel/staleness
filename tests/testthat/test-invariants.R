@@ -23,11 +23,11 @@ test_that("new evidence drawn from the same distribution raises no signal", {
 # The single-seed version above is what let the sufficiency defect ship. Design
 # section 7 states the invariant as "statistically identical new evidence => no
 # detector signals", but the test only ever checked two of the five, at one
-# seed. sufficiency() fired on 209 of 300 such samples: its stability test was
+# seed. sufficiency_changepoint() fired on 209 of 300 such samples: its stability test was
 # an OLS t-test on a cumulative mean, a series that is autocorrelated by
 # construction and converges by the law of large numbers, so the test detected
 # convergence and reported instability. Replaced by a permutation test over
-# study order (see ?sufficiency); the invariant is now checked the way it
+# study order (see ?sufficiency_changepoint); the invariant is now checked the way it
 # should have been from the start.
 #
 # The right assertion is a RATE, not "never fires": rcma and ottawa are
@@ -39,7 +39,7 @@ test_that("new evidence drawn from the same distribution raises no signal", {
 #' Run all five detectors over `n` samples of evidence that does not change.
 #'
 #' `effect` and `sd_study` pick which regime is exercised: a strong, precise
-#' effect makes `sufficiency` applicable and *sufficient* (so its stability
+#' effect makes `sufficiency_changepoint` applicable and *sufficient* (so its stability
 #' half is genuinely under test) while making `barrowman` and `simulation`
 #' inapplicable; a null effect does the reverse. Both regimes are needed to
 #' put all five detectors under the invariant, which is why there are two
@@ -59,7 +59,7 @@ no_change_run <- function(seed0, n, effect, vi_study, n_prev = 2000, n_new = 100
       rcma        = rcma(prev, upd),
       ottawa      = ottawa(prev, upd),
       barrowman   = barrowman(prev, n_prev = n_prev, n_new = n_new),
-      sufficiency = sufficiency(prev, upd),
+      sufficiency_changepoint = sufficiency_changepoint(prev, upd),
       simulation  = simulation(prev, new, B = 200, seed = 1)
     )
     for (m in available_methods()) verdicts[i, m] <- vs[[m]]$verdict
@@ -108,7 +108,7 @@ test_that("ottawa's effect criterion is unstable exactly where it is applied", {
 })
 
 test_that("unchanging evidence signals no more often than chance: strong-effect regime", {
-  # A strong, precise effect is what makes sufficiency() *sufficient*
+  # A strong, precise effect is what makes sufficiency_changepoint() *sufficient*
   # (index ~ 100), so `sufficient && !stable` turns entirely on the stability
   # test -- the regime the defect lived in. It is also, necessarily, a regime
   # where barrowman() and simulation() decline: both require a prior that was
@@ -123,14 +123,14 @@ test_that("unchanging evidence signals no more often than chance: strong-effect 
 
   # sufficiency was applicable and sufficient throughout, so every "current"
   # here is the stability test declining to fire.
-  expect_equal(sum(v[, "sufficiency"] == "not_applicable"), 0)
+  expect_equal(sum(v[, "sufficiency_changepoint"] == "not_applicable"), 0)
 
   # It is now an honest alpha = 0.05 permutation test, so it is *entitled* to
   # fire on about 5% of samples; demanding zero would only be satisfiable by a
   # broken test. Over 60 samples the upper 99.9% binomial bound is 8. The
   # pre-fix OLS implementation fired on roughly 70% of such samples (209 of
   # 300 in the measured experiment), so this bound has real teeth.
-  expect_lte(sum(v[, "sufficiency"] == "out_of_date"), 8)
+  expect_lte(sum(v[, "sufficiency_changepoint"] == "out_of_date"), 8)
 })
 
 # --- The invariant under a REALISTIC variance schedule ---------------------
@@ -156,7 +156,7 @@ test_that("unchanging evidence signals no more often than chance: strong-effect 
 #   geometric decay x650             151/200    24/200           10.3%
 #
 # The fix was to replace the statistic with one whose dependence on the
-# variance schedule is weak rather than structural (see ?sufficiency). Weak is
+# variance schedule is weak rather than structural (see ?sufficiency_changepoint). Weak is
 # not zero, and the last row is the disclosed limit: on a smooth, strongly
 # monotone precision ramp the test runs anti-conservative at about 10-11%.
 # Its bound below is set from that measured rate, not from the nominal 5%.
@@ -173,7 +173,7 @@ hetero_false_alarms <- function(vi, n = 200, effect = log(0.5), seed0 = 9000) {
     prev <- metafor::rma(yi = yi[seq_len(k_prev)], vi = vi[seq_len(k_prev)],
                          measure = "RR", method = "FE")
     upd  <- metafor::rma(yi = yi, vi = vi, measure = "RR", method = "FE")
-    unstable <- unstable + !sufficiency(prev, upd)$detail$stable
+    unstable <- unstable + !sufficiency_changepoint(prev, upd)$detail$stable
   }
   unstable
 }
@@ -212,7 +212,7 @@ test_that("a monotone exponential precision ramp stays inside its disclosed limi
   # residual dependence of max|Z_m| on the shape of the variance schedule
   # actually bites. Long-run rate 10.3% (independently 11.1% over 2000
   # samples, CI 9.8-12.6%) -- roughly twice nominal, and DISCLOSED as a limit
-  # in ?sufficiency rather than claimed away.
+  # in ?sufficiency_changepoint rather than claimed away.
   #
   # The bound is therefore set from the measured rate, not from 5%: 20.6
   # expected of 200, sd 4.3, 99.9% bound 34.7, so 40 with headroom. Measured:
@@ -224,7 +224,7 @@ test_that("a monotone exponential precision ramp stays inside its disclosed limi
   expect_gte(fired, 5)
 })
 
-test_that("sufficiency does not fire on a cumulative series that is only rounding noise", {
+test_that("sufficiency_changepoint does not fire on a cumulative series that is only rounding noise", {
   # 12 byte-identical studies. The cumulative effect spans 2.2e-16 -- pure
   # floating-point noise around a constant -- and the old OLS test fitted that
   # ULP, returning slope -7.4e-17 with p = 0.014 and a verdict of out_of_date.
@@ -232,7 +232,7 @@ test_that("sufficiency does not fire on a cumulative series that is only roundin
   prev <- fit_rr(rep(log(0.5), 12), rep(0.02, 12))
   cum <- cumulative_effect(as.numeric(prev$yi), as.numeric(prev$vi))
   expect_lt(diff(range(cum)), 1e-15)     # the series really is degenerate
-  v <- sufficiency(prev, prev)
+  v <- sufficiency_changepoint(prev, prev)
   expect_true(v$detail$sufficient)       # sufficiency is not the thing failing
   expect_true(v$detail$stable)
   expect_equal(v$detail$slope, 0)
@@ -245,7 +245,7 @@ test_that("every detector returns a verdict object with the required fields", {
   upd  <- fit_rr(rep(log(0.3), 12), rep(0.02, 12))
   new_ev <- list(yi = rep(log(0.3), 4), vi = rep(0.02, 4), k = 4)
   vs <- list(
-    rcma(prev, upd), ottawa(prev, upd), sufficiency(prev, upd),
+    rcma(prev, upd), ottawa(prev, upd), sufficiency_changepoint(prev, upd),
     barrowman(prev, 400, 900), simulation(prev, new_ev, B = 50, seed = 1)
   )
   for (v in vs) {

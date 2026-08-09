@@ -78,7 +78,7 @@ test_that("the README's worked example still produces what it claims", {
   env <- new.env(parent = globalenv())
   eval(parse(text = paste(readme_example(readme), collapse = "\n")), envir = env)
   chk <- check_currency(get("prev", envir = env), get("new", envir = env),
-                        methods = c("rcma", "ottawa", "sufficiency"))
+                        methods = c("rcma", "ottawa", "sufficiency_changepoint"))
   actual <- vapply(chk$verdicts, function(v) round(as.numeric(v$signal), 2),
                    numeric(1))
   expect_equal(unname(actual), claimed, tolerance = 1e-8)

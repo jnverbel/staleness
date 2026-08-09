@@ -1,13 +1,13 @@
 # Calibration measurements
 
-`sufficiency()` departs from its published description in one place: the
+`sufficiency_changepoint()` departs from its published description in one place: the
 stability half is tested with a change-point statistic under a permutation
 null, instead of the ordinary least squares slope of the cumulative series
 that the source specifies.
 
 A deviation from a published method needs evidence, not an assertion. This
 directory holds that evidence in runnable form. Every calibration figure
-quoted in `?sufficiency`, `vignette("methods")` and the JOSS paper is produced
+quoted in `?sufficiency_changepoint`, `vignette("methods")` and the JOSS paper is produced
 by `calibration.R`:
 
 The script runs *against* the package, so the package has to be available
