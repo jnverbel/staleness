@@ -7,36 +7,36 @@
 pooled_calibration(bts, truth = "shift", R = 2000, seed = NULL, conf = 0.95)
 }
 \arguments{
-\item{bts}{A list of `staleness_backtest` objects, one per independent
+\item{bts}{A list of \code{staleness_backtest} objects, one per independent
 review. Two backtests of the same evidence are not two reviews.}
 
-\item{truth}{One of [available_truths()].}
+\item{truth}{One of \code{\link[=available_truths]{available_truths()}}.}
 
 \item{R}{Bootstrap replicates.}
 
-\item{seed}{Integer seed, or `NULL`. Without one the interval is not
+\item{seed}{Integer seed, or \code{NULL}. Without one the interval is not
 reproducible; the caller's random stream is restored either way.}
 
 \item{conf}{Interval coverage.}
 }
 \value{
-A data frame with one row per method: `n_reviews`, `n_cuts`, the
-  pooled `sensitivity` and `specificity`, and percentile bounds for each.
-  Bounds are `NA` when fewer than two reviews contribute a defined rate --
-  an interval from one review would describe nothing but that review.
+A data frame with one row per method: \code{n_reviews}, \code{n_cuts}, the
+pooled \code{sensitivity} and \code{specificity}, and percentile bounds for each.
+Bounds are \code{NA} when fewer than two reviews contribute a defined rate --
+an interval from one review would describe nothing but that review.
 }
 \description{
-[calibration()] describes one body of evidence. Its `n` counts cuts, and
+\code{\link[=calibration]{calibration()}} describes one body of evidence. Its \code{n} counts cuts, and
 consecutive cuts of a single review share almost every study: the snapshot
 at 1970 and the snapshot at 1971 differ by whatever appeared in one year.
 Nineteen cuts are not nineteen observations, so a rate computed from them
-is a **description of that series**, not an estimate of how a detector
+is a \strong{description of that series}, not an estimate of how a detector
 behaves in general, and it carries no interval for the same reason — a
 binomial one would be built on a denominator that is not what it looks
 like, and would come out far too narrow.
 }
 \details{
-Independence is available at the level of **reviews**. Different reviews
+Independence is available at the level of \strong{reviews}. Different reviews
 share no studies, so this function pools across them and resamples whole
 reviews to get an interval. What varies between bootstrap replicates is
 which reviews were drawn, which is the variability that matters when asking

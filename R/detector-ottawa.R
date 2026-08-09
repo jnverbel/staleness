@@ -9,10 +9,10 @@
 #' `qualitative` and reported separately. An algorithm that claimed to judge
 #' "substantial harm" on its own would be overselling what the data support.
 #'
-#' @section Which reading of "50\% change" this implements, and why:
+#' @section Which reading of "50% change" this implements, and why:
 #' The original description (Shojania et al. 2007) states the quantitative
 #' signals as "changes in statistical significance or relative changes in
-#' effect magnitude of at least 50\%". That phrasing does not say *of what*,
+#' effect magnitude of at least 50%". That phrasing does not say *of what*,
 #' and the full text is behind a subscription, so it could not be consulted
 #' here. Declared rather than glossed over.
 #'
@@ -28,12 +28,12 @@
 #'
 #' A second, independent source settles it the same way. Kuhnisch et al.
 #' (2013), applying the method and citing Shojania for it, state signal B2 as
-#' "a change in relative effect size of at least 50\%" and work two examples:
+#' "a change in relative effect size of at least 50%" and work two examples:
 #' RR 2.10 to 1.51, and RR 2.61 to 1.66, both declared to meet the criterion.
 #' Neither meets it on the ratio of the effects (0.719 and 0.636, inside the
-#' band) nor as a percentage change in the estimate (28\% and 36\%, under the
-#' 50\% bar). Both meet it on the ratio of risk reductions (0.464 and 0.410,
-#' i.e. changes of 54\% and 59\%). Two papers, four worked examples, one
+#' band) nor as a percentage change in the estimate (28% and 36%, under the
+#' 50% bar). Both meet it on the ratio of risk reductions (0.464 and 0.410,
+#' i.e. changes of 54% and 59%). Two papers, four worked examples, one
 #' reading.
 #'
 #' @section The effect criterion is on risk REDUCTIONS, and is unstable:
@@ -49,8 +49,8 @@
 #' measurable. `1 - RR_prev` goes to zero as the prior effect approaches no
 #' effect, so the ratio explodes exactly where the Ottawa method is meant to be
 #' used -- on meta-analyses whose result is not yet significant. Measured on
-#' evidence containing **no change at all**: the effect signal fires on 64\% of
-#' samples under a null effect, and on 0\% once the effect is real and precise.
+#' evidence containing **no change at all**: the effect signal fires on 64% of
+#' samples under a null effect, and on 0% once the effect is real and precise.
 #' That is not an implementation artefact; it follows from the criterion.
 #'
 #' It also explains the published comparison. Ottawa flagged 34 of 80 reviews

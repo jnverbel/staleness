@@ -7,33 +7,33 @@
 cum_drift_slope(cum_theta, info)
 }
 \arguments{
-\item{cum_theta}{Numeric vector, as returned by [cumulative_effect()].}
+\item{cum_theta}{Numeric vector, as returned by \code{\link[=cumulative_effect]{cumulative_effect()}}.}
 
 \item{info}{Numeric vector of the same length, the accumulated information
-`cumsum(1 / vi)` in the same order.}
+\code{cumsum(1 / vi)} in the same order.}
 }
 \value{
-The ordinary-least-squares slope, or `NA_real_` if the series is
-  too short to have one.
+The ordinary-least-squares slope, or \code{NA_real_} if the series is
+too short to have one.
 }
 \description{
-The x-axis is accumulated Fisher information, `cumsum(1 / vi)`, which is
-what the primary source means by *"versus information increment"*
+The x-axis is accumulated Fisher information, \code{cumsum(1 / vi)}, which is
+what the primary source means by \emph{"versus information increment"}
 (Pattanittum et al. 2012, Table 1) and what trial-sequential-analysis
 methods use. An earlier implementation regressed on the study index
-`1, 2, 3, ...` instead; the two coincide only when every study carries the
+\verb{1, 2, 3, ...} instead; the two coincide only when every study carries the
 same variance.
 }
 \details{
 The first element of a cumulative series is just the first study, carrying
 no information about accumulation, so it is dropped before the slope is
-taken. Computed in closed form rather than through [stats::lm()]: the same
+taken. Computed in closed form rather than through \code{\link[stats:lm]{stats::lm()}}: the same
 number, but cheap.
 
-This slope is **reported** in `detail$slope` for fidelity to the published
-rule, so that anyone who wants to apply `|slope| > 0` literally can read it
+This slope is \strong{reported} in \code{detail$slope} for fidelity to the published
+rule, so that anyone who wants to apply \verb{|slope| > 0} literally can read it
 straight off the verdict. It is not what decides stability — see
-[stability_shift_z()] and the roxygen block of [sufficiency()] for why a
+\code{\link[=stability_shift_z]{stability_shift_z()}} and the roxygen block of \code{\link[=sufficiency]{sufficiency()}} for why a
 slope over a cumulative series turned out to be an unusable instrument.
 }
 \keyword{internal}

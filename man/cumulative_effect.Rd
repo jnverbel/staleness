@@ -11,7 +11,7 @@ cumulative_effect(yi, vi)
 be accumulated.}
 }
 \value{
-Numeric vector of length `length(yi)`.
+Numeric vector of length \code{length(yi)}.
 }
 \description{
 Cumulative fixed-effect estimate after each study

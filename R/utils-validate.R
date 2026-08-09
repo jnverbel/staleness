@@ -205,7 +205,7 @@ check_class <- function(x, cls, arg, made_by) {
 
 # A p-value outside [0, 1] is impossible rather than unknown, so it is refused
 # the way a malformed call is. truth_conclusion(p_t = -1) used to read as
-# significant and return TRUE: a ground truth manufactured from a number that
+# significant and return TRUE: an evaluation target manufactured from a number that
 # cannot exist. NA stays a datum and yields NA, as in the other two truths.
 check_p_value <- function(x, arg) {
   if (is.na(x)) return(invisible(NULL))

@@ -7,10 +7,10 @@
 is_log_scale_measure(measure)
 }
 \arguments{
-\item{measure}{Character, the `measure` field of an `rma` object.}
+\item{measure}{Character, the \code{measure} field of an \code{rma} object.}
 }
 \value{
-`TRUE` if `exp()` recovers the natural scale.
+\code{TRUE} if \code{exp()} recovers the natural scale.
 }
 \description{
 Is a metafor effect measure stored on the log scale?

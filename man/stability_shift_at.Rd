@@ -2,7 +2,7 @@
 % Please edit documentation in R/detector-sufficiency.R
 \name{stability_shift_at}
 \alias{stability_shift_at}
-\title{Split point at which [stability_shift_z()] attains its maximum}
+\title{Split point at which \code{\link[=stability_shift_z]{stability_shift_z()}} attains its maximum}
 \usage{
 stability_shift_at(yi, vi)
 }
@@ -11,10 +11,10 @@ stability_shift_at(yi, vi)
 be accumulated.}
 }
 \value{
-An integer in `1:(k - 1)`, or `NA_integer_`.
+An integer in \code{1:(k - 1)}, or \code{NA_integer_}.
 }
 \description{
-Reported in `detail$split` purely as a diagnostic: it says *where* the
+Reported in \code{detail$split} purely as a diagnostic: it says \emph{where} the
 cumulative estimate was still moving most, which is the difference between
 a review whose conclusion shifted years ago and one that is moving now.
 }

@@ -6,8 +6,8 @@
 #'
 #' In the published comparison this method flagged none of 80 reviews. It is
 #' either extremely conservative or misspecified; the backtesting engine exists
-#' to find out which. The highest simulated power in that cohort was 63.4\%,
-#' against a threshold of 80\%.
+#' to find out which. The highest simulated power in that cohort was 63.4%,
+#' against a threshold of 80%.
 #'
 #' @section How faithfully this follows the published procedure:
 #' The method is set out step by step in Pattanittum et al. (2012), Appendix
@@ -15,8 +15,8 @@
 #' a **t** distribution with the prior meta-analysis's pooled effect and
 #' variance; **one** study is simulated, carrying the combined precision of the
 #' recent studies rather than one study per recent study; the updated pooled
-#' effect is tested at 5\%; the draw is repeated `B` times; and power **strictly
-#' above** the threshold is the signal, as the source's "Power >80\%" reads. The
+#' effect is tested at 5%; the draw is repeated `B` times; and power **strictly
+#' above** the threshold is the signal, as the source's "Power >80%" reads. The
 #' degrees of freedom are the one parameter the source leaves implicit; they
 #' are taken as the prior study count minus one.
 #'

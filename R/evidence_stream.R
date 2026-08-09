@@ -39,7 +39,7 @@
 #'   `window` and [lead_time()] all read as years — and a `Date` passed through
 #'   `as.numeric()` becomes days since 1970, so `"yearly"` would cut once per
 #'   *day* and both windows would silently become days. Convert explicitly with
-#'   `as.numeric(format(date, "\%Y"))`.
+#'   `as.numeric(format(date, "%Y"))`.
 #' @param study_id Identifier of the study each estimate came from, one per
 #'   row. **Required.** Every row used to be treated as an independent study
 #'   and nothing in the stream could tell otherwise, so several outcomes, time

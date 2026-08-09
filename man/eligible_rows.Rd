@@ -7,17 +7,17 @@
 eligible_rows(bt, truth)
 }
 \arguments{
-\item{bt}{A `staleness_backtest`.}
+\item{bt}{A \code{staleness_backtest}.}
 
-\item{truth}{One of [available_truths()].}
+\item{truth}{One of \code{\link[=available_truths]{available_truths()}}.}
 }
 \value{
-The eligible subset of `bt$results`.
+The eligible subset of \code{bt$results}.
 }
 \description{
-The one filter shared by [calibration()] and [lead_time()]. Three kinds of
-row are dropped, none of them counted as either a hit or a miss: `censored`
-cuts, `not_applicable` verdicts, and rows whose truth column is `NA`
+The one filter shared by \code{\link[=calibration]{calibration()}} and \code{\link[=lead_time]{lead_time()}}. Three kinds of
+row are dropped, none of them counted as either a hit or a miss: \code{censored}
+cuts, \code{not_applicable} verdicts, and rows whose truth column is \code{NA}
 because the standard error it divides by was degenerate.
 }
 \keyword{internal}

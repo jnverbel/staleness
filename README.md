@@ -140,7 +140,7 @@ and the simulation method each identified zero out-of-date reviews. The three
 that did discriminate — Ottawa (34 reviews), recursive CMA (7) and Barrowman
 (7) — agreed at Kappa = 0.14, essentially chance (Pattanittum et al., 2012). `staleness`
 exists to make that comparison repeatable, on any body of evidence, with a
-design that avoids the trap of defining "ground truth" using the same rule a
+design that avoids the trap of defining the evaluation target using the same rule a
 detector is scored against: three independent truth definitions are
 implemented, contaminated detector-truth pairs are marked in the data
 itself, and `lead_time()` measures how far ahead of the evidence a detector

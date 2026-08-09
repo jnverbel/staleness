@@ -7,19 +7,19 @@
 with_preserved_seed(expr, seed = NULL)
 }
 \arguments{
-\item{expr}{Expression to evaluate. Lazily evaluated, so it runs *after*
-the seed has been set and *before* the old state is put back.}
+\item{expr}{Expression to evaluate. Lazily evaluated, so it runs \emph{after}
+the seed has been set and \emph{before} the old state is put back.}
 
-\item{seed}{Integer seed, or `NULL` to run from wherever the stream
+\item{seed}{Integer seed, or \code{NULL} to run from wherever the stream
 currently is, advancing it as any RNG call would.}
 }
 \value{
-The value of `expr`.
+The value of \code{expr}.
 }
 \description{
-Detectors that randomise ([simulation()], and the permutation test inside
-[sufficiency()]) must not leave a footprint on the caller's session. A
-script that calls `set.seed()` once and then runs [backtest()] would
+Detectors that randomise (\code{\link[=simulation]{simulation()}}, and the permutation test inside
+\code{\link[=sufficiency]{sufficiency()}}) must not leave a footprint on the caller's session. A
+script that calls \code{set.seed()} once and then runs \code{\link[=backtest]{backtest()}} would
 otherwise lose the reproducibility of everything it does afterwards, and
 CRAN policy forbids altering global state in any case.
 }
@@ -27,12 +27,12 @@ CRAN policy forbids altering global state in any case.
 What is forbidden is seizing the seed, not consuming deviates, so the two
 cases are handled differently.
 
-With a `seed`, `.Random.seed` is saved from the global environment,
-reseeded for the duration of `expr`, and restored on exit — including on
+With a \code{seed}, \code{.Random.seed} is saved from the global environment,
+reseeded for the duration of \code{expr}, and restored on exit — including on
 error. If the session had no stream at all, the exit handler removes the
-one `set.seed()` created rather than leaving it behind.
+one \code{set.seed()} created rather than leaving it behind.
 
-Without a `seed`, the stream is left to advance exactly as it would for
+Without a \code{seed}, the stream is left to advance exactly as it would for
 any other RNG call. Rewinding it would be worse than a footprint: every
 call would restart from the same state and return identical draws, so a
 path documented as unreproducible would in fact be deterministic.

@@ -7,15 +7,15 @@
 to_natural(theta, measure)
 }
 \arguments{
-\item{theta}{Numeric, a coefficient from an `rma` object.}
+\item{theta}{Numeric, a coefficient from an \code{rma} object.}
 
-\item{measure}{Character, the `measure` field of that object.}
+\item{measure}{Character, the \code{measure} field of that object.}
 }
 \value{
 The effect on its natural scale.
 }
 \description{
-`metafor` stores ratio measures as logarithms. Computing a ratio of effects
+\code{metafor} stores ratio measures as logarithms. Computing a ratio of effects
 on the log scale silently produces wrong but plausible numbers, so every
 ratio in this package goes through here first.
 }

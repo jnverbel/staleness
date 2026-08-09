@@ -12,16 +12,16 @@ verdict_na(method, reason)
 \arguments{
 \item{method}{Character, detector name.}
 
-\item{verdict}{One of `"out_of_date"`, `"current"`, `"not_applicable"`.}
+\item{verdict}{One of \code{"out_of_date"}, \code{"current"}, \code{"not_applicable"}.}
 
-\item{signal}{Numeric, the detector's continuous statistic, or `NA_real_`.}
+\item{signal}{Numeric, the detector's continuous statistic, or \code{NA_real_}.}
 
-\item{reason}{Character, mandatory when `verdict` is `"not_applicable"`.}
+\item{reason}{Character, mandatory when \code{verdict} is \code{"not_applicable"}.}
 
 \item{detail}{List, method-specific extras.}
 }
 \value{
-An object of class `staleness_verdict`.
+An object of class \code{staleness_verdict}.
 }
 \description{
 Construct a detector verdict

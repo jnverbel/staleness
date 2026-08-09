@@ -7,73 +7,73 @@
 evidence_stream(ma, date, study_id, ni = NULL, allow_dependence = FALSE)
 }
 \arguments{
-\item{ma}{An `rma.uni` object from `metafor`. Other fits (`rma.mh`,
-`rma.peto`) are refused with an explanatory error: every snapshot is
-refitted with [metafor::rma()], so accepting them would return
+\item{ma}{An \code{rma.uni} object from \code{metafor}. Other fits (\code{rma.mh},
+\code{rma.peto}) are refused with an explanatory error: every snapshot is
+refitted with \code{\link[metafor:rma]{metafor::rma()}}, so accepting them would return
 inverse-variance estimates under a Mantel-Haenszel label, and refitting
-with Mantel-Haenszel is impossible from `yi` and `vi` alone. This matters
+with Mantel-Haenszel is impossible from \code{yi} and \code{vi} alone. This matters
 in practice: Mantel-Haenszel is RevMan's default for binary outcomes, so
 it is what Cochrane reviews report. Both historical cases this package is
 validated against need it to reproduce their published intervals to the
 digit -- Lau et al. (1992) and the Cochrane review behind
-`metadat::dat.li2007`. Inverse variance gets the point estimate right in
+\code{metadat::dat.li2007}. Inverse variance gets the point estimate right in
 both and rounds an interval bound differently in both.}
 
-\item{date}{Numeric vector of publication **years**, one entry per study,
-  same order as the data used to fit `ma`. Missing values are an error; they
-  are never imputed.
+\item{date}{Numeric vector of publication \strong{years}, one entry per study,
+same order as the data used to fit \code{ma}. Missing values are an error; they
+are never imputed.
 
-  A `Date` is refused rather than converted. Every window in this package is
-  denominated in years — `cuts = "yearly"` steps by one, and `horizon`,
-  `window` and [lead_time()] all read as years — and a `Date` passed through
-  `as.numeric()` becomes days since 1970, so `"yearly"` would cut once per
-  *day* and both windows would silently become days. Convert explicitly with
-  `as.numeric(format(date, "\%Y"))`.}
+A \code{Date} is refused rather than converted. Every window in this package is
+denominated in years — \code{cuts = "yearly"} steps by one, and \code{horizon},
+\code{window} and \code{\link[=lead_time]{lead_time()}} all read as years — and a \code{Date} passed through
+\code{as.numeric()} becomes days since 1970, so \code{"yearly"} would cut once per
+\emph{day} and both windows would silently become days. Convert explicitly with
+\code{as.numeric(format(date, "\%Y"))}.}
 
 \item{study_id}{Identifier of the study each estimate came from, one per
-  row. **Required.** Every row used to be treated as an independent study
-  and nothing in the stream could tell otherwise, so several outcomes, time
-  points or arms from one trial entered as separate studies: their
-  participants summed twice in [barrowman()], their weights counted twice in
-  every pooled estimate, and the cumulative series moved on evidence that had
-  not been collected twice.
+row. \strong{Required.} Every row used to be treated as an independent study
+and nothing in the stream could tell otherwise, so several outcomes, time
+points or arms from one trial entered as separate studies: their
+participants summed twice in \code{\link[=barrowman]{barrowman()}}, their weights counted twice in
+every pooled estimate, and the cumulative series moved on evidence that had
+not been collected twice.
 
-  It is an identifier rather than a promise of independence because a
-  promise cannot be checked. If every row really is a distinct study, pass
-  the study labels or `seq_len(k)` — the point is that the choice is made
-  deliberately.}
+It is an identifier rather than a promise of independence because a
+promise cannot be checked. If every row really is a distinct study, pass
+the study labels or \code{seq_len(k)} — the point is that the choice is made
+deliberately.}
 
 \item{ni}{Optional numeric vector of sample sizes per study, needed by
-[barrowman()]. Defaults to `ma$ni` when `metafor` recorded it.}
+\code{\link[=barrowman]{barrowman()}}. Defaults to \code{ma$ni} when \code{metafor} recorded it.}
 
-\item{allow_dependence}{Set `TRUE` to build a stream whose `study_id` has
+\item{allow_dependence}{Set \code{TRUE} to build a stream whose \code{study_id} has
 duplicates. Refused by default: dependent estimates make one trial look
 like several. When allowed, the stream records it, and every metric
 computed from it should be read as optimistic.}
 }
 \value{
-An object of class `staleness_stream`.
+An object of class \code{staleness_stream}.
 }
 \description{
 The only part of the package that knows about time. Detectors receive
-snapshots, never dates, which is what allows [backtest()] to reuse them
+snapshots, never dates, which is what allows \code{\link[=backtest]{backtest()}} to reuse them
 unmodified.
 }
 \section{What the stream carries from the model, and what it refuses}{
 
-Every snapshot is refitted from `yi` and `vi`, so anything the caller set
+Every snapshot is refitted from \code{yi} and \code{vi}, so anything the caller set
 that changes the estimator has to travel with the stream or the snapshots
-answer under a model nobody fitted. Carried: `method`, `test` (the
+answer under a model nobody fitted. Carried: \code{method}, \code{test} (the
 Knapp-Hartung adjustment moves p-values by orders of magnitude, and
-[ottawa()] decides on p-values), `weighted`, and a `tau2` the caller fixed.
+\code{\link[=ottawa]{ottawa()}} decides on p-values), \code{weighted}, and a \code{tau2} the caller fixed.
 Verified against a direct refit for each.
 
 Refused, with an explanation rather than a silent drop: models with
-moderators, whose `beta` is a vector of coefficients rather than a pooled
-effect; models with custom per-study `weights`, which cannot follow a
-subset in any defensible way; and fits that are not `rma.uni`.
+moderators, whose \code{beta} is a vector of coefficients rather than a pooled
+effect; models with custom per-study \code{weights}, which cannot follow a
+subset in any defensible way; and fits that are not \code{rma.uni}.
 
-Not carried, because no detector reads them: `level`, `digits`, `slab`.
+Not carried, because no detector reads them: \code{level}, \code{digits}, \code{slab}.
 }
 
 \examples{

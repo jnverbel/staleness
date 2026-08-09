@@ -7,9 +7,9 @@
 rrr_ratio(theta_new, theta_prev, measure, se_prev, min_z = 2)
 }
 \arguments{
-\item{theta_new, theta_prev}{Numeric coefficients as stored by `metafor`.}
+\item{theta_new, theta_prev}{Numeric coefficients as stored by \code{metafor}.}
 
-\item{measure}{Character, the `measure` field.}
+\item{measure}{Character, the \code{measure} field.}
 
 \item{se_prev}{Numeric, standard error of the prior effect.}
 
@@ -17,39 +17,39 @@ rrr_ratio(theta_new, theta_prev, measure, se_prev, min_z = 2)
 errors from zero for a difference ratio to be computed.}
 }
 \value{
-List with `ratio` (possibly `NA_real_`), `reason`, `rrr_prev` (the
-  denominator `1 - RR_prev`, `NA` on difference measures) and `unstable`,
-  which is `TRUE` when the prior effect sits within `min_z` standard errors
-  of no effect and the ratio is therefore arbitrarily large. `unstable`
-  never changes the ratio: it reports it.
+List with \code{ratio} (possibly \code{NA_real_}), \code{reason}, \code{rrr_prev} (the
+denominator \code{1 - RR_prev}, \code{NA} on difference measures) and \code{unstable},
+which is \code{TRUE} when the prior effect sits within \code{min_z} standard errors
+of no effect and the ratio is therefore arbitrarily large. \code{unstable}
+never changes the ratio: it reports it.
 }
 \description{
-The Ottawa method's "change in effect size of at least 50%" is **not**
+The Ottawa method's "change in effect size of at least 50\%" is \strong{not}
 computed on the effect itself. Pattanittum et al. (2012), Table 1, states
 it explicitly: for treatment effects measured as a relative ratio (RR, OR)
-the comparison is between the *relative risk reduction* of the updated
-meta-analysis and the RRR of the previous one, where `RRR = 1 - RR`. For
-mean differences the relative change is computed as `rcma()` computes it.
+the comparison is between the \emph{relative risk reduction} of the updated
+meta-analysis and the RRR of the previous one, where \code{RRR = 1 - RR}. For
+mean differences the relative change is computed as \code{rcma()} computes it.
 }
 \details{
 The distinction is not cosmetic. Across the ten reviews with the largest
 indicator in that study's Appendix S3, all ten fire on the RRR ratio and
-**none** of them fires on the ratio of the risk ratios: a review moving
+\strong{none} of them fires on the ratio of the risk ratios: a review moving
 from RR 0.995 to RR 0.848 barely moves the risk ratio (0.85) while its risk
-reduction goes from 0.5% to 15%, a factor of 30.
+reduction goes from 0.5\% to 15\%, a factor of 30.
 
-That sensitivity is also the criterion's weakness. `1 - RR` is tiny
+That sensitivity is also the criterion's weakness. \code{1 - RR} is tiny
 whenever the prior effect is near no-effect, so the ratio explodes on
 rounding alone -- and near no-effect is precisely where the Ottawa method
 is meant to be applied.
 
 The difference-measure branch refuses such a case outright. This one does
-**not**, and the asymmetry is deliberate: every one of the eighty reviews
+\strong{not}, and the asymmetry is deliberate: every one of the eighty reviews
 in the method's published application was a null meta-analysis by inclusion
 criterion, so a guard that rejected them would answer a different question
 from the method's. The ratio is returned as the method defines it, with
-`rrr_prev` and `unstable` attached so the caller can see what it was
-divided by. Only `RR == 1` exactly, where the ratio is undefined rather
-than merely large, yields `NA_real_`.
+\code{rrr_prev} and \code{unstable} attached so the caller can see what it was
+divided by. Only \code{RR == 1} exactly, where the ratio is undefined rather
+than merely large, yields \code{NA_real_}.
 }
 \keyword{internal}

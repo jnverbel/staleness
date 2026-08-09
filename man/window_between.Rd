@@ -7,12 +7,12 @@
 window_between(stream, from, to)
 }
 \arguments{
-\item{stream}{A `staleness_stream`.}
+\item{stream}{A \code{staleness_stream}.}
 
-\item{from, to}{Bounds of the interval `(from, to]`.}
+\item{from, to}{Bounds of the interval \verb{(from, to]}.}
 }
 \value{
-A list with `yi`, `vi`, `ni` and `k`.
+A list with \code{yi}, \code{vi}, \code{ni} and \code{k}.
 }
 \description{
 Studies published in a half-open time window

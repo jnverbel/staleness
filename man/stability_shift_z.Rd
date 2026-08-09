@@ -11,13 +11,13 @@ stability_shift_z(yi, vi)
 be accumulated.}
 }
 \value{
-A non-negative number, or `NA_real_` for a series too short to
-  split.
+A non-negative number, or \code{NA_real_} for a series too short to
+split.
 }
 \description{
-The stability statistic actually tested by [sufficiency()]. For every split
-point `m` it compares the fixed-effect pooled estimate of the studies
-accumulated up to `m` against the pooled estimate of everything after `m`,
+The stability statistic actually tested by \code{\link[=sufficiency]{sufficiency()}}. For every split
+point \code{m} it compares the fixed-effect pooled estimate of the studies
+accumulated up to \code{m} against the pooled estimate of everything after \code{m},
 standardised by the standard error of that difference:
 }
 \details{
@@ -26,36 +26,36 @@ standardised by the standard error of that difference:
   sqrt(1/I_m + 1/(I_k - I_m))}
 
 where \eqn{I_m = \sum_{i \le m} 1/v_i}{I_m = sum of 1/v_i over the first m
-studies} is the information accumulated by step `m`. The statistic is
-`max |Z_m|` over `m = 1, ..., k - 1`.
+studies} is the information accumulated by step \code{m}. The statistic is
+\verb{max |Z_m|} over \verb{m = 1, ..., k - 1}.
 
 It measures the same thing the published slope is reaching for. The
-cumulative estimate's remaining movement after step `m` is exactly
-`(1 - I_m / I_k)` times `theta_after - theta_before`, so `Z_m` is that
+cumulative estimate's remaining movement after step \code{m} is exactly
+\code{(1 - I_m / I_k)} times \code{theta_after - theta_before}, so \code{Z_m} is that
 movement expressed in units of its own standard error, and the maximum over
-`m` is the largest step the cumulative curve has left in it.
+\code{m} is the largest step the cumulative curve has left in it.
 }
 \section{How far the pivotality goes, and where it stops}{
 
-Two things are exactly true. **Scale pivotality**: rescaling the effects and
-their variances together — `yi` to `theta + a * (yi - theta)` and `vi` to
-`a^2 * vi` — leaves the statistic bit-identical, since it is a ratio of a
-movement to its own standard error and both halves move by `a`. Note what
-this does *not* say: multiplying `vi` alone by `c` while holding `yi` fixed
-divides every `Z_m` by `sqrt(c)` (measured: 1.2247 at `vi = 1`, 0.6124 at
-`vi = 4`, for `yi = c(1, 2, 3)`). That weaker statement is what an earlier
-draft of this section claimed, and it is false. The permutation *p*-value is
+Two things are exactly true. \strong{Scale pivotality}: rescaling the effects and
+their variances together — \code{yi} to \code{theta + a * (yi - theta)} and \code{vi} to
+\code{a^2 * vi} — leaves the statistic bit-identical, since it is a ratio of a
+movement to its own standard error and both halves move by \code{a}. Note what
+this does \emph{not} say: multiplying \code{vi} alone by \code{c} while holding \code{yi} fixed
+divides every \code{Z_m} by \code{sqrt(c)} (measured: 1.2247 at \code{vi = 1}, 0.6124 at
+\code{vi = 4}, for \code{yi = c(1, 2, 3)}). That weaker statement is what an earlier
+draft of this section claimed, and it is false. The permutation \emph{p}-value is
 unaffected either way, because every permuted statistic rescales by the same
-factor. And **marginal pivotality**: under no drift each individual `Z_m` is
+factor. And \strong{marginal pivotality}: under no drift each individual \code{Z_m} is
 standard normal whatever the variance schedule is (measured standard
 deviations 0.998–1.002 across schedules spanning 650:1).
 
 The stronger claim — that the statistic therefore carries no imprint of the
-variance schedule at all — does **not** follow, and an earlier draft of this
-documentation asserted it wrongly. `max_m |Z_m|` is the discrete supremum of
+variance schedule at all — does \strong{not} follow, and an earlier draft of this
+documentation asserted it wrongly. \verb{max_m |Z_m|} is the discrete supremum of
 a standardised Brownian bridge sampled at the information fractions
-`I_m / I_k`, and those fractions are themselves a function of the schedule.
-Measured null quantiles at `k = 30` over 60,000 draws:
+\code{I_m / I_k}, and those fractions are themselves a function of the schedule.
+Measured null quantiles at \code{k = 30} over 60,000 draws:
 
 \preformatted{
   schedule (variance)          ratio    median   95th pct
@@ -65,16 +65,16 @@ Measured null quantiles at `k = 30` over 60,000 draws:
   geometric decay                  646:1     1.930      2.956
 }
 
-The V and Lambda nulls differ with a Kolmogorov-Smirnov `D` of 0.25, and the
+The V and Lambda nulls differ with a Kolmogorov-Smirnov \code{D} of 0.25, and the
 flat-schedule 95th percentile delivers 6.1\% under V and 3.4\% under Lambda.
 
-So the justification for the order-permutation null in [sufficiency()] is
-that the dependence is **weak**, not that it is absent — quantiles move by a
+So the justification for the order-permutation null in \code{\link[=sufficiency]{sufficiency()}} is
+that the dependence is \strong{weak}, not that it is absent — quantiles move by a
 few percent where the old slope statistic moved by orders of magnitude
 (0\% to 42\% false alarms across the same schedules). Since the null is
 rebuilt from each dataset's own studies rather than read off a reference
 distribution, most of that residual shows up only where the schedule is
-smooth and strongly monotone. See the calibration section of [sufficiency()]
+smooth and strongly monotone. See the calibration section of \code{\link[=sufficiency]{sufficiency()}}
 for what it costs in practice, and where.
 }
 

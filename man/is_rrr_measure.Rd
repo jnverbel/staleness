@@ -7,10 +7,10 @@
 is_rrr_measure(measure)
 }
 \arguments{
-\item{measure}{Character, the `measure` field of an `rma` object.}
+\item{measure}{Character, the \code{measure} field of an \code{rma} object.}
 }
 \value{
-`TRUE` when `1 - exp(theta)` is a risk reduction.
+\code{TRUE} when \code{1 - exp(theta)} is a risk reduction.
 }
 \description{
 Is the Ottawa relative-risk-reduction criterion defined for this measure?

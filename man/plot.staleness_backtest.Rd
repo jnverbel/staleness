@@ -7,14 +7,14 @@
 \method{plot}{staleness_backtest}(x, truth = "shift", ...)
 }
 \arguments{
-\item{x}{A `staleness_backtest`.}
+\item{x}{A \code{staleness_backtest}.}
 
-\item{truth}{One of `"shift"`, `"surprise"`, `"conclusion"`.}
+\item{truth}{One of \code{"shift"}, \code{"surprise"}, \code{"conclusion"}.}
 
-\item{...}{Passed to [graphics::barplot()].}
+\item{...}{Passed to \code{\link[graphics:barplot]{graphics::barplot()}}.}
 }
 \value{
-`x`, invisibly.
+\code{x}, invisibly.
 }
 \description{
 Base graphics on purpose: a methods package meant to last should not depend

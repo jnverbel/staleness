@@ -1,21 +1,52 @@
-#' Ground-truth definitions for backtesting
+#' Operational evaluation targets for backtesting
 #'
-#' Three independent answers to "was this meta-analysis really out of date at
-#' time t?". Independence matters: defining truth with the same rule a detector
-#' uses makes that detector correct by construction, which would turn any
-#' calibration result into an artefact.
+#' Three ways of asking "did this meta-analysis change by time t?", used to
+#' score detector verdicts. They are **operational choices, not ground truth**,
+#' and the distinction is not modesty: nothing here observes what a review
+#' team actually did, whether a recommendation changed, or whether anyone was
+#' harmed by acting on the old estimate. They observe the estimate moving.
 #'
-#' These three definitions are this package's own, and no published source
-#' offers a ready-made ground truth to borrow. The closest is Shojania et al.
+#' @section What each one measures, and what they share:
+#' All three read the same underlying event -- the pooled estimate moved
+#' between the cut and the target -- and differ in how they scale or classify
+#' it:
+#'
+#' * [truth_shift()] and [truth_surprise()] use the **identical numerator**,
+#'   `|theta_target - theta_t|`, and differ only in the denominator: the
+#'   standard error at the target, or the standard error at the cut. They are
+#'   one distance on two scales, not two independent facts, and a result that
+#'   holds under one and not the other is a statement about precision, not
+#'   about the detector.
+#' * [truth_conclusion()] is categorical rather than metric: a flip in the sign
+#'   of the effect, or across a significance threshold.
+#'
+#' Because the first two share a numerator, treat agreement between them as
+#' expected and disagreement as informative -- the reverse of how independent
+#' definitions would be read. Use them for sensitivity analysis across scalings
+#' rather than as three votes.
+#'
+#' @section The 1.96 is a scaling, not a test:
+#' `truth_shift()` divides by the standard error of the TARGET estimate, and
+#' `theta_t` is nested inside it -- the cut's studies are part of the target's.
+#' The variance of the difference between two nested estimates is not the
+#' variance of either, so `|theta_target - theta_t| / se_target` is not a test
+#' statistic and `1.96` is not a critical value. It is a threshold expressed in
+#' units of final precision, chosen because those units are interpretable, and
+#' it should be read that way.
+#'
+#' @section Why not a published definition:
+#' No published source offers one to borrow. The closest is Shojania et al.
 #' (2007), whose survival analysis counts a review as needing an update on
 #' "changes in statistical significance or relative changes in effect magnitude
-#' of at least 50\%", plus qualitative signals a program cannot infer.
-#' [truth_conclusion()] is the definition closest to that quantitative half.
-#' [truth_shift()] and [truth_surprise()] deliberately go elsewhere: they never
-#' look at a significance threshold or an effect-size ratio, which is what
-#' keeps them free of every detector's own logic. Treat them as three
-#' operational choices, stated so they can be argued with, rather than as a
-#' standard.
+#' of at least 50%", plus qualitative signals a program cannot infer.
+#' [truth_conclusion()] is the closest to that quantitative half.
+#'
+#' What all three do avoid is circularity: scoring a detector against a target
+#' built from the same rule it uses makes it correct by construction.
+#' [truth_shift()] and [truth_surprise()] never look at a significance
+#' threshold or an effect-size ratio, so no detector's logic leaks into them;
+#' `truth_conclusion` does share logic with [ottawa()], which is exactly why
+#' that pair is named in [CONTAMINATED_PAIRS].
 #'
 #' @param theta_t Pooled effect at the cut point.
 #' @param se_t Standard error at the cut point.

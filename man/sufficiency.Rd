@@ -14,24 +14,24 @@ sufficiency(
 )
 }
 \arguments{
-\item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
+\item{prev}{An \code{rma.uni} object, the meta-analysis as previously published.}
 
-\item{new_ma}{An `rma.uni` object refitted with the new evidence included.}
+\item{new_ma}{An \code{rma.uni} object refitted with the new evidence included.}
 
-\item{min_k}{Minimum number of studies in `new_ma`. Below this the
-  stability test is meaningless: an order-permutation null needs enough
-  orderings to have a distribution.
+\item{min_k}{Minimum number of studies in \code{new_ma}. Below this the
+stability test is meaningless: an order-permutation null needs enough
+orderings to have a distribution.
 
-  It gates the **updated** evidence only. The two halves of this method
-  read different objects — sufficiency from `prev`, stability from
-  `new_ma` — so nothing here constrains the size of `prev`, and a
-  two-study prior review can drive the sufficiency half on its own. That
-  is deliberate rather than overlooked: the fail-safe N is defined for any
-  number of studies, and the source sets no floor. Read `detail$k` if the
-  size of the prior review matters to you; it is reported for that reason.}
+It gates the \strong{updated} evidence only. The two halves of this method
+read different objects — sufficiency from \code{prev}, stability from
+\code{new_ma} — so nothing here constrains the size of \code{prev}, and a
+two-study prior review can drive the sufficiency half on its own. That
+is deliberate rather than overlooked: the fail-safe N is defined for any
+number of studies, and the source sets no floor. Read \code{detail$k} if the
+size of the prior review matters to you; it is reported for that reason.}
 
 \item{alpha_stability}{Cutoff for the stability permutation p-value: the
-review is unstable when `p_stability < alpha_stability`.}
+review is unstable when \code{p_stability < alpha_stability}.}
 
 \item{n_perm}{Number of order permutations used to build the null
 distribution of the stability statistic.}
@@ -41,13 +41,13 @@ verdicts are reproducible; the caller's own random stream is saved and
 restored around the draw, so calling this detector never changes it.}
 }
 \value{
-A `staleness_verdict`. Its `detail` carries `index`, `sufficient`,
-  `stable`, `slope` (the published slope, reported only), `z_shift` and
-  `split` (the statistic actually tested and where it peaked),
-  `p_stability`, `k` (of `prev`) and `k_new` (of `new_ma`).
+A \code{staleness_verdict}. Its \code{detail} carries \code{index}, \code{sufficient},
+\code{stable}, \code{slope} (the published slope, reported only), \code{z_shift} and
+\code{split} (the statistic actually tested and where it peaked),
+\code{p_stability}, \code{k} (of \code{prev}) and \code{k_new} (of \code{new_ma}).
 }
 \description{
-Sufficiency is the fail-safe N scaled by `5k + 10`; a review is sufficient
+Sufficiency is the fail-safe N scaled by \verb{5k + 10}; a review is sufficient
 when this index exceeds 1, Rosenthal's own rule of thumb for a pooled effect
 being robust to unpublished null studies. Stability asks whether the
 cumulative pooled effect has stopped moving; a review is stable when the
@@ -58,9 +58,9 @@ than the same studies would produce in a random order.
 The two indicators deliberately read from different bodies of evidence.
 Per the primary source that operationalises this method as a two-snapshot
 comparison (Pattanittum et al. 2012, Table 1), sufficiency — both the
-fail-safe N and the `k` in `5k + 10` — is computed on the meta-analysis
-**as previously published** (`prev`), while stability is computed on the
-cumulative series of the **updated** meta-analysis (`new_ma`), which is
+fail-safe N and the \code{k} in \verb{5k + 10} — is computed on the meta-analysis
+\strong{as previously published} (\code{prev}), while stability is computed on the
+cumulative series of the \strong{updated} meta-analysis (\code{new_ma}), which is
 where new studies show up as drift or lack of it. Confirmed against a
 second, independent secondary source; the original method paper (Mullen,
 Muellerleile & Bryant 2001) was not reachable in full text, and does not
@@ -78,72 +78,72 @@ suggests, and also confirmed in the design doc.
 \section{How stability is tested, and why not as published}{
 
 This is the largest declared departure in the package, and it is a
-departure from the *statistic*, not only from the decision rule. It was
+departure from the \emph{statistic}, not only from the decision rule. It was
 arrived at by measurement, over three implementations; the numbers below
-are all reproducible from `vignette("methods")`.
+are all reproducible from \code{vignette("methods")}.
 
-**What the source says.** Pattanittum et al. (2012, Table 1) states the
-instability criterion as an *"absolute slope of the linear regression
-\[fitted across the cumulative treatment effects versus information
-increment\] >0"*. Taken literally the rule is degenerate: on continuous
-data that slope is never exactly zero, so every review with `index > 1`
+\strong{What the source says.} Pattanittum et al. (2012, Table 1) states the
+instability criterion as an \emph{"absolute slope of the linear regression
+[fitted across the cumulative treatment effects versus information
+increment] >0"}. Taken literally the rule is degenerate: on continuous
+data that slope is never exactly zero, so every review with \code{index > 1}
 would be flagged and the indicator would carry no information. Some
 significance rule has to stand in for it.
 
-**Attempt 1, the OLS t-test: invalid.** A cumulative mean is
+\strong{Attempt 1, the OLS t-test: invalid.} A cumulative mean is
 near-perfectly autocorrelated by construction and converges on the pooled
-effect by the law of large numbers, so the `lm()` t-test detects
-*convergence* and reports *instability*. Over 300 samples of genuinely
+effect by the law of large numbers, so the \code{lm()} t-test detects
+\emph{convergence} and reports \emph{instability}. Over 300 samples of genuinely
 unchanging evidence (20 prior plus 10 new studies from one distribution)
-it returned `out_of_date` 209 times, where `rcma()` and `ottawa()`
+it returned \code{out_of_date} 209 times, where \code{rcma()} and \code{ottawa()}
 returned it none.
 
-**Attempt 2, permuting study order but keeping the slope: calibrated on
-average, blind where it matters.** Comparing the observed slope against
+\strong{Attempt 2, permuting study order but keeping the slope: calibrated on
+average, blind where it matters.} Comparing the observed slope against
 the slopes of the same studies reshuffled brought the false-alarm rate on
 that experiment to 16/300, nominal. But the slope of a cumulative series
 is dominated by its first few points, where little information has
 accumulated and the series swings hardest, so the permutation null is
-wide and a *late* change cannot clear it. Measured: with 20 prior studies
-at RR 0.5 and 10 new ones at RR 0.30, power was **1 in 200** — and it fell
+wide and a \emph{late} change cannot clear it. Measured: with 20 prior studies
+at RR 0.5 and 10 new ones at RR 0.30, power was \strong{1 in 200} — and it fell
 to 0 as the new studies got further away, because a larger shift makes the
 permuted series swing harder too. On a 20-study series that sits at RR 0.5
 and then drops to RR 0.05, it fired when the drop came after study
 2, 5, 8 or 10 and was silent when it came after study 12, 15 or 18. Worse,
 the permutation null itself is not valid when study variances change
 systematically over calendar time: with early small trials and later large
-ones and *no drift at all*, it fired on 83/300 samples (28\%), and on a
+ones and \emph{no drift at all}, it fired on 83/300 samples (28\%), and on a
 schedule of 20 small trials followed by 10 large ones, on 127/300 (42\%).
 Study order is exchangeable under no change only if the variances are
 exchangeable too, and in a real evidence stream they are not.
 
 Fitting the regression against accumulated information rather than the
-study index — which is what the source's *"versus information increment"*
-actually specifies, and what [cum_drift_slope()] now reports — is a real
-fidelity fix but **not** a fix for any of this. When variances are equal,
-`cumsum(1 / vi)` is an affine function of the study index, so every slope
-is rescaled by the same constant and the permutation p-value is *identical
-to the last bit*. It was measured: E1, E2 and E3 above were unchanged, and
+study index — which is what the source's \emph{"versus information increment"}
+actually specifies, and what \code{\link[=cum_drift_slope]{cum_drift_slope()}} now reports — is a real
+fidelity fix but \strong{not} a fix for any of this. When variances are equal,
+\code{cumsum(1 / vi)} is an affine function of the study index, so every slope
+is rescaled by the same constant and the permutation p-value is \emph{identical
+to the last bit}. It was measured: E1, E2 and E3 above were unchanged, and
 the 28\% false-alarm rate moved only to 25\%.
 
-**What runs instead.** The statistic is replaced with the largest
+\strong{What runs instead.} The statistic is replaced with the largest
 standardised movement the cumulative series has left in it
-([stability_shift_z()]): for each split point `m`, the fixed-effect pooled
-estimate of the first `m` studies is compared with the pooled estimate of
+(\code{\link[=stability_shift_z]{stability_shift_z()}}): for each split point \code{m}, the fixed-effect pooled
+estimate of the first \code{m} studies is compared with the pooled estimate of
 the rest, divided by the standard error of that difference, and the
-statistic is the maximum absolute value over `m`. This still asks the
-method's own question — *has the pooled estimate stopped moving?* — and it
+statistic is the maximum absolute value over \code{m}. This still asks the
+method's own question — \emph{has the pooled estimate stopped moving?} — and it
 is monotone in the same quantity the published slope is a proxy for, since
-the movement remaining in the cumulative curve after step `m` is exactly
-`(1 - I_m / I_k)` times the difference it standardises. What it adds is
-that its dependence on the variance schedule is **weak instead of
-structural**: it is exactly scale-pivotal and each `Z_m` is marginally
+the movement remaining in the cumulative curve after step \code{m} is exactly
+\code{(1 - I_m / I_k)} times the difference it standardises. What it adds is
+that its dependence on the variance schedule is \strong{weak instead of
+structural}: it is exactly scale-pivotal and each \code{Z_m} is marginally
 standard normal under any schedule, so the schedule no longer drives the
 statistic the way it drove the slope. It does not vanish from it entirely —
-see the pivotality section of [stability_shift_z()] for the measured
+see the pivotality section of \code{\link[=stability_shift_z]{stability_shift_z()}} for the measured
 residual and the calibration table below for what it costs. The permutation
-machinery is otherwise unchanged — `n_perm` draws, the two-sided
-`(1 + count) / (n_perm + 1)` estimator so the p-value is never zero, a fixed
+machinery is otherwise unchanged — \code{n_perm} draws, the two-sided
+\code{(1 + count) / (n_perm + 1)} estimator so the p-value is never zero, a fixed
 seed, the caller's random stream preserved, and a cumulative series that is
 constant to floating-point rounding short-circuited as maximally stable
 before anything is computed.
@@ -167,33 +167,33 @@ An earlier draft of this documentation reported that calibration "stays
 between 4.0\% and 6.7\% across nine variance and heterogeneity regimes". That
 was true of those nine regimes and false as a general claim: all nine were
 flat, mildly linear or single-step. Measured over 1000 no-drift samples at
-`k = 30` (2000 for the worst case), against the actual permutation test:
+\code{k = 30} (2000 for the worst case), against the actual permutation test:
 
 \preformatted{
   variance schedule                              ratio   false alarms
-  flat                                             1:1       5.3\%
-  linear decay (the E4 schedule)                  16:1       5.7\%
-  dat.bcg, real variances in year order           60:1       5.0\%
-  dat.egger2001, real variances                   90:1       3.0\%
-  L-shaped, small-big-small                       16:1       2.4\%  <- conservative
-  step, 20 small then 10 large trials             50:1       8.1\%
-  V-shaped, big-small-big                         16:1       8.4\%
-  dat.bcg, the same variances sorted decreasing   60:1       9.4\%
-  geometric decay, vi = 0.5 * 0.845^j            114:1       9.3\%
-  geometric decay, vi = 0.5 * 0.80^j             650:1      11.1\%  <- worst measured
-  geometric growth, the same reversed            650:1      10.9\%
+  flat                                             1:1       5.3%
+  linear decay (the E4 schedule)                  16:1       5.7%
+  dat.bcg, real variances in year order           60:1       5.0%
+  dat.egger2001, real variances                   90:1       3.0%
+  L-shaped, small-big-small                       16:1       2.4%  <- conservative
+  step, 20 small then 10 large trials             50:1       8.1%
+  V-shaped, big-small-big                         16:1       8.4%
+  dat.bcg, the same variances sorted decreasing   60:1       9.4%
+  geometric decay, vi = 0.5 * 0.845^j            114:1       9.3%
+  geometric decay, vi = 0.5 * 0.80^j             650:1      11.1%  <- worst measured
+  geometric growth, the same reversed            650:1      10.9%
 }
 
 The pattern is not the direction of the trend — growth and decay are
-equally bad — but its **smoothness, monotonicity and range**. Irregular
-real-world schedules are nominal; the same `dat.bcg` variances rearranged
+equally bad — but its \strong{smoothness, monotonicity and range}. Irregular
+real-world schedules are nominal; the same \code{dat.bcg} variances rearranged
 into sorted order go from 5.0\% to 9.4\%, which is the cleanest demonstration
 that it is the arrangement and not the numbers. A smooth 650:1 monotone
-precision ramp is the measured worst case at about **11\%**, roughly twice
+precision ramp is the measured worst case at about \strong{11\%}, roughly twice
 nominal. That is a disclosed limit, not a claim of nominality; it is pinned
-by a test in `test-invariants.R` so it cannot silently get worse.
+by a test in \code{test-invariants.R} so it cannot silently get worse.
 
-`detail$slope` still reports the literal published quantity — the
+\code{detail$slope} still reports the literal published quantity — the
 least-squares slope of the cumulative effects against accumulated
 information — so a reader who wants the source's own rule can apply it.
 It no longer decides anything.
@@ -205,25 +205,25 @@ Four, all measured, none of them hidden. Three of the four were understated
 in the first draft of this documentation and are restated here with the
 numbers that falsified the original wording.
 
-**It is conservative well past `k = 5`.** The false-alarm rate on unchanging
-evidence is 0.9\% at `k = 5`, 1.7\% at `k = 6`, 3.4\% at `k = 8`, 3.3\% at
-`k = 10` and 5.5\% at `k = 12` — still half-nominal at twice the minimum, and
-nominal only from about `k = 12`. (The first draft said "conservative at
-`k = 5`" and blamed the 120 distinct orderings, which cannot explain `k = 8`
+\strong{It is conservative well past \code{k = 5}.} The false-alarm rate on unchanging
+evidence is 0.9\% at \code{k = 5}, 1.7\% at \code{k = 6}, 3.4\% at \code{k = 8}, 3.3\% at
+\code{k = 10} and 5.5\% at \code{k = 12} — still half-nominal at twice the minimum, and
+nominal only from about \code{k = 12}. (The first draft said "conservative at
+\code{k = 5}" and blamed the 120 distinct orderings, which cannot explain \code{k = 8}
 and its 40,320.) The real mechanism is the same one that produces the next
 limitation, with its sign reversed: the maximum is often driven by the split
 that isolates the single most extreme study, and a given study lands at an
-end in `2 / k` of all orderings — 40\% at `k = 5`, 25\% at `k = 8`, 6.7\% at
-`k = 30`. At small `k` a large fraction of permutations therefore reproduce
+end in \code{2 / k} of all orderings — 40\% at \code{k = 5}, 25\% at \code{k = 8}, 6.7\% at
+\code{k = 30}. At small \code{k} a large fraction of permutations therefore reproduce
 the observed extreme, the null is diffuse, and the test under-fires. It
 under-fires rather than over-fires, which is the safe direction, but a
-`current` verdict from a short update is weak evidence of stability.
+\code{current} verdict from a short update is weak evidence of stability.
 
-**A single discordant study, arriving first or last, can carry the
-statistic — and the threshold is low.** The statistic is a maximum over
+\strong{A single discordant study, arriving first or last, can carry the
+statistic — and the threshold is low.} The statistic is a maximum over
 split points, and the split that isolates one study is one of them. With
 ordinary sampling noise on the other studies, the probability that one study
-`D` standard errors from the rest, sitting at either end, forces `unstable`:
+\code{D} standard errors from the rest, sitting at either end, forces \code{unstable}:
 
 \preformatted{
    k     no outlier   D = 3 SE   D = 5 SE   D = 10 SE
@@ -233,31 +233,31 @@ ordinary sampling noise on the other studies, the probability that one study
   40          0.052      0.240      0.995       0.993
 }
 
-So the operative statement is that a **five**-SE discordant study at either
-end forces `unstable` almost always from about `k = 25` — not, as the first
-draft said, twenty SE from about `k = 35`. That earlier claim was measured
+So the operative statement is that a \strong{five}-SE discordant study at either
+end forces \code{unstable} almost always from about \code{k = 25} — not, as the first
+draft said, twenty SE from about \code{k = 35}. That earlier claim was measured
 on a noise-free fixture in which every other study was byte-identical, which
 makes the mirror-image ordering an exact tie and inflates the permutation
 count; it landed in the one corner of the parameter space where the effect
-looks mild. (The same saturation is visible above: at `D` = 20 SE the rate
-*falls* again, to 0.453 at `k = 20`.) A five-SE discordant study is an
-ordinary occurrence in a real review, so at moderate `k` this detector is
+looks mild. (The same saturation is visible above: at \code{D} = 20 SE the rate
+\emph{falls} again, to 0.453 at \code{k = 20}.) A five-SE discordant study is an
+ordinary occurrence in a real review, so at moderate \code{k} this detector is
 substantially a single-outlier detector. Whether that is the right answer is
 arguable — such a study does move the pooled estimate, and that ordering
 really is extreme among all orderings — but it must not be mistaken for
-evidence of a trend. `detail$split` separates the two readings and does so
-reliably: among firings in the table above it pointed at `k - 1`, the
+evidence of a trend. \code{detail$split} separates the two readings and does so
+reliably: among firings in the table above it pointed at \code{k - 1}, the
 single-study split, in 97–99\% of cases.
 
-**A smooth, strongly monotone variance schedule runs anti-conservative**, up
+\strong{A smooth, strongly monotone variance schedule runs anti-conservative}, up
 to about 11\% against a nominal 5\%. See the calibration section above for the
 full table and for the regimes where it does not happen, which include every
 real variance schedule tested.
 
-**Power falls away under strong between-study heterogeneity.** Against 20
+\strong{Power falls away under strong between-study heterogeneity.} Against 20
 prior studies at RR 0.5 and 10 new ones at RR 0.30, power is 200/200 at
-`tau = 0` and `tau = 0.10`, 199/200 at `tau = 0.20`, and 160/200 at
-`tau = 0.35`. The permutation null is built from the same heterogeneous
+\code{tau = 0} and \code{tau = 0.10}, 199/200 at \code{tau = 0.20}, and 160/200 at
+\code{tau = 0.35}. The permutation null is built from the same heterogeneous
 studies, so calibration holds throughout — it is power, not the false-alarm
 rate, that degrades.
 }

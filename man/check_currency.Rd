@@ -15,28 +15,28 @@ check_currency(
 )
 }
 \arguments{
-\item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
+\item{prev}{An \code{rma.uni} object, the meta-analysis as previously published.}
 
-\item{new}{A list with `yi`, `vi` and `k`, as returned by
-[window_between()]. The three must agree: `yi` and `vi` of the same
-length, and `k` equal to that length. `k` decides whether there is new
-evidence at all and `yi`/`vi` are what the updated model is fitted on, so
+\item{new}{A list with \code{yi}, \code{vi} and \code{k}, as returned by
+\code{\link[=window_between]{window_between()}}. The three must agree: \code{yi} and \code{vi} of the same
+length, and \code{k} equal to that length. \code{k} decides whether there is new
+evidence at all and \code{yi}/\code{vi} are what the updated model is fitted on, so
 a mismatch is refused rather than resolved in favour of either. The values
-must also be usable: `yi` finite, `vi` finite and strictly positive. A
+must also be usable: \code{yi} finite, \code{vi} finite and strictly positive. A
 missing or infinite variance is dropped or ignored by the model fit, which
-returns the prior estimate unchanged and so a verdict of `"current"`
+returns the prior estimate unchanged and so a verdict of \code{"current"}
 computed from evidence that carried nothing.}
 
-\item{methods}{Character vector of detector names, see [available_methods()].}
+\item{methods}{Character vector of detector names, see \code{\link[=available_methods]{available_methods()}}.}
 
-\item{n_prev, n_new}{Sample sizes, required by [barrowman()].}
+\item{n_prev, n_new}{Sample sizes, required by \code{\link[=barrowman]{barrowman()}}.}
 
-\item{qualitative}{Character vector of qualitative signals, see [ottawa()].}
+\item{qualitative}{Character vector of qualitative signals, see \code{\link[=ottawa]{ottawa()}}.}
 
-\item{seed}{Integer seed for [simulation()].}
+\item{seed}{Integer seed for \code{\link[=simulation]{simulation()}}.}
 }
 \value{
-An object of class `staleness_check`.
+An object of class \code{staleness_check}.
 }
 \description{
 Applies the selected detectors to a prior meta-analysis and the evidence

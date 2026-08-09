@@ -7,18 +7,18 @@
 \method{summary}{staleness_backtest}(object, ...)
 }
 \arguments{
-\item{object}{A `staleness_backtest`, see [backtest()].}
+\item{object}{A \code{staleness_backtest}, see \code{\link[=backtest]{backtest()}}.}
 
-\item{...}{Unused; present for S3 consistency with [summary()].}
+\item{...}{Unused; present for S3 consistency with \code{\link[=summary]{summary()}}.}
 }
 \value{
-A data frame, the row-bound output of [calibration()] for each
-  truth definition.
+A data frame, the row-bound output of \code{\link[=calibration]{calibration()}} for each
+truth definition.
 }
 \description{
-Runs [calibration()] once per entry of [available_truths()] and stacks the
+Runs \code{\link[=calibration]{calibration()}} once per entry of \code{\link[=available_truths]{available_truths()}} and stacks the
 results, so a single call shows sensitivity, specificity and contamination
-side by side across `shift`, `surprise` and `conclusion`.
+side by side across \code{shift}, \code{surprise} and \code{conclusion}.
 }
 \examples{
 library(metafor)

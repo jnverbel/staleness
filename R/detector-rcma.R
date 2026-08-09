@@ -18,7 +18,7 @@
 #' those ten published reviews, every one fires on the RRR ratio and **not
 #' one** fires on the ratio of the risk ratios. A review moving from RR 0.995
 #' to RR 0.848 barely moves the risk ratio, while its risk reduction goes from
-#' 0.5\% to 15\%.
+#' 0.5% to 15%.
 #'
 #' So there is no containment on ratio measures, and an `rcma` firing is not a
 #' subset of the `ottawa` firings. This section stays because the relationship

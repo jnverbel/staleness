@@ -7,85 +7,85 @@
 lead_time(bt, truth = "shift", within = NULL)
 }
 \arguments{
-\item{bt}{A `staleness_backtest`, see [backtest()].}
+\item{bt}{A \code{staleness_backtest}, see \code{\link[=backtest]{backtest()}}.}
 
-\item{truth}{One of `"shift"`, `"surprise"`, `"conclusion"`, see
-[available_truths()].}
+\item{truth}{One of \code{"shift"}, \code{"surprise"}, \code{"conclusion"}, see
+\code{\link[=available_truths]{available_truths()}}.}
 
 \item{within}{Maximum age of a firing for it to count as advance warning of
-  an event, in the same units as the cuts. Defaults to the backtest's own
-  `horizon`, which is the window the backtest was built around.
+an event, in the same units as the cuts. Defaults to the backtest's own
+\code{horizon}, which is the window the backtest was built around.
 
-  The old default was `Inf`, and it flattered every detector: one firing in
-  1955 counted as advance warning for an event in 1980, so a detector that
-  fired once and then went quiet scored the same median lead as one that
-  warned before each event in turn. `Inf` is still available and still
-  meaningful — "did this detector ever fire before the event" is a real
-  question — but as something a caller asks for, not something they get
-  without choosing it.}
+The old default was \code{Inf}, and it flattered every detector: one firing in
+1955 counted as advance warning for an event in 1980, so a detector that
+fired once and then went quiet scored the same median lead as one that
+warned before each event in turn. \code{Inf} is still available and still
+meaningful — "did this detector ever fire before the event" is a real
+question — but as something a caller asks for, not something they get
+without choosing it.}
 }
 \value{
-A data frame, one row per method in `bt$methods`, with columns
-  `method`, `median_lead` and `n_events`.
+A data frame, one row per method in \code{bt$methods}, with columns
+\code{method}, \code{median_lead} and \code{n_events}.
 }
 \description{
 The metric that decides practical usefulness. A detector that only fires
 in the same period the evidence already moved looks perfect in a
-contingency table and is useless in practice: `calibration()` cannot tell
+contingency table and is useless in practice: \code{calibration()} cannot tell
 the two apart, because it scores each cut in isolation.
 }
 \details{
-`lead_time()` looks at every true event (per the chosen `truth`
+\code{lead_time()} looks at every true event (per the chosen \code{truth}
 definition), not just the first. For each true event it finds the
-detector's earliest `out_of_date` firing at or before that event's cut
-and records `event_cut - firing_cut` as that event's lead; an event the
+detector's earliest \code{out_of_date} firing at or before that event's cut
+and records \code{event_cut - firing_cut} as that event's lead; an event the
 detector never flagged in time (no firing at or before it) contributes no
-lead at all rather than a miss disguised as a number. `median_lead` is
-the median of the leads that *are* defined, i.e. the median time-to-event
+lead at all rather than a miss disguised as a number. \code{median_lead} is
+the median of the leads that \emph{are} defined, i.e. the median time-to-event
 across the events the detector caught early or on time — the events it
 missed entirely are excluded from that median, not folded into it as
-zero. A `median_lead` of 0 is a real, meaningful value: it means the
+zero. A \code{median_lead} of 0 is a real, meaningful value: it means the
 detector, in the middle of its caught events, only ever fired in the same
 period the evidence had already moved, not that it failed to catch
 anything.
 }
 \section{Why the two sides of the comparison are filtered differently}{
 
-This is the only metric here that relates *different* rows: the event comes
-from one cut and the firing that preceded it from another. [calibration()]
+This is the only metric here that relates \emph{different} rows: the event comes
+from one cut and the firing that preceded it from another. \code{\link[=calibration]{calibration()}}
 scores each row on its own, so it needs the verdict and the truth from the
 same row and must drop the row when either is missing. That does not carry
 over.
 
-Censored cuts and `not_applicable` verdicts are excluded from both sides,
-as in [calibration()]. A truth of `NA` is excluded from the **events**
-only: an event is defined by `truth == TRUE`, and unknown is not true. It
-is *not* excluded from the **firings**. A firing is an observed fact about
+Censored cuts and \code{not_applicable} verdicts are excluded from both sides,
+as in \code{\link[=calibration]{calibration()}}. A truth of \code{NA} is excluded from the \strong{events}
+only: an event is defined by \code{truth == TRUE}, and unknown is not true. It
+is \emph{not} excluded from the \strong{firings}. A firing is an observed fact about
 the detector, and its role here is to precede a later event; whether the
 truth of its own cut could be computed says nothing about that.
 
 Filtering the firings too — which earlier versions did, by reusing
-`calibration()`'s eligibility filter unchanged — deletes real early
+\code{calibration()}'s eligibility filter unchanged — deletes real early
 warnings. A detector that fired at 2000 where truth was indeterminate, for
-an event at 2001, reported `median_lead = NA` instead of 1. The bias has a
+an event at 2001, reported \code{median_lead = NA} instead of 1. The bias has a
 direction: dropping a firing can only ever lengthen a lead or erase it,
 never shorten it, so it always reads against the detector.
 
-A method with no true event under `truth` in the uncensored window gets
-`n_events = 0` and `median_lead = NA`: there is nothing to lead. A method
-that never fired `out_of_date` at or before any of its true events also
-gets `median_lead = NA`, with `n_events` still reporting how many events
-it missed (visible in detail via `calibration()`'s sensitivity). As in
-[calibration()], every method in `bt$methods` gets a row, including one
-that was `not_applicable` at every cut and therefore has no eligible rows
+A method with no true event under \code{truth} in the uncensored window gets
+\code{n_events = 0} and \code{median_lead = NA}: there is nothing to lead. A method
+that never fired \code{out_of_date} at or before any of its true events also
+gets \code{median_lead = NA}, with \code{n_events} still reporting how many events
+it missed (visible in detail via \code{calibration()}'s sensitivity). As in
+\code{\link[=calibration]{calibration()}}, every method in \code{bt$methods} gets a row, including one
+that was \code{not_applicable} at every cut and therefore has no eligible rows
 at all.
 }
 
 \section{How long a warning stays relevant}{
 
 A firing counts as advance warning for an event if it happened at or before
-that event and no earlier than `within` units before it. The default,
-`Inf`, keeps the definition above: the earliest firing at or before the
+that event and no earlier than \code{within} units before it. The default,
+\code{Inf}, keeps the definition above: the earliest firing at or before the
 event, however distant.
 
 That default is generous, and worth seeing plainly. With events at 2005,
@@ -95,11 +95,11 @@ single cut -- while its sensitivity is 0, because it flagged none of those
 events at their own cut. A warning that old is not advance notice of
 anything in particular.
 
-Set `within` to bound it. `within = bt$horizon` restricts a warning to the
+Set \code{within} to bound it. \code{within = bt$horizon} restricts a warning to the
 span over which the backtest considers truth evaluable, and turns that
-7 into `NA`. Nothing here picks a value for you, because the right one
+7 into \code{NA}. Nothing here picks a value for you, because the right one
 depends on how fast the field moves; the default is stated rather than
-hidden, and `calibration()`'s sensitivity should always be read alongside
+hidden, and \code{calibration()}'s sensitivity should always be read alongside
 this column.
 }
 

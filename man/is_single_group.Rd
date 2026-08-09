@@ -7,10 +7,10 @@
 is_single_group(measure)
 }
 \arguments{
-\item{measure}{Character, the `measure` field of an `rma` object.}
+\item{measure}{Character, the \code{measure} field of an \code{rma} object.}
 }
 \value{
-`TRUE` for a proportion, rate, mean or correlation.
+\code{TRUE} for a proportion, rate, mean or correlation.
 }
 \description{
 Is this a summary of one group rather than a comparison?

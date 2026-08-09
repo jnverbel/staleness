@@ -5,35 +5,35 @@
 \title{Detector-truth pairs that share logic}
 \format{
 A data frame with one row per circular detector-truth pair and two
-  character columns:
+character columns:
 \describe{
-  \item{method}{Name of the detector, one of [available_methods()].}
-  \item{truth}{Name of the truth definition whose logic it shares, one of
-    [available_truths()].}
+\item{method}{Name of the detector, one of \code{\link[=available_methods]{available_methods()}}.}
+\item{truth}{Name of the truth definition whose logic it shares, one of
+\code{\link[=available_truths]{available_truths()}}.}
 }
-  It currently holds a single row: `ottawa` against `truth_conclusion`.
-  The table is this package's own judgement about its own detectors, not
-  data from an external source, so it is stated here to be argued with.
+It currently holds a single row: \code{ottawa} against \code{truth_conclusion}.
+The table is this package's own judgement about its own detectors, not
+data from an external source, so it is stated here to be argued with.
 }
 \usage{
 CONTAMINATED_PAIRS
 }
 \value{
-A data frame; see **Format**.
+A data frame; see \strong{Format}.
 }
 \description{
-`ottawa` signals on a change of significance, which is exactly what
-`truth_conclusion` measures. Any metric computed for that pair is circular.
+\code{ottawa} signals on a change of significance, which is exactly what
+\code{truth_conclusion} measures. Any metric computed for that pair is circular.
 }
 \details{
-Such pairs are **flagged, not dropped**: [calibration()] returns a
-`contaminated` column on every row, looked up from this table and sitting
+Such pairs are \strong{flagged, not dropped}: \code{\link[=calibration]{calibration()}} returns a
+\code{contaminated} column on every row, looked up from this table and sitting
 next to the numbers it warns about. Dropping a row makes a reader notice an
 absence; flagging it puts the warning in front of them. It also leaves the
 circular comparison available to anyone who actually wants it — "does
-`ottawa` reproduce its own rule correctly" is a legitimate question, just a
-different one from "does `ottawa` predict the future" — and filtering on
-`contaminated` takes one line for anyone who does not.
+\code{ottawa} reproduce its own rule correctly" is a legitimate question, just a
+different one from "does \code{ottawa} predict the future" — and filtering on
+\code{contaminated} takes one line for anyone who does not.
 }
 \examples{
 CONTAMINATED_PAIRS

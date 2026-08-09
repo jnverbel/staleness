@@ -16,57 +16,57 @@ backtest(
 )
 }
 \arguments{
-\item{stream}{A `staleness_stream` from [evidence_stream()].}
+\item{stream}{A \code{staleness_stream} from \code{\link[=evidence_stream]{evidence_stream()}}.}
 
-\item{cuts}{`"yearly"`, or a numeric vector of explicit cut points. Sorted
+\item{cuts}{\code{"yearly"}, or a numeric vector of explicit cut points. Sorted
 and de-duplicated: a repeated cut is the same point in time, and counting
 it twice would inflate the denominator of every metric.}
 
-\item{methods}{Detector names, see [available_methods()].}
+\item{methods}{Detector names, see \code{\link[=available_methods]{available_methods()}}.}
 
 \item{horizon}{Units of future required for a cut's truth to be evaluated.}
 
 \item{window}{Length of the window of new evidence assessed at each cut.
-Cuts with fewer than `max(horizon, window)` units of future are marked
+Cuts with fewer than \code{max(horizon, window)} units of future are marked
 censored and excluded from metrics — see the note on censoring above.}
 
 \item{min_k}{Minimum studies required in a snapshot. At least 2, since a
 meta-analysis cannot be fitted from fewer.}
 
-\item{seed}{Integer seed for [simulation()].}
+\item{seed}{Integer seed for \code{\link[=simulation]{simulation()}}.}
 
 \item{truth_target}{What each cut's truth is scored against.
 
-  `"final"`, the default and the historical behaviour, uses the model fitted
-  over the whole stream. Note what that implies: `horizon` then governs
-  **censoring only**, and changing it from 3 to 8 leaves every truth column
-  identical on the cuts they share. A run described as "performance at three
-  years" is scored against every study ever published, which on
-  `metadat::dat.bcg` means evidence three decades later.
+\code{"final"}, the default and the historical behaviour, uses the model fitted
+over the whole stream. Note what that implies: \code{horizon} then governs
+\strong{censoring only}, and changing it from 3 to 8 leaves every truth column
+identical on the cuts they share. A run described as "performance at three
+years" is scored against every study ever published, which on
+\code{metadat::dat.bcg} means evidence three decades later.
 
-  `"horizon"` scores each cut against the review as it stood at
-  `cut + horizon`, so the question becomes the one the parameter's name
-  implies: did this meta-analysis go out of date **within the next
-  `horizon` years**. Cuts whose target date has no snapshot that can be fitted get
-  `NA` truths, which the metrics drop.
+\code{"horizon"} scores each cut against the review as it stood at
+\code{cut + horizon}, so the question becomes the one the parameter's name
+implies: did this meta-analysis go out of date \strong{within the next
+\code{horizon} years}. Cuts whose target date has no snapshot that can be fitted get
+\code{NA} truths, which the metrics drop.
 
-  The two answer different questions and neither is a correction of the
-  other. `"final"` asks whether a review was already superseded by what
-  would eventually be known; `"horizon"` asks whether it was about to be.}
+The two answer different questions and neither is a correction of the
+other. \code{"final"} asks whether a review was already superseded by what
+would eventually be known; \code{"horizon"} asks whether it was about to be.}
 }
 \value{
-An object of class `staleness_backtest` with elements `results` (a
-  data.frame with columns `cut`, `method`, `verdict`, `signal`, `reason`,
-  `truth_shift`, `truth_surprise`, `truth_conclusion`, `censored`),
-  `stream`, `methods`, `horizon`, `window`, `n_cuts` and `n_censored`. The
-  `truth_shift` and `truth_surprise` columns can be `NA` when the standard
-  error they divide by (`se_final` or the snapshot's own `se`) is
-  degenerate; that `NA` means "truth could not be determined here", not
-  "no shift occurred", and is deliberately left unresolved rather than
-  guessed at. Consumers must exclude those rows from any accuracy metric,
-  the same treatment `censored == TRUE` rows get — never count an `NA`
-  truth as a miss. [calibration()] and [lead_time()] already do this
-  filtering for you.
+An object of class \code{staleness_backtest} with elements \code{results} (a
+data.frame with columns \code{cut}, \code{method}, \code{verdict}, \code{signal}, \code{reason},
+\code{truth_shift}, \code{truth_surprise}, \code{truth_conclusion}, \code{censored}),
+\code{stream}, \code{methods}, \code{horizon}, \code{window}, \code{n_cuts} and \code{n_censored}. The
+\code{truth_shift} and \code{truth_surprise} columns can be \code{NA} when the standard
+error they divide by (\code{se_final} or the snapshot's own \code{se}) is
+degenerate; that \code{NA} means "truth could not be determined here", not
+"no shift occurred", and is deliberately left unresolved rather than
+guessed at. Consumers must exclude those rows from any accuracy metric,
+the same treatment \code{censored == TRUE} rows get — never count an \code{NA}
+truth as a miss. \code{\link[=calibration]{calibration()}} and \code{\link[=lead_time]{lead_time()}} already do this
+filtering for you.
 }
 \description{
 Walks the evidence stream, reconstructs what was known at each point in the
@@ -74,35 +74,35 @@ past, asks every detector the same question it would be asked today, and
 compares the answer with what actually happened afterwards.
 }
 \details{
-At each cut `t`, the snapshot (`prev`, from [snapshot_at()]) and the new
-evidence window (`new`, from [window_between()]) are built using only
-studies with `date <= t` and `date` in `(t, t + window]` respectively.
-Nothing past the cut, including tau-squared, feeds into `prev`: it is
-refit from scratch on the restricted data by [snapshot_at()], never
-derived from the full series. The `final` meta-analysis, fit once over the
+At each cut \code{t}, the snapshot (\code{prev}, from \code{\link[=snapshot_at]{snapshot_at()}}) and the new
+evidence window (\code{new}, from \code{\link[=window_between]{window_between()}}) are built using only
+studies with \code{date <= t} and \code{date} in \verb{(t, t + window]} respectively.
+Nothing past the cut, including tau-squared, feeds into \code{prev}: it is
+refit from scratch on the restricted data by \code{\link[=snapshot_at]{snapshot_at()}}, never
+derived from the full series. The \code{final} meta-analysis, fit once over the
 complete stream, exists solely to score truth after the fact and is never
 passed to a detector.
 
-When the stream carries sample sizes (`stream$ni`), they are summed on
-both sides of the cut and passed to [check_currency()] as `n_prev`/`n_new`
-so that [barrowman()] can be evaluated like every other detector. When the
-stream has no `ni`, both are passed as `NULL` and `barrowman()` degrades to
-`not_applicable` through [check_currency()]'s own handling, rather than
+When the stream carries sample sizes (\code{stream$ni}), they are summed on
+both sides of the cut and passed to \code{\link[=check_currency]{check_currency()}} as \code{n_prev}/\code{n_new}
+so that \code{\link[=barrowman]{barrowman()}} can be evaluated like every other detector. When the
+stream has no \code{ni}, both are passed as \code{NULL} and \code{barrowman()} degrades to
+\code{not_applicable} through \code{\link[=check_currency]{check_currency()}}'s own handling, rather than
 erroring.
 
 Cuts too close to the end of the stream cannot be fairly evaluated: they
-are kept in `results` (marked `censored = TRUE`) so that a caller can see
+are kept in \code{results} (marked \code{censored = TRUE}) so that a caller can see
 them, but must be excluded from any accuracy metric computed later. "Too
-close" means within `max(horizon, window)` of the last study date, not just
-within `horizon`. Both bounds have to hold, and for different reasons: a
-cut needs `horizon` units of future for its truth to have had time to
-materialise, *and* it needs `window` units of future for the detector to be
+close" means within \code{max(horizon, window)} of the last study date, not just
+within \code{horizon}. Both bounds have to hold, and for different reasons: a
+cut needs \code{horizon} units of future for its truth to have had time to
+materialise, \emph{and} it needs \code{window} units of future for the detector to be
 handed the same amount of new evidence every other uncensored cut was
-handed. Censoring on `horizon` alone would let a run with
-`window > horizon` score late cuts as full observations while their
+handed. Censoring on \code{horizon} alone would let a run with
+\code{window > horizon} score late cuts as full observations while their
 evidence window ran off the end of the data — a truncated window shows a
 detector less change than really happened, biasing exactly those cuts
-toward `current`, invisibly. A backtest needs at least 3 uncensored cuts to
+toward \code{current}, invisibly. A backtest needs at least 3 uncensored cuts to
 say anything useful about a detector's calibration and is refused
 otherwise.
 }

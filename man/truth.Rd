@@ -6,7 +6,7 @@
 \alias{truth_surprise}
 \alias{truth_conclusion}
 \alias{available_truths}
-\title{Ground-truth definitions for backtesting}
+\title{Operational evaluation targets for backtesting}
 \usage{
 truth_shift(theta_t, theta_final, se_final, threshold = 1.96)
 
@@ -23,56 +23,93 @@ available_truths()
 
 \item{se_final}{Standard error using all evidence.}
 
-\item{threshold}{Number of standard errors for `truth_shift`.}
+\item{threshold}{Number of standard errors for \code{truth_shift}.}
 
 \item{se_t}{Standard error at the cut point.}
 
 \item{p_t, p_final}{Two-sided p-values at the cut point and at the end.}
 
-\item{alpha}{Significance level for `truth_conclusion`.}
+\item{alpha}{Significance level for \code{truth_conclusion}.}
 }
 \value{
-`truth_shift()`, `truth_surprise()` and `truth_conclusion()` each
-  return a single logical value: `TRUE` if the meta-analysis was out of date
-  at the cut point under that definition, `FALSE` if it was not, and `NA`
-  when the question cannot be answered from the values supplied.
+\code{truth_shift()}, \code{truth_surprise()} and \code{truth_conclusion()} each
+return a single logical value: \code{TRUE} if the meta-analysis was out of date
+at the cut point under that definition, \code{FALSE} if it was not, and \code{NA}
+when the question cannot be answered from the values supplied.
 
-  `NA` is a deliberate third answer rather than a failure. `truth_shift()`
-  and `truth_surprise()` divide by a standard error, so one that is zero,
-  negative or non-finite makes the distance impossible to judge — not
-  infinite.
-  Returning `TRUE` there would score an unknowable truth as a certain event
-  and bias every metric computed from it, which is why [calibration()] and
-  [lead_time()] drop those rows instead.
+\code{NA} is a deliberate third answer rather than a failure. \code{truth_shift()}
+and \code{truth_surprise()} divide by a standard error, so one that is zero,
+negative or non-finite makes the distance impossible to judge — not
+infinite.
+Returning \code{TRUE} there would score an unknowable truth as a certain event
+and bias every metric computed from it, which is why \code{\link[=calibration]{calibration()}} and
+\code{\link[=lead_time]{lead_time()}} drop those rows instead.
 
-  `available_truths()` returns a character vector of the truth names the
-  rest of the package accepts: `"shift"`, `"surprise"` and `"conclusion"`.
-  These are the strings [backtest()], [calibration()] and [lead_time()] take
-  in their `truth` arguments, and the suffixes of the three functions above.
+\code{available_truths()} returns a character vector of the truth names the
+rest of the package accepts: \code{"shift"}, \code{"surprise"} and \code{"conclusion"}.
+These are the strings \code{\link[=backtest]{backtest()}}, \code{\link[=calibration]{calibration()}} and \code{\link[=lead_time]{lead_time()}} take
+in their \code{truth} arguments, and the suffixes of the three functions above.
 }
 \description{
-Three independent answers to "was this meta-analysis really out of date at
-time t?". Independence matters: defining truth with the same rule a detector
-uses makes that detector correct by construction, which would turn any
-calibration result into an artefact.
+Three ways of asking "did this meta-analysis change by time t?", used to
+score detector verdicts. They are \strong{operational choices, not ground truth},
+and the distinction is not modesty: nothing here observes what a review
+team actually did, whether a recommendation changed, or whether anyone was
+harmed by acting on the old estimate. They observe the estimate moving.
 }
-\details{
-These three definitions are this package's own, and no published source
-offers a ready-made ground truth to borrow. The closest is Shojania et al.
+\section{What each one measures, and what they share}{
+
+All three read the same underlying event -- the pooled estimate moved
+between the cut and the target -- and differ in how they scale or classify
+it:
+\itemize{
+\item \code{\link[=truth_shift]{truth_shift()}} and \code{\link[=truth_surprise]{truth_surprise()}} use the \strong{identical numerator},
+\verb{|theta_target - theta_t|}, and differ only in the denominator: the
+standard error at the target, or the standard error at the cut. They are
+one distance on two scales, not two independent facts, and a result that
+holds under one and not the other is a statement about precision, not
+about the detector.
+\item \code{\link[=truth_conclusion]{truth_conclusion()}} is categorical rather than metric: a flip in the sign
+of the effect, or across a significance threshold.
+}
+
+Because the first two share a numerator, treat agreement between them as
+expected and disagreement as informative -- the reverse of how independent
+definitions would be read. Use them for sensitivity analysis across scalings
+rather than as three votes.
+}
+
+\section{The 1.96 is a scaling, not a test}{
+
+\code{truth_shift()} divides by the standard error of the TARGET estimate, and
+\code{theta_t} is nested inside it -- the cut's studies are part of the target's.
+The variance of the difference between two nested estimates is not the
+variance of either, so \verb{|theta_target - theta_t| / se_target} is not a test
+statistic and \code{1.96} is not a critical value. It is a threshold expressed in
+units of final precision, chosen because those units are interpretable, and
+it should be read that way.
+}
+
+\section{Why not a published definition}{
+
+No published source offers one to borrow. The closest is Shojania et al.
 (2007), whose survival analysis counts a review as needing an update on
 "changes in statistical significance or relative changes in effect magnitude
 of at least 50\%", plus qualitative signals a program cannot infer.
-[truth_conclusion()] is the definition closest to that quantitative half.
-[truth_shift()] and [truth_surprise()] deliberately go elsewhere: they never
-look at a significance threshold or an effect-size ratio, which is what
-keeps them free of every detector's own logic. Treat them as three
-operational choices, stated so they can be argued with, rather than as a
-standard.
+\code{\link[=truth_conclusion]{truth_conclusion()}} is the closest to that quantitative half.
+
+What all three do avoid is circularity: scoring a detector against a target
+built from the same rule it uses makes it correct by construction.
+\code{\link[=truth_shift]{truth_shift()}} and \code{\link[=truth_surprise]{truth_surprise()}} never look at a significance
+threshold or an effect-size ratio, so no detector's logic leaks into them;
+\code{truth_conclusion} does share logic with \code{\link[=ottawa]{ottawa()}}, which is exactly why
+that pair is named in \link{CONTAMINATED_PAIRS}.
 }
+
 \section{An estimate of exactly zero}{
 
-`truth_conclusion()` compares `sign(theta_t)` with `sign(theta_final)`, and
-`sign(0)` is `0`, which differs from both `+1` and `-1`. An estimate
+\code{truth_conclusion()} compares \code{sign(theta_t)} with \code{sign(theta_final)}, and
+\code{sign(0)} is \code{0}, which differs from both \code{+1} and \code{-1}. An estimate
 sitting exactly on the null therefore reads as a sign change against any
 non-zero one. That is the intended reading — moving from "no effect at
 all" to a definite direction is a change in the practical conclusion — and

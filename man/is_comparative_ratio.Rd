@@ -7,13 +7,13 @@
 is_comparative_ratio(measure)
 }
 \arguments{
-\item{measure}{Character, the `measure` field of an `rma` object.}
+\item{measure}{Character, the \code{measure} field of an \code{rma} object.}
 }
 \value{
-`TRUE` for a two-arm ratio measure.
+\code{TRUE} for a two-arm ratio measure.
 }
 \description{
 The question the detectors actually need answered, and the one the old
-`is_ratio_measure()` was silently standing in for.
+\code{is_ratio_measure()} was silently standing in for.
 }
 \keyword{internal}

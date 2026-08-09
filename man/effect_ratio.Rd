@@ -7,9 +7,9 @@
 effect_ratio(theta_new, theta_prev, measure, se_prev, min_z = 2)
 }
 \arguments{
-\item{theta_new, theta_prev}{Numeric coefficients as stored by `metafor`.}
+\item{theta_new, theta_prev}{Numeric coefficients as stored by \code{metafor}.}
 
-\item{measure}{Character, the `measure` field.}
+\item{measure}{Character, the \code{measure} field.}
 
 \item{se_prev}{Numeric, standard error of the prior effect.}
 
@@ -17,7 +17,7 @@ effect_ratio(theta_new, theta_prev, measure, se_prev, min_z = 2)
 errors from zero for a difference ratio to be computed.}
 }
 \value{
-List with `ratio` (possibly `NA_real_`) and `reason`.
+List with \code{ratio} (possibly \code{NA_real_}) and \code{reason}.
 }
 \description{
 For difference measures the ratio is undefined when the prior effect is

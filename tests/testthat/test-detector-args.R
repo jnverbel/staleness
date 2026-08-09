@@ -265,7 +265,7 @@ test_that("ottawa's qualitative signals must be text", {
 test_that("the truth functions validate their thresholds", {
   # threshold and alpha were never checked. A negative threshold makes every
   # comparison TRUE, an NA makes every one NA, and truth_conclusion(alpha = NA)
-  # still returned a verdict -- a ground truth computed from a cutoff that is
+  # still returned a verdict -- an evaluation target computed from a cutoff that is
   # not one.
   expect_error(truth_shift(-0.3, -0.75, 0.12, threshold = -1), "positive")
   expect_error(truth_shift(-0.3, -0.75, 0.12, threshold = NA), "positive")
@@ -436,7 +436,7 @@ test_that("a factor cannot run one detector and be labelled another", {
 })
 
 test_that("truth_conclusion refuses p-values that cannot exist", {
-  # p_t = -1 read as significant and returned TRUE: a ground truth
+  # p_t = -1 read as significant and returned TRUE: an evaluation target
   # manufactured from a number outside [0, 1]. Impossible is refused; NA stays
   # a datum and yields NA, as in the other two truths.
   expect_error(truth_conclusion(0.1, -1, 0.1, 0.10), "p-value")

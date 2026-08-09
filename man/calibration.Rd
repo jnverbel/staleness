@@ -2,78 +2,80 @@
 % Please edit documentation in R/metrics.R
 \name{calibration}
 \alias{calibration}
-\title{Calibration of the detectors against a truth definition}
+\title{Calibration of the detectors against an evaluation target}
 \usage{
 calibration(bt, truth = "shift")
 }
 \arguments{
-\item{bt}{A `staleness_backtest`, see [backtest()].}
+\item{bt}{A \code{staleness_backtest}, see \code{\link[=backtest]{backtest()}}.}
 
-\item{truth}{One of `"shift"`, `"surprise"`, `"conclusion"`, see
-[available_truths()].}
+\item{truth}{One of \code{"shift"}, \code{"surprise"}, \code{"conclusion"}, see
+\code{\link[=available_truths]{available_truths()}}.}
 }
 \value{
-A data frame, one row per method in `bt$methods`, with columns
-  `method`, `truth`, `sensitivity`, `specificity`, `false_alarm`, `n` and
-  `contaminated`. Descriptive of this series; see the section above.
+A data frame, one row per method in \code{bt$methods}, with columns
+\code{method}, \code{truth}, \code{sensitivity}, \code{specificity}, \code{false_alarm}, \code{n} and
+\code{contaminated}. Descriptive of this series; see the section above.
 }
 \description{
 Turns a backtest's raw results into sensitivity, specificity and false
-alarm rate, one row per method, scored against a chosen definition of
-ground truth (see [truth]).
+alarm rate, one row per method, scored against a chosen operational target
+(see \link{truth}). Those targets observe the pooled estimate moving; they do not
+observe what a review team did, so these are rates against a stated
+criterion rather than against an external outcome.
 }
 \details{
 Three kinds of rows are excluded from the count before any metric is
 computed, none of them counted as either a hit or a miss:
 \itemize{
-  \item `censored` cuts, too close to the end of the series to be fairly
-    evaluated (see [backtest()]).
-  \item `not_applicable` verdicts, where the detector declined to answer.
-  \item Rows whose truth column for the requested `truth` is `NA`. This
-    happens when [truth_shift()] or [truth_surprise()] divide by a
-    degenerate (zero) standard error and cannot say what should have
-    happened; `backtest()` deliberately lets that `NA` propagate rather
-    than guessing. Left unfiltered, it would flow into `sum(hit & ev)` and
-    silently turn a whole cell into `NA` instead of merely omitting one
-    row.
+\item \code{censored} cuts, too close to the end of the series to be fairly
+evaluated (see \code{\link[=backtest]{backtest()}}).
+\item \code{not_applicable} verdicts, where the detector declined to answer.
+\item Rows whose truth column for the requested \code{truth} is \code{NA}. This
+happens when \code{\link[=truth_shift]{truth_shift()}} or \code{\link[=truth_surprise]{truth_surprise()}} divide by a
+degenerate (zero) standard error and cannot say what should have
+happened; \code{backtest()} deliberately lets that \code{NA} propagate rather
+than guessing. Left unfiltered, it would flow into \code{sum(hit & ev)} and
+silently turn a whole cell into \code{NA} instead of merely omitting one
+row.
 }
 
-`ottawa` signals on a change of significance, which is exactly what
-`truth_conclusion` measures: scored against that truth it is correct by
+\code{ottawa} signals on a change of significance, which is exactly what
+\code{truth_conclusion} measures: scored against that truth it is correct by
 construction. Rather than silently drop that pair or footnote it, every
-row this function returns carries a `contaminated` flag looked up from
-[CONTAMINATED_PAIRS], so no downstream reader can miss it.
+row this function returns carries a \code{contaminated} flag looked up from
+\link{CONTAMINATED_PAIRS}, so no downstream reader can miss it.
 
-The rows are one per method **requested in the backtest** (`bt$methods`),
+The rows are one per method \strong{requested in the backtest} (\code{bt$methods}),
 not one per method that happened to survive the filter. A detector that was
-`not_applicable` at every cut — as `barrowman()` and `simulation()` are on
-any consistently significant series — gets a row with `n = 0` and `NA`
+\code{not_applicable} at every cut — as \code{barrowman()} and \code{simulation()} are on
+any consistently significant series — gets a row with \code{n = 0} and \code{NA}
 metrics. "This detector never applied to this evidence" is itself a result
 about the detector, and belongs in the table as a row rather than as an
 absence the reader has to notice.
 }
 \section{These rates describe one series; they do not estimate a rate}{
 
-`n` counts **cuts**, and consecutive cuts of one review share almost every
+\code{n} counts \strong{cuts}, and consecutive cuts of one review share almost every
 study — the snapshot at 1970 and the one at 1971 differ by whatever appeared
 in a single year. Nineteen cuts are not nineteen observations, so what comes
 back is a description of this body of evidence and not an estimate of how a
 detector behaves in general.
 
-That is also why no interval is returned. A binomial one computed on `n`
+That is also why no interval is returned. A binomial one computed on \code{n}
 would treat overlapping snapshots as independent draws and come out far too
 narrow: the honest answer on a single series is no interval, not a
 confident-looking one.
 
-For a rate that generalises, use [pooled_calibration()] over several
-independent reviews. Reviews share no studies, so resampling *them* gives an
+For a rate that generalises, use \code{\link[=pooled_calibration]{pooled_calibration()}} over several
+independent reviews. Reviews share no studies, so resampling \emph{them} gives an
 interval that means something.
 
 A second caution, measured rather than theoretical: against
-`truth_target = "final"` a review whose effect kept moving has **no true
-negatives at all** — every earlier cut counts as out of date — so its
-specificity is `NA` rather than perfect. That is the case in 6 of the 17
-reviews swept in `inst/applicability/`.
+\code{truth_target = "final"} a review whose effect kept moving has \strong{no true
+negatives at all} — every earlier cut counts as out of date — so its
+specificity is \code{NA} rather than perfect. That is the case in 6 of the 17
+reviews swept in \verb{inst/applicability/}.
 }
 
 \examples{

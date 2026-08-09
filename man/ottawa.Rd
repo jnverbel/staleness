@@ -13,26 +13,26 @@ ottawa(
 )
 }
 \arguments{
-\item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
+\item{prev}{An \code{rma.uni} object, the meta-analysis as previously published.}
 
-\item{new_ma}{An `rma.uni` object refitted with the new evidence included.
-It must be on the same `measure` as `prev`: comparing a risk ratio
+\item{new_ma}{An \code{rma.uni} object refitted with the new evidence included.
+It must be on the same \code{measure} as \code{prev}: comparing a risk ratio
 against a mean difference does not define a ratio, and used to return one
 anyway, with a verdict attached.}
 
 \item{alpha}{Significance threshold. The published method uses 0.04, not 0.05.}
 
-\item{sig_change}{`"gain"` counts only non-significant becoming significant,
-as in the original. `"any"` also counts the loss of significance.}
+\item{sig_change}{\code{"gain"} counts only non-significant becoming significant,
+as in the original. \code{"any"} also counts the loss of significance.}
 
 \item{qualitative}{Character vector of qualitative signals declared by the
-analyst. Any non-empty entry triggers a signal. `NA` is an error: an
-unknown qualitative signal is not a present one, and `nzchar(NA)` is
-`TRUE`, so accepting it returned `"out_of_date"` for "I don't know". Pass
-`""` for a signal that was checked and found absent.}
+analyst. Any non-empty entry triggers a signal. \code{NA} is an error: an
+unknown qualitative signal is not a present one, and \code{nzchar(NA)} is
+\code{TRUE}, so accepting it returned \code{"out_of_date"} for "I don't know". Pass
+\code{""} for a signal that was checked and found absent.}
 }
 \value{
-A `staleness_verdict`.
+A \code{staleness_verdict}.
 }
 \description{
 Two quantitative signals: a change in statistical significance, and a change
@@ -42,20 +42,20 @@ of at least 50 percent in the pooled effect.
 The published method also lists four qualitative signals: opposing findings,
 substantial harm, a superior new therapy, and a change in effectiveness. This
 function does not infer them. They are supplied by the analyst through
-`qualitative` and reported separately. An algorithm that claimed to judge
+\code{qualitative} and reported separately. An algorithm that claimed to judge
 "substantial harm" on its own would be overselling what the data support.
 }
 \section{Which reading of "50\% change" this implements, and why}{
 
 The original description (Shojania et al. 2007) states the quantitative
 signals as "changes in statistical significance or relative changes in
-effect magnitude of at least 50\%". That phrasing does not say *of what*,
+effect magnitude of at least 50\%". That phrasing does not say \emph{of what},
 and the full text is behind a subscription, so it could not be consulted
 here. Declared rather than glossed over.
 
 The only published application of the method resolves it explicitly, and on
 data that can be checked: Pattanittum et al. (2012), Table 1, computes the
-change on relative risk **reductions** for ratio measures, and defers to the
+change on relative risk \strong{reductions} for ratio measures, and defers to the
 rCMA rule for mean differences. This package follows that reading, because
 it is the one that reproduces the ten worked reviews in that study's
 Appendix S3: all ten fire under it, none fires under the ratio of the
@@ -77,34 +77,34 @@ reading.
 \section{The effect criterion is on risk REDUCTIONS, and is unstable}{
 
 For ratio measures the comparison is
-`(1 - RR_new) / (1 - RR_prev)`, not the ratio of the effects. For mean
-differences it defers to [rcma()], so **there** the two coincide -- but on
-ratio measures they do not, and an `rcma` firing is not a subset of the
-`ottawa` firings. Earlier versions of this documentation declared such a
+\code{(1 - RR_new) / (1 - RR_prev)}, not the ratio of the effects. For mean
+differences it defers to \code{\link[=rcma]{rcma()}}, so \strong{there} the two coincide -- but on
+ratio measures they do not, and an \code{rcma} firing is not a subset of the
+\code{ottawa} firings. Earlier versions of this documentation declared such a
 containment; it was an artefact of implementing both criteria with the same
 internal function.
 
 The consequence is worth stating plainly, because it is unflattering and
-measurable. `1 - RR_prev` goes to zero as the prior effect approaches no
+measurable. \code{1 - RR_prev} goes to zero as the prior effect approaches no
 effect, so the ratio explodes exactly where the Ottawa method is meant to be
 used -- on meta-analyses whose result is not yet significant. Measured on
-evidence containing **no change at all**: the effect signal fires on 64\% of
+evidence containing \strong{no change at all}: the effect signal fires on 64\% of
 samples under a null effect, and on 0\% once the effect is real and precise.
 That is not an implementation artefact; it follows from the criterion.
 
 It also explains the published comparison. Ottawa flagged 34 of 80 reviews
 where recursive CMA and Barrowman each flagged 7 -- and all 80 were null
 meta-analyses by inclusion criterion. Confirmed outside simulation on
-`metadat::dat.laopaiboon2015`, a null review where this detector's
+\code{metadat::dat.laopaiboon2015}, a null review where this detector's
 specificity falls to 0.14 while the other four hold at 1.00.
 
-**This is not corrected here, on purpose.** Correcting it would mean
+\strong{This is not corrected here, on purpose.} Correcting it would mean
 implementing a different method, and the reason this package exists is to
 find out how the published ones behave. What is corrected is the silence:
-`detail$effect_unstable` marks the verdicts where the denominator is near
-zero, and `detail$rrr_prev` reports the denominator itself, so nobody
+\code{detail$effect_unstable} marks the verdicts where the denominator is near
+zero, and \code{detail$rrr_prev} reports the denominator itself, so nobody
 receives a ratio of -19 without being told it came from dividing by
--0.005. Same principle as [CONTAMINATED_PAIRS]: flag the result, do not
+-0.005. Same principle as \link{CONTAMINATED_PAIRS}: flag the result, do not
 quietly remove or repair it.
 }
 

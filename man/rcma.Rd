@@ -7,42 +7,42 @@
 rcma(prev, new_ma, lower = 0.5, upper = 1.5)
 }
 \arguments{
-\item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
+\item{prev}{An \code{rma.uni} object, the meta-analysis as previously published.}
 
-\item{new_ma}{An `rma.uni` object refitted with the new evidence included.
-It must be on the same `measure` as `prev`: comparing a risk ratio
+\item{new_ma}{An \code{rma.uni} object refitted with the new evidence included.
+It must be on the same \code{measure} as \code{prev}: comparing a risk ratio
 against a mean difference does not define a ratio, and used to return one
 anyway, with a verdict attached.}
 
 \item{lower, upper}{Signal thresholds on the ratio scale.}
 }
 \value{
-A `staleness_verdict`.
+A \code{staleness_verdict}.
 }
 \description{
 Signals when the pooled effect, on its natural scale, changes by at least
 half relative to the prior estimate.
 }
-\section{Relationship to `ottawa()`}{
+\section{Relationship to \code{ottawa()}}{
 
 These two rules look like the same rule and are not, which earlier versions
 of this documentation asserted wrongly. Both compare an updated effect
 against a prior one at thresholds of 0.5 and 1.5, but they compare
-different quantities. `rcma()` takes the ratio of the effects. [ottawa()]
-takes the ratio of the relative risk *reductions*,
-`(1 - RR_new) / (1 - RR_prev)` -- the definition its published application
+different quantities. \code{rcma()} takes the ratio of the effects. \code{\link[=ottawa]{ottawa()}}
+takes the ratio of the relative risk \emph{reductions},
+\code{(1 - RR_new) / (1 - RR_prev)} -- the definition its published application
 uses (Pattanittum et al. 2012, Table 1), verified in this package's test
 suite against the ten reviews in that study's Appendix S3.
 
 On difference measures the two do coincide, because the source defers to
 the rCMA rule there. On ratio measures they can disagree completely: of
-those ten published reviews, every one fires on the RRR ratio and **not
-one** fires on the ratio of the risk ratios. A review moving from RR 0.995
+those ten published reviews, every one fires on the RRR ratio and \strong{not
+one} fires on the ratio of the risk ratios. A review moving from RR 0.995
 to RR 0.848 barely moves the risk ratio, while its risk reduction goes from
 0.5\% to 15\%.
 
-So there is no containment on ratio measures, and an `rcma` firing is not a
-subset of the `ottawa` firings. This section stays because the relationship
+So there is no containment on ratio measures, and an \code{rcma} firing is not a
+subset of the \code{ottawa} firings. This section stays because the relationship
 is easy to assume and wrong in both directions: anyone recomputing the
 inter-method agreement this package exists to re-ask should treat these as
 two criteria, not as one criterion counted twice.

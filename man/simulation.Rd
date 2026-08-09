@@ -14,32 +14,32 @@ simulation(
 )
 }
 \arguments{
-\item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
+\item{prev}{An \code{rma.uni} object, the meta-analysis as previously published.}
 
-\item{new_evidence}{A list with `yi`, `vi` and `k`, as returned by
-[window_between()]. The three must agree: `yi` and `vi` of the same
-length, and `k` equal to that length. `k` decides whether there is any
-new evidence while `yi` and `vi` are what gets used, so a mismatch is
+\item{new_evidence}{A list with \code{yi}, \code{vi} and \code{k}, as returned by
+\code{\link[=window_between]{window_between()}}. The three must agree: \code{yi} and \code{vi} of the same
+length, and \code{k} equal to that length. \code{k} decides whether there is any
+new evidence while \code{yi} and \code{vi} are what gets used, so a mismatch is
 answered from one and reported from the other; it is refused rather than
-resolved. The values must also be usable: `yi` finite, `vi` finite and
+resolved. The values must also be usable: \code{yi} finite, \code{vi} finite and
 strictly positive.}
 
 \item{B}{Number of simulation replicates.}
 
 \item{alpha}{Significance level for each simulated meta-analysis.}
 
-\item{power_threshold}{Signal when simulated power *exceeds* this value.
-The comparison is strict, following the source's "Power >80%", so a
-simulated power of exactly `power_threshold` reads as `"current"`.}
+\item{power_threshold}{Signal when simulated power \emph{exceeds} this value.
+The comparison is strict, following the source's "Power >80\%", so a
+simulated power of exactly \code{power_threshold} reads as \code{"current"}.}
 
 \item{seed}{Optional integer seed. Results are not reproducible without it.
 Either way the caller's own random stream is saved before the simulation
 and restored afterwards, so calling this detector — directly or through
-[check_currency()] or [backtest()] — never changes what a caller's
-subsequent `runif()`, `sample()` or `rnorm()` returns.}
+\code{\link[=check_currency]{check_currency()}} or \code{\link[=backtest]{backtest()}} — never changes what a caller's
+subsequent \code{runif()}, \code{sample()} or \code{rnorm()} returns.}
 }
 \value{
-A `staleness_verdict`.
+A \code{staleness_verdict}.
 }
 \description{
 Simulates new studies with the parameters of the recent literature, adds them
@@ -56,20 +56,20 @@ against a threshold of 80\%.
 
 The method is set out step by step in Pattanittum et al. (2012), Appendix
 S1, and this implementation follows it: the new study's effect is drawn from
-a **t** distribution with the prior meta-analysis's pooled effect and
-variance; **one** study is simulated, carrying the combined precision of the
+a \strong{t} distribution with the prior meta-analysis's pooled effect and
+variance; \strong{one} study is simulated, carrying the combined precision of the
 recent studies rather than one study per recent study; the updated pooled
-effect is tested at 5\%; the draw is repeated `B` times; and power **strictly
-above** the threshold is the signal, as the source's "Power >80\%" reads. The
+effect is tested at 5\%; the draw is repeated \code{B} times; and power \strong{strictly
+above} the threshold is the signal, as the source's "Power >80\%" reads. The
 degrees of freedom are the one parameter the source leaves implicit; they
 are taken as the prior study count minus one.
 
 One deviation is unavoidable and is declared rather than hidden. The source
-simulates at the level of **participants** — binomial draws for dichotomous
+simulates at the level of \strong{participants} — binomial draws for dichotomous
 outcomes, normal draws for continuous ones, from event rates and means
 recovered per arm — and then computes an effect from them. This package
-never sees participant-level data. It works from `yi` and `vi`, so it
-simulates the effect directly, with variance `vi_new + tau^2`. For a study
+never sees participant-level data. It works from \code{yi} and \code{vi}, so it
+simulates the effect directly, with variance \code{vi_new + tau^2}. For a study
 of any reasonable size the two coincide closely, since the effect estimate
 is asymptotically normal about the same mean with the same variance; they
 can differ for very small or very sparse studies, where the participant-level

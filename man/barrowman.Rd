@@ -7,25 +7,25 @@
 barrowman(prev, n_prev, n_new, alpha = 0.05, z_crit = 1.96)
 }
 \arguments{
-\item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
+\item{prev}{An \code{rma.uni} object, the meta-analysis as previously published.}
 
 \item{n_prev}{Numeric, total participants in the prior meta-analysis.}
 
 \item{n_new}{Numeric, participants contributed by the new studies.
 Omitting a sample size altogether is a malformed call and is an error, and
-so is an impossible one: `n_prev` must be positive and `n_new` cannot be
-negative. Supplying one that is present but not a usable number — `NA`,
-`NaN`, infinite — is a fact about the data, not about the call, so it yields
-`"not_applicable"` with the reason attached, the same treatment every other
-un-answerable case gets. `n_new = 0` is neither: it says the new studies
-contributed nobody, and its answer is a ratio of 0, i.e. `"current"`.}
+so is an impossible one: \code{n_prev} must be positive and \code{n_new} cannot be
+negative. Supplying one that is present but not a usable number — \code{NA},
+\code{NaN}, infinite — is a fact about the data, not about the call, so it yields
+\code{"not_applicable"} with the reason attached, the same treatment every other
+un-answerable case gets. \code{n_new = 0} is neither: it says the new studies
+contributed nobody, and its answer is a ratio of 0, i.e. \code{"current"}.}
 
 \item{alpha}{Significance level used to decide applicability.}
 
 \item{z_crit}{Critical value, 1.96 in the published method.}
 }
 \value{
-A `staleness_verdict`.
+A \code{staleness_verdict}.
 }
 \description{
 Compares the participants contributed by new studies against the number that
@@ -33,7 +33,7 @@ would be needed for the pooled result to reach significance.
 }
 \details{
 Applies only when the prior meta-analysis was not statistically significant.
-When it does not apply the verdict is `"not_applicable"`, never `"current"`:
+When it does not apply the verdict is \code{"not_applicable"}, never \code{"current"}:
 treating inapplicability as evidence of currency would bias any calibration
 study in this detector's favour.
 }

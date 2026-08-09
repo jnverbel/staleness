@@ -11,8 +11,8 @@ split_z(yi, vi)
 be accumulated.}
 }
 \value{
-Numeric vector of length `length(yi) - 1`, possibly containing
-  non-finite entries for splits that carry no information.
+Numeric vector of length \code{length(yi) - 1}, possibly containing
+non-finite entries for splits that carry no information.
 }
 \description{
 Standardised split differences, one per possible changepoint

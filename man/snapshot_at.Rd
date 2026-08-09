@@ -7,12 +7,12 @@
 snapshot_at(stream, cut)
 }
 \arguments{
-\item{stream}{A `staleness_stream`.}
+\item{stream}{A \code{staleness_stream}.}
 
-\item{cut}{Numeric or Date, the cut point. Studies with `date <= cut` are used.}
+\item{cut}{Numeric or Date, the cut point. Studies with \code{date <= cut} are used.}
 }
 \value{
-An `rma.uni` object.
+An \code{rma.uni} object.
 }
 \description{
 Refit the meta-analysis as it stood at a point in time

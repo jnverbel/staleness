@@ -17,11 +17,13 @@ eligible_rows <- function(bt, truth) {
       !is.na(res[[col]]), ]
 }
 
-#' Calibration of the detectors against a truth definition
+#' Calibration of the detectors against an evaluation target
 #'
 #' Turns a backtest's raw results into sensitivity, specificity and false
-#' alarm rate, one row per method, scored against a chosen definition of
-#' ground truth (see [truth]).
+#' alarm rate, one row per method, scored against a chosen operational target
+#' (see [truth]). Those targets observe the pooled estimate moving; they do not
+#' observe what a review team did, so these are rates against a stated
+#' criterion rather than against an external outcome.
 #'
 #' Three kinds of rows are excluded from the count before any metric is
 #' computed, none of them counted as either a hit or a miss:
