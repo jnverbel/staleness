@@ -56,3 +56,36 @@ test_that("a degenerate standard error makes truth unknown, not certain", {
   expect_true(truth_shift(0.5, 1.0, 0.1))
   expect_false(truth_shift(0.5, 0.51, 0.1))
 })
+
+test_that("an effect that cannot be located cannot have moved", {
+  # The three truths already returned NA for a degenerate standard error --
+  # "the distance cannot be judged, not that it is infinite" -- and then
+  # returned TRUE for a degenerate EFFECT. Same class of degeneracy, opposite
+  # treatment, inside the same function:
+  #
+  #   truth_shift(0, 1, se_final = 0)   -> NA    (SE degenerate)
+  #   truth_shift(Inf, 0, se_final = 1) -> TRUE  (effect degenerate)
+  #
+  # A spurious TRUE is worse than a wrong answer here: it is a free hit for
+  # every detector that fires at that cut, so it inflates sensitivity and
+  # biases the calibration this package exists to produce. rcma() had always
+  # treated a non-finite effect as not_applicable; the truths now agree.
+  for (bad in c(Inf, -Inf)) {
+    expect_true(is.na(truth_shift(bad, 0, 1)))
+    expect_true(is.na(truth_shift(0, bad, 1)))
+    expect_true(is.na(truth_surprise(bad, 1, 0)))
+    expect_true(is.na(truth_surprise(0, 1, bad)))
+    expect_true(is.na(truth_conclusion(bad, 0.1, 0, 0.1)))
+    expect_true(is.na(truth_conclusion(0, 0.1, bad, 0.1)))
+  }
+  # NaN and NA already propagated to NA; they still do.
+  expect_true(is.na(truth_shift(NaN, 0, 1)))
+  expect_true(is.na(truth_shift(NA_real_, 0, 1)))
+  expect_true(is.na(truth_conclusion(NaN, 0.1, 0, 0.1)))
+
+  # Finite effects are untouched, including the boundary the sign test uses.
+  expect_true(truth_shift(-0.30, -0.75, 0.12))
+  expect_false(truth_shift(-0.30, -0.31, 0.12))
+  expect_true(truth_conclusion(-0.30, 0.21, -0.75, 0.001))
+  expect_true(truth_conclusion(0, 0.21, -0.75, 0.001))   # sign(0) is its own
+})
