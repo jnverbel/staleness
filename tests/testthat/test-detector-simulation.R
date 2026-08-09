@@ -141,3 +141,33 @@ test_that("a session with no random stream is left with none", {
   invisible(with_preserved_seed(stats::runif(1), seed = 3))
   expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 })
+
+test_that("the power threshold is strict, as the source states", {
+  # The vignette said "at or above 80%" while the code compares with `>`,
+  # following the source's "Power >80%". The code was right and the prose was
+  # wrong, but nothing could tell them apart, because no test touched the
+  # boundary.
+  #
+  # And the boundary cannot be reached from the data: simulated power is
+  # hits/B, so building evidence that lands on exactly 0.80 is guesswork, and
+  # a value that misses by any amount makes `>` and `>=` behave identically.
+  # Move the THRESHOLD to the datum instead -- it is a parameter, and a
+  # parameter is exact.
+  prev <- metafor::rma(yi = c(-0.20, -0.35, 0.05, -0.30, -0.10),
+                       vi = c(0.16, 0.20, 0.18, 0.15, 0.22), measure = "RR")
+  new_ev <- list(k = 3, yi = c(-0.9, -0.8, -0.85), vi = rep(0.02, 3))
+
+  observed <- simulation(prev, new_ev, B = 200, seed = 7)$signal
+  expect_equal(observed, 0.7)
+
+  # Threshold exactly equal to the power: strict `>` says current.
+  at <- simulation(prev, new_ev, B = 200, seed = 7,
+                   power_threshold = observed)
+  expect_equal(at$verdict, "current")
+
+  # One replicate below it, the same power fires. The pair is what makes the
+  # operator visible; either case alone passes under both `>` and `>=`.
+  below <- simulation(prev, new_ev, B = 200, seed = 7,
+                      power_threshold = observed - 1 / 200)
+  expect_equal(below$verdict, "out_of_date")
+})

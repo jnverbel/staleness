@@ -38,7 +38,9 @@
 #'   [window_between()].
 #' @param B Number of simulation replicates.
 #' @param alpha Significance level for each simulated meta-analysis.
-#' @param power_threshold Signal when simulated power reaches this value.
+#' @param power_threshold Signal when simulated power *exceeds* this value.
+#'   The comparison is strict, following the source's "Power >80%", so a
+#'   simulated power of exactly `power_threshold` reads as `"current"`.
 #' @param seed Optional integer seed. Results are not reproducible without it.
 #'   Either way the caller's own random stream is saved before the simulation
 #'   and restored afterwards, so calling this detector — directly or through
@@ -64,6 +66,11 @@
 #' @export
 simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
                        power_threshold = 0.80, seed = NULL) {
+  check_count(B, "B")
+  check_probability(alpha, "alpha")
+  # Closed here and open for alpha: a threshold of 0 means every power fires
+  # and 1 means none does, and both are coherent requests.
+  check_probability(power_threshold, "power_threshold", closed = TRUE)
   if (prev$pval < alpha) {
     return(verdict_na("simulation",
       "prior meta-analysis was already significant; the method does not apply"))

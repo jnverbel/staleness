@@ -96,6 +96,22 @@ First public release.
   from 3 to 5 in `calibration()` — the denominator of every rate, inflated
   without a warning.
 
+* All five detectors now validate their arguments too. The engine had been
+  swept and they had not, and the same defect was in every one of them. Two
+  were silent, which is the worse failure: `ottawa(alpha = NA)` returned a
+  verdict of `out_of_date`, because both significance comparisons became `NA`
+  and the code read that as a change, and `sufficiency(alpha_stability = NA)`
+  returned `current`. Neither warned.
+
+* `barrowman()` refuses impossible sample sizes. `n_prev = 0` drove the
+  required sample size to zero, so the participant ratio was `Inf` and the
+  verdict was `out_of_date`; a negative size made the ratio negative, which
+  can never exceed 1, so it always read `current` — a failure biased in one
+  direction. `n_new = 0` remains valid and means what it says: no new
+  participants, so the ratio is 0 and the review reads as current. An `NA` or
+  infinite size is still a fact about the evidence, not the call, and still
+  yields `"not_applicable"` with its reason.
+
 ## Reproducibility
 
 * `inst/calibration/calibration.R` regenerates every calibration figure quoted
@@ -118,7 +134,12 @@ First public release.
   measured calibration of the replacement across nine variance regimes, and
   where it degrades.
 
-* `rcma()`'s rule is contained verbatim in `ottawa()`: same effect ratio, same
-  thresholds. Whenever `rcma()` fires, `ottawa()` fires, by arithmetic rather
-  than by agreement. Declared in both help pages so that nobody recomputes
-  inter-method agreement treating one of the ten detector pairs as data.
+* `rcma()` and `ottawa()` are two criteria, not one counted twice. Both compare
+  an updated quantity against a prior one at thresholds of 0.5 and 1.5, but
+  `rcma()` takes the ratio of the pooled effects and `ottawa()` the ratio of
+  the relative risk reductions, so on ratio measures they disagree in both
+  directions; on difference measures they coincide, because the source defers
+  to the rCMA rule there. Earlier documentation declared the first to be
+  contained in the second — see the correction above — and both help pages now
+  say otherwise, so that inter-method agreement is computed on what the
+  detectors actually do.

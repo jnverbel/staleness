@@ -50,3 +50,34 @@ test_that("an infinite ratio is not a signal", {
   expect_true(is.na(res$signal))
   expect_match(res$reason, "finite")
 })
+
+test_that("rcma is not contained in ottawa, in both directions", {
+  # The documentation asserted containment for several versions, and the
+  # assertion survived the correction in two places because nobody had pinned
+  # it to a run. A claim about two detectors' relationship belongs in a test:
+  # prose cannot go red.
+  #
+  # Direction one: rcma fires and ottawa does not. The pooled effect moves
+  # from RR 0.20 to 0.33 -- a ratio of 1.63 -- while the risk reduction it
+  # implies goes from 80% to 67%, a ratio of 0.84, well inside ottawa's band.
+  strong <- metafor::rma(yi = rep(log(0.20), 4), vi = rep(0.05, 4),
+                         measure = "RR")
+  weaker <- metafor::rma(yi = c(rep(log(0.20), 4), rep(log(0.50), 4)),
+                         vi = c(rep(0.05, 4), rep(0.02, 4)), measure = "RR")
+  expect_equal(rcma(strong, weaker)$verdict, "out_of_date")
+  expect_equal(ottawa(strong, weaker)$verdict, "current")
+
+  # Direction two is already covered by the ten published reviews in
+  # test-external-validation.R, where all ten fire on ottawa's RRR ratio and
+  # not one fires on rcma's ratio of effects.
+
+  # And the signals are different numbers even when the verdicts agree, which
+  # is the cheapest way to see that one rule is not the other.
+  prev <- metafor::rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4),
+                       measure = "RR")
+  upd  <- metafor::rma(yi = c(rep(log(0.50), 4), rep(log(1.10), 4)),
+                       vi = c(rep(0.05, 4), rep(0.02, 4)), measure = "RR")
+  expect_equal(rcma(prev, upd)$verdict, ottawa(prev, upd)$verdict)
+  expect_false(isTRUE(all.equal(rcma(prev, upd)$signal,
+                                ottawa(prev, upd)$signal)))
+})

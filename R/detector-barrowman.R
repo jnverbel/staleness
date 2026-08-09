@@ -11,11 +11,13 @@
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param n_prev Numeric, total participants in the prior meta-analysis.
 #' @param n_new Numeric, participants contributed by the new studies.
-#' Omitting a sample size altogether is a malformed call and is an error.
-#' Supplying one that is present but not a usable number — `NA`, `NaN`,
-#' infinite — is a fact about the data, not about the call, so it yields
+#' Omitting a sample size altogether is a malformed call and is an error, and
+#' so is an impossible one: `n_prev` must be positive and `n_new` cannot be
+#' negative. Supplying one that is present but not a usable number — `NA`,
+#' `NaN`, infinite — is a fact about the data, not about the call, so it yields
 #' `"not_applicable"` with the reason attached, the same treatment every other
-#' un-answerable case gets.
+#' un-answerable case gets. `n_new = 0` is neither: it says the new studies
+#' contributed nobody, and its answer is a ratio of 0, i.e. `"current"`.
 #'
 #' @param alpha Significance level used to decide applicability.
 #' @param z_crit Critical value, 1.96 in the published method.
@@ -38,13 +40,32 @@
 #' barrowman(decided, n_prev = 555, n_new = 2265)
 #' @export
 barrowman <- function(prev, n_prev, n_new, alpha = 0.05, z_crit = 1.96) {
+  check_probability(alpha, "alpha")
+  check_positive_number(z_crit, "z_crit")
   if (is.null(n_prev) || is.null(n_new)) {
     stop("`barrowman()` needs the sample size of both the prior meta-analysis ",
          "and the new studies", call. = FALSE)
   }
+  check_scalar_numeric(n_prev, "n_prev")
+  check_scalar_numeric(n_new, "n_new")
   if (!is.finite(n_prev) || !is.finite(n_new)) {
     return(verdict_na("barrowman",
       "sample size is missing or not a finite number; the participant ratio cannot be computed"))
+  }
+  # A size of zero or less is not an unusable datum, it is an impossible one:
+  # no meta-analysis has ever had no participants. n_prev = 0 drove the
+  # required sample size to 0 and the ratio to Inf, so the detector answered
+  # out_of_date; a negative size made the ratio negative, which can never
+  # exceed 1, so it always answered current. Both looked like verdicts.
+  if (n_prev <= 0) {
+    stop("`n_prev` must be positive: a prior meta-analysis with no ",
+         "participants cannot set a target for the new ones", call. = FALSE)
+  }
+  # Zero new participants, by contrast, is a coherent statement -- nothing has
+  # been added -- and its answer is a ratio of 0, which reads as current.
+  if (n_new < 0) {
+    stop("`n_new` cannot be negative; use 0 when the new studies contribute ",
+         "no participants", call. = FALSE)
   }
   if (!is.finite(prev$pval)) {
     return(verdict_na("barrowman",

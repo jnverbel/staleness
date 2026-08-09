@@ -516,7 +516,9 @@ by leaving the method out.
 Ten thousand replicate "new studies" are simulated using the parameters of
 the recently published literature, added to the prior meta-analysis, and the
 fraction of replicates in which the pooled result reaches significance is
-recorded as a power estimate. A power at or above 80% is the signal.
+recorded as a power estimate. A power *above* 80% is the signal: the source
+reads "Power >80%", so the comparison is strict and a power of exactly 80%
+reads as current.
 
 ```{r simulation-signal}
 prev_sim <- rma(yi = c(0.30, 0.28, 0.32, 0.29), vi = rep(0.16, 4), measure = "MD")

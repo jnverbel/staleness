@@ -94,6 +94,9 @@
 ottawa <- function(prev, new_ma, alpha = 0.04,
                    sig_change = c("gain", "any"),
                    qualitative = character()) {
+  # An NA alpha made both significance comparisons NA, which the code below
+  # read as a change: the detector returned out_of_date without a warning.
+  check_probability(alpha, "alpha")
   sig_change <- match.arg(sig_change)
 
   was_sig <- prev$pval   < alpha

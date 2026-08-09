@@ -3,12 +3,16 @@ Type: Package
 Title: Detect and Calibrate Out-of-Date Meta-Analyses
 Version: 0.1.0
 Authors@R: person("Javier", "Núñez", email = "jnverbel@gmail.com", role = c("aut", "cre"))
-Description: Applies the five published statistical methods for detecting whether a
+Description: Implements the five published statistical methods for detecting whether a
     systematic review or meta-analysis has gone out of date, and provides a
     backtesting engine to calibrate those methods against historical evidence.
     Methods implemented follow Shojania and colleagues (2007) <doi:10.7326/0003-4819-147-4-200708210-00179>
     and the comparative evaluation of updating signals in the evidence synthesis
-    literature. The package performs no literature searching and no screening.
+    literature. Two of the five depart from their sources where the published
+    procedure could not be reproduced as stated; every departure is measured and
+    documented in the corresponding help page and in the 'methods' vignette, so
+    that results are not read as a literal reproduction. The package performs no
+    literature searching and no screening.
 URL: https://github.com/jnverbel/staleness
 BugReports: https://github.com/jnverbel/staleness/issues
 License: MIT + file LICENSE

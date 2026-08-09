@@ -93,6 +93,27 @@ The two signals above differ because they measure different things:
 `rcma` compares the pooled effects, `ottawa` compares the relative risk
 reductions. See `?ottawa`.
 
+### Where the implementation departs from its source
+
+The column above lists limitations of the *methods*. Two detectors also depart
+from the *procedure* their sources describe, and the results of those two
+should not be read as a literal reproduction:
+
+- **`sufficiency`** tests stability with a change-point statistic
+  (`max_m |Z_m|`) under an order-permutation null, not with the ordinary least
+  squares slope of the cumulative series the source specifies. That slope has
+  no valid null distribution — the cumulative mean is autocorrelated by
+  construction and convergent by the law of large numbers — and fired on 209
+  of 300 samples containing no change at all. The published slope is still
+  computed and reported in `detail$slope`.
+- **`simulation`** departs in four ways: it draws from a *t* distribution
+  rather than a normal, simulates one study carrying the combined precision of
+  the recent ones rather than one per study, and uses a strict threshold. The
+  fourth cannot be removed: the source simulates participants, and this package
+  only ever sees effect sizes and their variances.
+
+`vignette("methods")` measures each departure and says where it degrades.
+
 `vignette("methods", package = "staleness")` covers each of these in full,
 including the formula, the original source, and the critique in more
 detail.

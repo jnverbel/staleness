@@ -23,7 +23,9 @@ simulation(
 
 \item{alpha}{Significance level for each simulated meta-analysis.}
 
-\item{power_threshold}{Signal when simulated power reaches this value.}
+\item{power_threshold}{Signal when simulated power *exceeds* this value.
+The comparison is strict, following the source's "Power >80%", so a
+simulated power of exactly `power_threshold` reads as `"current"`.}
 
 \item{seed}{Optional integer seed. Results are not reproducible without it.
 Either way the caller's own random stream is saved before the simulation

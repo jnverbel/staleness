@@ -317,9 +317,12 @@ test_that("the backtest puts the turning point in 1973 and stays quiet after", {
   ot <- r[r$method == "ottawa", ]
   expect_setequal(ot$cut[ot$verdict == "out_of_date"], c(1969, 1970, 1971, 1972))
 
-  # It warns ahead of the event rather than alongside it.
+  # It warns ahead of the event rather than alongside it. Pinned to the figure
+  # the validation report cites, not to a bound: `> 0` would still pass if the
+  # lead collapsed from 1.5 years to a single month, and a validation whose
+  # numbers can drift without going red is not validating anything.
   lt <- lead_time(bt, "conclusion")
-  expect_gt(lt$median_lead[lt$method == "ottawa"], 0)
+  expect_equal(lt$median_lead[lt$method == "ottawa"], 1.5)
 
   # And the circular pair is flagged without being asked.
   cal <- calibration(bt, "conclusion")
@@ -344,7 +347,9 @@ test_that("the estimator choice moves the answer by years, not decimals", {
     NA_integer_
   }
   expect_equal(first_sig("FE"), 1973)
-  expect_gt(first_sig("REML"), 1973)
+  # 1979, not merely "later": the gap is six years, and that size is the point
+  # of the test.
+  expect_equal(first_sig("REML"), 1979)
 })
 
 test_that("a Mantel-Haenszel fit is refused with a usable explanation", {
@@ -401,10 +406,10 @@ test_that("ISIS-4 removes the effect, and rcma saw it coming", {
   # Before ISIS-4: a significant 35% reduction. After it: nothing.
   before <- metafor::rma(yi, vi, data = es[es$year <= 1994, ], method = "FE")
   after  <- metafor::rma(yi, vi, data = es[es$year <= 1995, ], method = "FE")
-  expect_lt(before$pval, 0.001)
-  expect_lt(exp(as.numeric(before$beta)), 0.70)
-  expect_gt(after$pval, 0.05)
-  expect_gt(exp(as.numeric(after$beta)), 0.95)
+  expect_equal(round(exp(as.numeric(before$beta)), 3), 0.650)
+  expect_equal(round(before$pval, 5), 0.00047)
+  expect_equal(round(exp(as.numeric(after$beta)), 3), 1.021)
+  expect_equal(round(after$pval, 4), 0.4948)
 
   ma <- metafor::rma(yi, vi, data = es, measure = "OR", method = "FE")
   st <- evidence_stream(ma, date = es$year, ni = es$n1i + es$n2i)
@@ -417,16 +422,17 @@ test_that("ISIS-4 removes the effect, and rcma saw it coming", {
   # behaviour on dat.lau1992, where the effect never moved and it never fired.
   rc <- r[r$method == "rcma", ]
   fired <- rc$cut[rc$verdict == "out_of_date"]
-  expect_true(all(fired < 1995))
-  expect_gte(length(fired), 5)
+  # The exact set, not a count with a floor: nine consecutive cuts, every one
+  # of them before ISIS-4.
+  expect_equal(fired, c(1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994))
 
   # Scored against a truth that shares no logic with it: perfect, and early.
   cal <- calibration(bt, "shift")
   expect_equal(cal$sensitivity[cal$method == "rcma"], 1)
   expect_equal(cal$specificity[cal$method == "rcma"], 1)
   expect_false(cal$contaminated[cal$method == "rcma"])
-  expect_gte(lead_time(bt, "shift")$median_lead[
-    lead_time(bt, "shift")$method == "rcma"], 3)
+  expect_equal(lead_time(bt, "shift")$median_lead[
+    lead_time(bt, "shift")$method == "rcma"], 4)
 })
 
 # --- A third case, for the branch the other two never reach ---------------
@@ -515,7 +521,7 @@ test_that("barrowman and simulation answer on every cut of a null review", {
   for (m in c("barrowman", "simulation")) {
     d <- r[r$method == m, ]
     expect_equal(sum(d$verdict == "not_applicable"), 0, info = m)
-    expect_gt(nrow(d), 5)
+    expect_equal(nrow(d), 8, info = m)
   }
   # Neither raises a false alarm on evidence that never moved.
   cal <- calibration(bt, "shift")
@@ -539,7 +545,9 @@ test_that("ottawa's instability on null reviews shows up in real data too", {
   cal <- calibration(bt, "shift")
 
   # Specificity collapses for ottawa and holds for everything else.
-  expect_lt(cal$specificity[cal$method == "ottawa"], 0.3)
+  # 1/7 exactly -- one correct silence in seven chances. Pinned as the figure
+  # the report cites rather than as "below 0.3".
+  expect_equal(cal$specificity[cal$method == "ottawa"], 1 / 7)
   expect_equal(cal$specificity[cal$method == "rcma"], 1)
   expect_equal(cal$specificity[cal$method == "sufficiency"], 1)
 })

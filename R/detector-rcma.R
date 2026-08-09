@@ -40,9 +40,14 @@
 #'                vi = c(rep(0.05, 4), rep(0.02, 4)), measure = "RR")
 #' rcma(prev, updated)
 #'
-#' # Containment in ottawa() is arithmetic, not an empirical agreement:
-#' # whenever rcma fires, ottawa fires on the very same ratio.
-#' c(rcma = rcma(prev, updated)$verdict, ottawa = ottawa(prev, updated)$verdict)
+#' # These are two criteria, not one counted twice. Here the pooled effect
+#' # moves far enough for rcma while the risk reduction it implies -- the
+#' # quantity ottawa measures -- barely moves: RR 0.20 to 0.33 is a 63% shift
+#' # in the effect, but a risk reduction of 80% to 67%, a ratio of 0.84.
+#' strong <- rma(yi = rep(log(0.20), 4), vi = rep(0.05, 4), measure = "RR")
+#' weaker <- rma(yi = c(rep(log(0.20), 4), rep(log(0.50), 4)),
+#'               vi = c(rep(0.05, 4), rep(0.02, 4)), measure = "RR")
+#' c(rcma = rcma(strong, weaker)$verdict, ottawa = ottawa(strong, weaker)$verdict)
 #'
 #' # A smaller shift stays below the 1.5 threshold and reads as current.
 #' mild <- rma(yi = c(rep(log(0.50), 4), rep(log(0.90), 3)),
@@ -50,6 +55,12 @@
 #' rcma(prev, mild)
 #' @export
 rcma <- function(prev, new_ma, lower = 0.5, upper = 1.5) {
+  check_positive_number(lower, "lower")
+  check_positive_number(upper, "upper")
+  if (lower >= upper) {
+    stop("`lower` must be below `upper`: the two bracket the band of ratios ",
+         "that count as unchanged", call. = FALSE)
+  }
   r <- effect_ratio(
     theta_new  = as.numeric(new_ma$beta),
     theta_prev = as.numeric(prev$beta),
