@@ -10,15 +10,19 @@ This is a new submission.
 * Ubuntu 24.04, R devel (4.7.0) — GitHub Actions
 * Ubuntu 24.04, R release (4.6.1) — GitHub Actions
 * Ubuntu 24.04, R 4.5.3, 4.4.3, 4.3.3 and 4.2.3 — GitHub Actions
+* win-builder, R devel (2026-08-08 r90381 ucrt)
+* win-builder, R release (4.6.1 ucrt)
 
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
-The note is the usual `New submission` from the incoming-feasibility check,
-together with a remark on the package version. Nothing else is flagged on any
-of the eight environments above; `checking examples ... OK` and
-`checking tests ... OK` on all of them.
+The note is the usual `New submission` from the incoming-feasibility check.
+`checking examples ... OK`, `checking tests ... OK` and
+`checking PDF version of manual ... OK` on all of the above.
+
+The URLs it flags as 404 all point at the package's own repository, which is
+private while this submission is prepared and becomes public on acceptance.
 
 ## Maintainer
 
