@@ -70,11 +70,17 @@
 #'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.
+#'   It must be on the same `measure` as `prev`: comparing a risk ratio
+#'   against a mean difference does not define a ratio, and used to return one
+#'   anyway, with a verdict attached.
 #' @param alpha Significance threshold. The published method uses 0.04, not 0.05.
 #' @param sig_change `"gain"` counts only non-significant becoming significant,
 #'   as in the original. `"any"` also counts the loss of significance.
 #' @param qualitative Character vector of qualitative signals declared by the
-#'   analyst. Any non-empty entry triggers a signal.
+#'   analyst. Any non-empty entry triggers a signal. `NA` is an error: an
+#'   unknown qualitative signal is not a present one, and `nzchar(NA)` is
+#'   `TRUE`, so accepting it returned `"out_of_date"` for "I don't know". Pass
+#'   `""` for a signal that was checked and found absent.
 #' @return A `staleness_verdict`.
 #' @examples
 #' library(metafor)
@@ -97,6 +103,15 @@ ottawa <- function(prev, new_ma, alpha = 0.04,
   # An NA alpha made both significance comparisons NA, which the code below
   # read as a change: the detector returned out_of_date without a warning.
   check_probability(alpha, "alpha")
+  check_same_measure(prev, new_ma)
+  # nzchar(NA_character_) is TRUE, so an analyst recording "unknown" for a
+  # qualitative signal used to get out_of_date. Unknown is not present, and
+  # this is an argument rather than a datum, so it is refused.
+  if (anyNA(qualitative)) {
+    stop("`qualitative` has missing values; an unknown qualitative signal is ",
+         "not a signal. Leave it out, or pass \"\" for one that was checked ",
+         "and found absent", call. = FALSE)
+  }
   sig_change <- match.arg(sig_change)
 
   was_sig <- prev$pval   < alpha

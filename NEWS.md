@@ -159,6 +159,36 @@ First public release.
   infinite size is still a fact about the evidence, not the call, and still
   yields `"not_applicable"` with its reason.
 
+## Units, scales and unknowns
+
+* `evidence_stream()` requires publication **years** and refuses a `Date`.
+  `date` had been checked for length and for missing values but never for
+  type, so a `Date` went through `as.numeric()` into days since 1970 — and
+  every window here is denominated in years. Ten studies three days apart
+  produced **21 cuts numbered 11329, 11330, …** under `cuts = "yearly"`, and
+  `horizon` and `window` silently became days as well. The documentation had
+  promised `Date` support outright. Convert with
+  `as.numeric(format(date, "%Y"))`; a factor or character vector is refused
+  too, rather than failing later inside a comparison.
+
+* `rcma()` and `ottawa()` require both models to be on the same `measure`.
+  Each read `$measure` off `prev` to choose its branch and neither checked
+  `new_ma`, so a risk ratio compared against a mean difference returned a
+  signal of 2.98 and a verdict of `out_of_date` — a number with no meaning,
+  presented like any other. `check_currency()` never produced this because it
+  refits both models itself, but both detectors are exported.
+
+* `ottawa()` refuses an `NA` in `qualitative`. `nzchar(NA_character_)` is
+  `TRUE`, so an analyst recording "unknown" for one of the four qualitative
+  signals received `"out_of_date"`. Unknown is not present. Pass `""` for a
+  signal that was checked and found absent.
+
+* `truth_shift()`, `truth_surprise()` and `truth_conclusion()` require scalar
+  inputs, as `?truth` has always said they take. `truth_shift()` returned one
+  logical per element and `truth_conclusion()` died inside R's own coercion —
+  the documentation was stronger than the code, and the `\value` section
+  added a commit earlier had just restated the claim without enforcing it.
+
 ## Validation against real reviews, with the criterion matched to the detector
 
 * Two further historical cases, both scored against what Cochrane went on to

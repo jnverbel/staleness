@@ -15,7 +15,10 @@ ottawa(
 \arguments{
 \item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
 
-\item{new_ma}{An `rma.uni` object refitted with the new evidence included.}
+\item{new_ma}{An `rma.uni` object refitted with the new evidence included.
+It must be on the same `measure` as `prev`: comparing a risk ratio
+against a mean difference does not define a ratio, and used to return one
+anyway, with a verdict attached.}
 
 \item{alpha}{Significance threshold. The published method uses 0.04, not 0.05.}
 
@@ -23,7 +26,10 @@ ottawa(
 as in the original. `"any"` also counts the loss of significance.}
 
 \item{qualitative}{Character vector of qualitative signals declared by the
-analyst. Any non-empty entry triggers a signal.}
+analyst. Any non-empty entry triggers a signal. `NA` is an error: an
+unknown qualitative signal is not a present one, and `nzchar(NA)` is
+`TRUE`, so accepting it returned `"out_of_date"` for "I don't know". Pass
+`""` for a signal that was checked and found absent.}
 }
 \value{
 A `staleness_verdict`.

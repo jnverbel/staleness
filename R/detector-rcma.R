@@ -28,6 +28,9 @@
 #'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.
+#'   It must be on the same `measure` as `prev`: comparing a risk ratio
+#'   against a mean difference does not define a ratio, and used to return one
+#'   anyway, with a verdict attached.
 #' @param lower,upper Signal thresholds on the ratio scale.
 #' @return A `staleness_verdict`.
 #' @examples
@@ -55,6 +58,7 @@
 #' rcma(prev, mild)
 #' @export
 rcma <- function(prev, new_ma, lower = 0.5, upper = 1.5) {
+  check_same_measure(prev, new_ma)
   check_positive_number(lower, "lower")
   check_positive_number(upper, "upper")
   if (lower >= upper) {

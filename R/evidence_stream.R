@@ -30,8 +30,16 @@
 #'   digit -- Lau et al. (1992) and the Cochrane review behind
 #'   `metadat::dat.li2007`. Inverse variance gets the point estimate right in
 #'   both and rounds an interval bound differently in both.
-#' @param date Numeric or Date vector, one entry per study, same order as the
-#'   data used to fit `ma`. Missing values are an error; they are never imputed.
+#' @param date Numeric vector of publication **years**, one entry per study,
+#'   same order as the data used to fit `ma`. Missing values are an error; they
+#'   are never imputed.
+#'
+#'   A `Date` is refused rather than converted. Every window in this package is
+#'   denominated in years — `cuts = "yearly"` steps by one, and `horizon`,
+#'   `window` and [lead_time()] all read as years — and a `Date` passed through
+#'   `as.numeric()` becomes days since 1970, so `"yearly"` would cut once per
+#'   *day* and both windows would silently become days. Convert explicitly with
+#'   `as.numeric(format(date, "\%Y"))`.
 #' @param ni Optional numeric vector of sample sizes per study, needed by
 #'   [barrowman()]. Defaults to `ma$ni` when `metafor` recorded it.
 #' @return An object of class `staleness_stream`.
@@ -95,6 +103,21 @@ evidence_stream <- function(ma, date, ni = NULL) {
   }
   if (anyNA(date)) {
     stop("`date` has missing values; dates are never imputed", call. = FALSE)
+  }
+  # Everything downstream is denominated in YEARS: cuts = "yearly" steps by
+  # one, and `horizon`, `window` and lead_time() are all read as years. A Date
+  # used to pass straight through as.numeric() into days since 1970, so
+  # "yearly" cut once per day and the two windows silently became days. The
+  # unit is refused here, at the single point every date enters, rather than
+  # reinterpreted somewhere it cannot be seen.
+  if (inherits(date, c("Date", "POSIXct", "POSIXlt"))) {
+    stop("`date` must be the publication year as a number, not a Date: every ",
+         "window in this package is measured in years. Convert with ",
+         "as.numeric(format(date, \"%Y\"))", call. = FALSE)
+  }
+  if (!is.numeric(date)) {
+    stop("`date` must be numeric, giving the publication year of each study; ",
+         "got ", class(date)[1], call. = FALSE)
   }
   ni_supplied <- !is.null(ni)
   if (is.null(ni)) ni <- ma$ni

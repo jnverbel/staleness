@@ -19,8 +19,16 @@ digit -- Lau et al. (1992) and the Cochrane review behind
 `metadat::dat.li2007`. Inverse variance gets the point estimate right in
 both and rounds an interval bound differently in both.}
 
-\item{date}{Numeric or Date vector, one entry per study, same order as the
-data used to fit `ma`. Missing values are an error; they are never imputed.}
+\item{date}{Numeric vector of publication **years**, one entry per study,
+  same order as the data used to fit `ma`. Missing values are an error; they
+  are never imputed.
+
+  A `Date` is refused rather than converted. Every window in this package is
+  denominated in years — `cuts = "yearly"` steps by one, and `horizon`,
+  `window` and [lead_time()] all read as years — and a `Date` passed through
+  `as.numeric()` becomes days since 1970, so `"yearly"` would cut once per
+  *day* and both windows would silently become days. Convert explicitly with
+  `as.numeric(format(date, "\%Y"))`.}
 
 \item{ni}{Optional numeric vector of sample sizes per study, needed by
 [barrowman()]. Defaults to `ma$ni` when `metafor` recorded it.}

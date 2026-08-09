@@ -163,3 +163,75 @@ test_that("seed is bounded by the range set.seed() actually accepts", {
   expect_error(simulation(prev, new_ev(), B = 5, seed = lim + 1),
                "set\\.seed", fixed = FALSE)
 })
+
+test_that("evidence_stream requires dates it can cut yearly", {
+  # `date` was checked for length and for NAs, never for type. A Date vector
+  # went through as.numeric() into DAYS SINCE 1970, so cuts = "yearly" stepped
+  # one DAY at a time: ten studies three days apart produced 21 cuts numbered
+  # 11329, 11330, ... and `horizon` and `window` silently became days too.
+  # Everything here is denominated in years -- cuts, horizon, window,
+  # lead_time -- so a Date is refused with the conversion spelled out rather
+  # than reinterpreted.
+  ma <- metafor::rma(yi = rnorm(6, -0.3, 0.1), vi = runif(6, 0.02, 0.05),
+                     measure = "RR")
+  d <- as.Date("2001-01-01") + seq(0, by = 3, length.out = 6)
+  # The generic "must be numeric" guard would already reject a Date, so these
+  # require the SPECIFIC message: one that names the unit and spells out the
+  # conversion. Mutation showed the difference -- dropping the Date branch left
+  # the tests green while the user lost the only sentence that tells them what
+  # to do about it.
+  expect_error(evidence_stream(ma, date = d), "as\\.numeric\\(format\\(")
+  expect_error(evidence_stream(ma, date = as.POSIXct(d)),
+               "as\\.numeric\\(format\\(")
+  expect_error(evidence_stream(ma, date = factor(2001:2006)), "numeric")
+  expect_error(evidence_stream(ma, date = as.character(2001:2006)), "numeric")
+  # Years still work, including fractional ones.
+  expect_silent(evidence_stream(ma, date = 2001:2006))
+  expect_silent(evidence_stream(ma, date = seq(2001, 2003.5, length.out = 6)))
+})
+
+test_that("rcma and ottawa refuse models on different scales", {
+  # Both read $measure off `prev` to decide which branch to take, and neither
+  # checked that `new_ma` was on the same one. A risk ratio compared against a
+  # mean difference returned a signal of 2.98 and a verdict of out_of_date --
+  # a number with no meaning, presented like every other verdict.
+  prev <- metafor::rma(yi = rep(log(0.5), 4), vi = rep(0.05, 4), measure = "RR")
+  upd  <- metafor::rma(yi = rep(0.40, 4), vi = rep(0.05, 4), measure = "MD")
+  expect_error(rcma(prev, upd), "same")
+  expect_error(ottawa(prev, upd), "same")
+  same <- metafor::rma(yi = rep(log(0.9), 4), vi = rep(0.05, 4), measure = "RR")
+  expect_silent(rcma(prev, same))
+})
+
+test_that("ottawa refuses an unknown qualitative signal", {
+  # nzchar(NA_character_) is TRUE, so an analyst recording "I don't know" for a
+  # qualitative signal got out_of_date. Unknown is not the same as present,
+  # and this is an argument rather than a datum, so it is refused.
+  prev <- metafor::rma(yi = rep(log(0.5), 4), vi = rep(0.05, 4), measure = "RR")
+  upd  <- metafor::rma(yi = c(rep(log(0.5), 4), rep(log(0.52), 3)),
+                       vi = c(rep(0.05, 4), rep(0.02, 3)), measure = "RR")
+  expect_equal(ottawa(prev, upd)$verdict, "current")
+  expect_error(ottawa(prev, upd, qualitative = NA_character_), "missing")
+  expect_error(ottawa(prev, upd, qualitative = c("harm", NA)), "missing")
+  # An empty string is not a signal, and still is not.
+  expect_equal(ottawa(prev, upd, qualitative = "")$verdict, "current")
+  expect_equal(ottawa(prev, upd, qualitative = "substantial harm")$verdict,
+               "out_of_date")
+})
+
+test_that("the truth functions return one logical, as they document", {
+  # ?truth says each returns "a single logical value". truth_shift() happily
+  # returned a vector of two, and truth_conclusion() died with R's own
+  # "'length = 2' in coercion to 'logical(1)'". The documentation was stronger
+  # than the code -- again.
+  expect_error(truth_shift(c(-0.3, -0.2), -0.75, 0.12), "single")
+  expect_error(truth_surprise(c(-0.3, -0.2), 0.3, -0.75), "single")
+  expect_error(truth_conclusion(c(-0.3, -0.2), c(0.2, 0.3), -0.75, 0.001),
+               "single")
+  expect_error(truth_shift(-0.3, -0.75, c(0.12, 0.2)), "single")
+
+  # Scalars still behave exactly as before.
+  expect_true(truth_shift(-0.30, -0.75, 0.12))
+  expect_true(truth_conclusion(-0.30, 0.21, -0.75, 0.001))
+  expect_true(is.na(truth_shift(-0.30, -0.75, 0)))
+})

@@ -111,6 +111,36 @@ check_new_evidence <- function(new, arg = "new") {
   invisible(NULL)
 }
 
+# Both detectors read $measure off `prev` to choose their branch, and neither
+# checked that the updated model was on the same scale. A risk ratio against a
+# mean difference returned a signal of 2.98 and a verdict, which is a number
+# with no meaning wearing the same clothes as every other verdict.
+check_same_measure <- function(prev, new_ma) {
+  a <- if (is.null(prev$measure)) NA_character_ else as.character(prev$measure)
+  b <- if (is.null(new_ma$measure)) NA_character_ else as.character(new_ma$measure)
+  if (!identical(a, b)) {
+    stop("`prev` and `new_ma` must be on the same scale; got ",
+         if (is.na(a)) "none" else a, " and ", if (is.na(b)) "none" else b,
+         ". Comparing effects across measures does not define a ratio",
+         call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+# The truth functions each document "a single logical value". They took
+# vectors: truth_shift() returned one per element, truth_conclusion() died
+# inside R's own coercion. Documentation stronger than code, again.
+check_scalar_input <- function(..., arg) {
+  vals <- list(...)
+  bad <- vapply(vals, function(x) !is.numeric(x) || length(x) != 1L,
+                logical(1))
+  if (any(bad)) {
+    stop("`", arg, "` takes a single number for each argument, not a vector; ",
+         "apply it one row at a time", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 check_positive_number <- function(x, arg) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
     stop("`", arg, "` must be a single positive number", call. = FALSE)
