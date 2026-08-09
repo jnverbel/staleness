@@ -159,6 +159,25 @@ First public release.
   infinite size is still a fact about the evidence, not the call, and still
   yields `"not_applicable"` with its reason.
 
+## Applicability across historical reviews
+
+* `inst/applicability/` sweeps every dataset in `metadat`, keeps the 17 that
+  can carry a backtest, and runs all five detectors over each. **168 of those
+  reviews' 185 yearly cuts (91%) had an already-significant prior
+  meta-analysis**, and in 11 of the 17 every cut did. `barrowman()` and
+  `simulation()` require a non-significant prior, so they can answer in only 4
+  and 5 of the 17 — not wrongly, but unable to be asked at all. The published
+  comparison of these methods could not see this: its 80 reviews were selected
+  for having a non-significant pooled result, which is precisely the case
+  where those two are applicable. `sufficiency()` fails the other way,
+  answering in all 17 with a mean sensitivity of 0.041 and zero in 11 of them.
+
+  Sensitivity and specificity there are scored against `truth_shift()`, this
+  package's own definition, so the sweep compares the five methods against
+  each other over real evidence. It does not validate them against published
+  outcomes; that claim belongs to the four cases in the test suite and still
+  numbers four.
+
 ## Reproducibility
 
 * `inst/calibration/calibration.R` regenerates every calibration figure quoted
