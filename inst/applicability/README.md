@@ -10,9 +10,18 @@ one place where they can always be asked.
 way. It sweeps every dataset in `metadat`, keeps the ones that can carry a
 backtest, and runs all five detectors over each.
 
+The script runs *against* the package, so the package has to be available
+first. From a clean clone:
+
+    R CMD INSTALL .
     Rscript inst/applicability/applicability.R
 
-It takes a few seconds and needs `metadat`. Results are deterministic.
+or, while developing, without installing:
+
+    Rscript -e 'pkgload::load_all("."); source("inst/applicability/applicability.R")'
+
+It also needs `metadat`, which is in `Suggests`. It takes a few seconds and
+the results are deterministic.
 
 ## What it finds
 

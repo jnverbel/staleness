@@ -9,14 +9,20 @@
 test_that("the applicability sweep still produces the figures its README quotes", {
   skip_if_not_installed("metadat")
   skip_if_not_installed("metafor")
-  # Skipped on the file's absence rather than skip_on_cran(): the installed
-  # package has no inst/ above the test directory under R CMD check, but
-  # skip_on_cran() would also silence this in local development, where the
-  # script is actually edited.
-  script <- "../../inst/applicability/applicability.R"
-  readme <- "../../inst/applicability/README.md"
-  skip_if_not(file.exists(script) && file.exists(readme),
-              "applicability files not reachable from the test dir")
+  # Located with system.file(), not with a relative path. The first version
+  # used "../../inst/..." copied from test-readme.R, and that was wrong here:
+  # the top-level README genuinely is absent from an installed package, so its
+  # test has to skip, but inst/ IS installed. The relative path made this skip
+  # under R CMD check -- on every platform, in the very distribution whose
+  # reproducible artefact it exists to check. A test that never runs where it
+  # matters is not coverage.
+  #
+  # system.file() resolves under pkgload::load_all() too, so this runs the
+  # same way in development, under check, and from an installed library.
+  script <- system.file("applicability/applicability.R", package = "staleness")
+  readme <- system.file("applicability/README.md", package = "staleness")
+  skip_if_not(nzchar(script) && nzchar(readme),
+              "applicability files not found in the package")
 
   out <- utils::capture.output(source(script, local = new.env()))
   txt <- paste(out, collapse = "\n")

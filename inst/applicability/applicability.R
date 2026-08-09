@@ -40,10 +40,21 @@
 # which is what the four cases in test-external-validation.R do. The two
 # claims are different and only the first one has n = 17.
 
-suppressMessages(library(staleness))
+# This runs against the package, so the package has to be there. Saying so
+# with an actionable message: a bare library() call fails from a clean clone
+# with "there is no package called 'staleness'", which tells the reader what
+# happened but not what to do.
+if (!requireNamespace("staleness", quietly = TRUE)) {
+  stop("this script runs against the staleness package, which is not ",
+       "installed.\n  From a clean clone:  R CMD INSTALL . && Rscript ",
+       "inst/applicability/applicability.R\n  While developing:    Rscript -e ",
+       "'pkgload::load_all(\".\"); source(\"inst/applicability/applicability.R\")'",
+       call. = FALSE)
+}
 if (!requireNamespace("metadat", quietly = TRUE)) {
   stop("this script needs the metadat package", call. = FALSE)
 }
+suppressMessages(library(staleness))
 suppressMessages(library(metafor))
 
 HORIZON <- 3   # years ahead the truth is evaluated over

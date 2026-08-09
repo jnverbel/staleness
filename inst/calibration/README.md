@@ -10,12 +10,22 @@ directory holds that evidence in runnable form. Every calibration figure
 quoted in `?sufficiency`, `vignette("methods")` and the JOSS paper is produced
 by `calibration.R`:
 
+The script runs *against* the package, so the package has to be available
+first. From a clean clone:
+
 ```
+R CMD INSTALL .
 Rscript inst/calibration/calibration.R
 ```
 
-It takes about a minute, needs only the package itself, and is deterministic —
-the seeds are the ones the original measurements used.
+or, while developing, without installing:
+
+```
+Rscript -e 'pkgload::load_all("."); source("inst/calibration/calibration.R")'
+```
+
+It takes about a minute, needs nothing beyond the package itself, and is
+deterministic — the seeds are the ones the original measurements used.
 
 ## What it measures
 

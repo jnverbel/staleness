@@ -15,6 +15,16 @@
 # deterministic: every experiment fixes its seeds, and the seeds are the ones
 # the original measurements used.
 
+# Same as inst/applicability/applicability.R: this runs against the package,
+# and a bare library() call fails from a clean clone with a message that says
+# what happened but not what to do about it.
+if (!requireNamespace("staleness", quietly = TRUE)) {
+  stop("this script runs against the staleness package, which is not ",
+       "installed.\n  From a clean clone:  R CMD INSTALL . && Rscript ",
+       "inst/calibration/calibration.R\n  While developing:    Rscript -e ",
+       "'pkgload::load_all(\".\"); source(\"inst/calibration/calibration.R\")'",
+       call. = FALSE)
+}
 suppressMessages(library(staleness))
 
 ALPHA <- 0.05  # the stability cutoff sufficiency() uses by default
