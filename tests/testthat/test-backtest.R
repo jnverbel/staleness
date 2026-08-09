@@ -5,9 +5,7 @@
 # the answer against what actually happened afterwards.
 
 make_bcg_stream <- function() {
-  dat <- metadat::dat.bcg
-  es  <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg,
-                         ci = cpos, di = cneg, data = dat)
+    es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
   evidence_stream(ma, date = es$year)
 }

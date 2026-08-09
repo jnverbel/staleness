@@ -31,7 +31,13 @@ test_that("simulation reports power as its signal, bounded in [0, 1]", {
   v <- simulation(prev, new_ev, B = 200, seed = 7)
   expect_gte(v$signal, 0)
   expect_lte(v$signal, 1)
-  expect_true(v$verdict %in% c("out_of_date", "current"))
+  # Pinned to the verdict this fixture actually produces. The assertion used
+  # to read `v$verdict %in% c("out_of_date", "current")`, which passes
+  # whichever way the detector answers and so tests nothing about it: the
+  # power here is 0.57, comfortably under the 0.80 threshold, and stays
+  # `current` across seeds 1 to 5.
+  expect_equal(v$verdict, "current")
+  expect_lt(v$signal, 0.80)
 })
 
 test_that("high power crosses the threshold and signals", {

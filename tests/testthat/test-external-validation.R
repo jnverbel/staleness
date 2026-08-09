@@ -8,11 +8,11 @@
 
 skip_if_not_installed("metafor")
 
+# Wraps the shared fixture so this file's tests skip cleanly when metadat is
+# absent, which every one of them needs.
 bcg <- function() {
   skip_if_not_installed("metadat")
-  d <- metadat::dat.bcg
-  metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos, di = cneg,
-                  data = d)
+  bcg_es()
 }
 
 test_that("failsafe_n agrees with metafor::fsn on Rosenthal's estimator", {
@@ -553,8 +553,7 @@ test_that("all three refit sites propagate the caller's model options", {
   # rcma, ottawa and sufficiency. Fixing one and not the others leaves the
   # verdicts and the truth computed under different models.
   skip_if_not_installed("metadat")
-  es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
-                        di = cneg, data = metadat::dat.bcg)
+  es <- bcg_es()
   kn <- metafor::rma(yi, vi, data = es, test = "knha")
   ni <- es$tpos + es$tneg + es$cpos + es$cneg
   st <- evidence_stream(kn, date = es$year, ni = ni)

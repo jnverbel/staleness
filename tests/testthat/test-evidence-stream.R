@@ -1,7 +1,5 @@
 make_bcg_stream <- function() {
-  dat <- metadat::dat.bcg
-  es  <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg,
-                         ci = cpos, di = cneg, data = dat)
+    es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
   evidence_stream(ma, date = es$year)
 }
@@ -17,9 +15,7 @@ test_that("a stream is built from an rma object and sorted by date", {
 
 test_that("missing dates are an explicit error, never imputed", {
   skip_if_not_installed("metadat")
-  dat <- metadat::dat.bcg
-  es  <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg,
-                         ci = cpos, di = cneg, data = dat)
+    es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
   bad <- es$year; bad[3] <- NA
   expect_error(evidence_stream(ma, date = bad), "missing")
@@ -27,9 +23,7 @@ test_that("missing dates are an explicit error, never imputed", {
 
 test_that("date length must match the number of studies", {
   skip_if_not_installed("metadat")
-  dat <- metadat::dat.bcg
-  es  <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg,
-                         ci = cpos, di = cneg, data = dat)
+    es <- bcg_es()
   ma  <- metafor::rma(yi, vi, data = es)
   expect_error(evidence_stream(ma, date = c(1950, 1960)), "length")
 })
@@ -117,8 +111,7 @@ test_that("a meta-regression is refused rather than silently flattened", {
   # not a pooled effect. Every snapshot here is refitted WITHOUT moderators,
   # so accepting one would hand back a plain pooled analysis under the label
   # of the model the caller supplied. Different question, same-looking answer.
-  es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
-                        di = cneg, data = metadat::dat.bcg)
+  es <- bcg_es()
   mr <- metafor::rma(yi, vi, mods = ~ ablat, data = es)
   expect_gt(length(mr$beta), 1)
   expect_error(evidence_stream(mr, date = es$year), "moderator")
@@ -128,8 +121,7 @@ test_that("the test statistic the caller chose survives into every snapshot", {
   # test = "knha" changes the p-value by orders of magnitude, and ottawa()
   # decides on p-values. Refitting snapshots with the default z test would
   # score the caller's evidence under a test they did not ask for.
-  es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
-                        di = cneg, data = metadat::dat.bcg)
+  es <- bcg_es()
   kn <- metafor::rma(yi, vi, data = es, test = "knha")
   st <- evidence_stream(kn, date = es$year)
   expect_equal(st$test, "knha")
@@ -149,8 +141,7 @@ test_that("options that change the estimator survive into the snapshots", {
   # method and test were not the only ones. weighted = FALSE and a fixed tau2
   # both change beta, se and pval, and a snapshot refitted without them scores
   # the caller's evidence under a model they did not fit.
-  es <- metafor::escalc(measure = "RR", ai = tpos, bi = tneg, ci = cpos,
-                        di = cneg, data = metadat::dat.bcg)
+  es <- bcg_es()
   keep <- es$year <= 1975
 
   unw <- metafor::rma(yi, vi, data = es, weighted = FALSE)
