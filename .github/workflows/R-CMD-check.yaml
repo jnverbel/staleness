@@ -55,13 +55,20 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      # --no-manual: the vignettes are html_vignette, so nothing in the
-      # package needs LaTeX and building the PDF manual would be the only
-      # thing pulling it in.
+      # CRAN builds the PDF manual, so the package DOES need LaTeX to pass —
+      # an earlier version of this file skipped it everywhere on the argument
+      # that html_vignette needs no LaTeX, and that blind spot shipped a
+      # `Status: 1 ERROR` to win-builder: a single Greek Λ in one .Rd aborted
+      # the manual. Eight green platforms said nothing, because none of them
+      # built it. One job carries LaTeX so the manual is actually compiled;
+      # the other seven stay light.
+      - uses: r-lib/actions/setup-tinytex@v2
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-          args: 'c("--no-manual", "--as-cran")'
+          args: ${{ (matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release') && 'c("--as-cran")' || 'c("--no-manual", "--as-cran")' }}
 
       # R CMD check runs the tests against the built package, where README.md
       # is not reachable from the test directory, so the test that pins the

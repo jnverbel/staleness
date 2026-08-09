@@ -111,13 +111,13 @@ cum_drift_slope <- function(cum_theta, info) {
 #' \preformatted{
 #'   schedule (variance)          ratio    median   95th pct
 #'   flat                           1:1     1.817      2.881
-#'   V-shaped,  big-small-big      16:1     1.923      2.950
-#'   L-shaped,  small-big-small    16:1     1.599      2.732
-#'   geometric decay              646:1     1.930      2.956
+#'   V-shaped,      big-small-big      16:1     1.923      2.950
+#'   Lambda-shaped, small-big-small    16:1     1.599      2.732
+#'   geometric decay                  646:1     1.930      2.956
 #' }
 #'
-#' The V and Λ nulls differ with a Kolmogorov–Smirnov `D` of 0.25, and the
-#' flat-schedule 95th percentile delivers 6.1\% under V and 3.4\% under Λ.
+#' The V and Lambda nulls differ with a Kolmogorov-Smirnov `D` of 0.25, and the
+#' flat-schedule 95th percentile delivers 6.1\% under V and 3.4\% under Lambda.
 #'
 #' So the justification for the order-permutation null in [sufficiency()] is
 #' that the dependence is **weak**, not that it is absent — quantiles move by a
