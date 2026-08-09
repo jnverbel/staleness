@@ -3,8 +3,23 @@
 \name{CONTAMINATED_PAIRS}
 \alias{CONTAMINATED_PAIRS}
 \title{Detector-truth pairs that share logic}
+\format{
+A data frame with one row per circular detector-truth pair and two
+  character columns:
+\describe{
+  \item{method}{Name of the detector, one of [available_methods()].}
+  \item{truth}{Name of the truth definition whose logic it shares, one of
+    [available_truths()].}
+}
+  It currently holds a single row: `ottawa` against `truth_conclusion`.
+  The table is this package's own judgement about its own detectors, not
+  data from an external source, so it is stated here to be argued with.
+}
 \usage{
 CONTAMINATED_PAIRS
+}
+\value{
+A data frame; see **Format**.
 }
 \description{
 `ottawa` signals on a change of significance, which is exactly what

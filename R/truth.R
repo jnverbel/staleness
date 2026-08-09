@@ -25,6 +25,24 @@
 #' @param threshold Number of standard errors for `truth_shift`.
 #' @param alpha Significance level for `truth_conclusion`.
 #'
+#' @return `truth_shift()`, `truth_surprise()` and `truth_conclusion()` each
+#'   return a single logical value: `TRUE` if the meta-analysis was out of date
+#'   at the cut point under that definition, `FALSE` if it was not, and `NA`
+#'   when the question cannot be answered from the values supplied.
+#'
+#'   `NA` is a deliberate third answer rather than a failure. `truth_shift()`
+#'   and `truth_surprise()` divide by a standard error, so one that is zero,
+#'   negative or non-finite makes the distance impossible to judge — not
+#'   infinite.
+#'   Returning `TRUE` there would score an unknowable truth as a certain event
+#'   and bias every metric computed from it, which is why [calibration()] and
+#'   [lead_time()] drop those rows instead.
+#'
+#'   `available_truths()` returns a character vector of the truth names the
+#'   rest of the package accepts: `"shift"`, `"surprise"` and `"conclusion"`.
+#'   These are the strings [backtest()], [calibration()] and [lead_time()] take
+#'   in their `truth` arguments, and the suffixes of the three functions above.
+#'
 #' @section An estimate of exactly zero:
 #' `truth_conclusion()` compares `sign(theta_t)` with `sign(theta_final)`, and
 #' `sign(0)` is `0`, which differs from both `+1` and `-1`. An estimate
@@ -95,6 +113,19 @@ available_truths <- function() c("shift", "surprise", "conclusion")
 #' `ottawa` reproduce its own rule correctly" is a legitimate question, just a
 #' different one from "does `ottawa` predict the future" — and filtering on
 #' `contaminated` takes one line for anyone who does not.
+#'
+#' @format A data frame with one row per circular detector-truth pair and two
+#'   character columns:
+#' \describe{
+#'   \item{method}{Name of the detector, one of [available_methods()].}
+#'   \item{truth}{Name of the truth definition whose logic it shares, one of
+#'     [available_truths()].}
+#' }
+#'   It currently holds a single row: `ottawa` against `truth_conclusion`.
+#'   The table is this package's own judgement about its own detectors, not
+#'   data from an external source, so it is stated here to be argued with.
+#'
+#' @return A data frame; see **Format**.
 #'
 #' @examples
 #' CONTAMINATED_PAIRS

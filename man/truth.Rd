@@ -31,6 +31,25 @@ available_truths()
 
 \item{alpha}{Significance level for `truth_conclusion`.}
 }
+\value{
+`truth_shift()`, `truth_surprise()` and `truth_conclusion()` each
+  return a single logical value: `TRUE` if the meta-analysis was out of date
+  at the cut point under that definition, `FALSE` if it was not, and `NA`
+  when the question cannot be answered from the values supplied.
+
+  `NA` is a deliberate third answer rather than a failure. `truth_shift()`
+  and `truth_surprise()` divide by a standard error, so one that is zero,
+  negative or non-finite makes the distance impossible to judge — not
+  infinite.
+  Returning `TRUE` there would score an unknowable truth as a certain event
+  and bias every metric computed from it, which is why [calibration()] and
+  [lead_time()] drop those rows instead.
+
+  `available_truths()` returns a character vector of the truth names the
+  rest of the package accepts: `"shift"`, `"surprise"` and `"conclusion"`.
+  These are the strings [backtest()], [calibration()] and [lead_time()] take
+  in their `truth` arguments, and the suffixes of the three functions above.
+}
 \description{
 Three independent answers to "was this meta-analysis really out of date at
 time t?". Independence matters: defining truth with the same rule a detector
