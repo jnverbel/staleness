@@ -29,7 +29,7 @@ Examples of unacceptable behaviour:
 ## Enforcement
 
 Instances of abusive, harassing or otherwise unacceptable behaviour may be
-reported to the maintainer at javier@tectonico.com.co. All complaints will be
+reported to the maintainer at jnverbel@gmail.com. All complaints will be
 reviewed and investigated promptly and fairly, and the maintainer is obliged to
 respect the privacy and security of the reporter.
 

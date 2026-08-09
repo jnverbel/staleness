@@ -3,7 +3,7 @@ citHeader("To cite the staleness package in publications, use:")
 bibentry(
   bibtype = "Manual",
   title   = "staleness: Detect and Calibrate Out-of-Date Meta-Analyses",
-  author  = person("Javier", "Núñez", email = "javier@tectonico.com.co"),
+  author  = person("Javier", "Núñez", email = "jnverbel@gmail.com"),
   year    = "2026",
   note    = sprintf("R package version %s", meta$Version),
   url     = "https://github.com/jnverbel/staleness"

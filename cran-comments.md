@@ -20,6 +20,12 @@ together with a remark on the package version. Nothing else is flagged on any
 of the eight environments above; `checking examples ... OK` and
 `checking tests ... OK` on all of them.
 
+## Maintainer
+
+Javier Núñez <jnverbel@gmail.com>. A personal address rather than an
+institutional one, deliberately: it will outlive any affiliation, and CRAN
+needs a maintainer address that keeps working.
+
 ## Notes for the reviewer
 
 * `Language: en-GB`. The prose is consistently British throughout (21

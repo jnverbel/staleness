@@ -22,11 +22,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Javier Núñez \email{javier@tectonico.com.co}
+\strong{Maintainer}: Javier Núñez \email{jnverbel@gmail.com}
 
 Authors:
 \itemize{
-  \item Javier Núñez \email{javier@tectonico.com.co}
+  \item Javier Núñez \email{jnverbel@gmail.com}
 }
 
 }
