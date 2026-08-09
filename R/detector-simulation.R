@@ -35,7 +35,11 @@
 #'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_evidence A list with `yi`, `vi` and `k`, as returned by
-#'   [window_between()].
+#'   [window_between()]. The three must agree: `yi` and `vi` of the same
+#'   length, and `k` equal to that length. `k` decides whether there is any
+#'   new evidence while `yi` and `vi` are what gets used, so a mismatch is
+#'   answered from one and reported from the other; it is refused rather than
+#'   resolved.
 #' @param B Number of simulation replicates.
 #' @param alpha Significance level for each simulated meta-analysis.
 #' @param power_threshold Signal when simulated power *exceeds* this value.
@@ -75,6 +79,9 @@ simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
   # the early returns below: a not_applicable verdict must not swallow a
   # malformed seed.
   check_seed(seed)
+  # Same contract as check_currency(): this function is exported too, and its
+  # `new_evidence` reaches it directly as often as through that one.
+  check_new_evidence(new_evidence, "new_evidence")
   if (prev$pval < alpha) {
     return(verdict_na("simulation",
       "prior meta-analysis was already significant; the method does not apply"))

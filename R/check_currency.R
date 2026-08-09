@@ -4,7 +4,11 @@
 #' published since.
 #'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
-#' @param new A list with `yi`, `vi` and `k`, as returned by [window_between()].
+#' @param new A list with `yi`, `vi` and `k`, as returned by
+#'   [window_between()]. The three must agree: `yi` and `vi` of the same
+#'   length, and `k` equal to that length. `k` decides whether there is new
+#'   evidence at all and `yi`/`vi` are what the updated model is fitted on, so
+#'   a mismatch is refused rather than resolved in favour of either.
 #' @param methods Character vector of detector names, see [available_methods()].
 #' @param n_prev,n_new Sample sizes, required by [barrowman()].
 #' @param qualitative Character vector of qualitative signals, see [ottawa()].
@@ -40,6 +44,13 @@
 check_currency <- function(prev, new, methods = available_methods(),
                            n_prev = NULL, n_new = NULL,
                            qualitative = character(), seed = NULL) {
+  # backtest() has raised on an empty `methods` since its argument sweep;
+  # this function quietly built a staleness_check holding zero verdicts -- an
+  # object that answers no question, for the same mistake, in the same package.
+  if (!length(methods)) {
+    stop("`methods` is empty; name at least one of: ",
+         paste(available_methods(), collapse = ", "), call. = FALSE)
+  }
   unknown <- setdiff(methods, available_methods())
   if (length(unknown)) {
     stop("unknown method: ", paste(unknown, collapse = ", "), call. = FALSE)
@@ -58,7 +69,9 @@ check_currency <- function(prev, new, methods = available_methods(),
          "meta-analysis. Passing the updated model here would count every ",
          "prior study twice.", call. = FALSE)
   }
-  if (is.null(new$k) || new$k < 1) {
+  check_new_evidence(new)
+  check_seed(seed)
+  if (new$k < 1) {
     # Absence of new evidence is not evidence of currency. It gets its own
     # class so that no caller can mistake it for a verified "current".
     verdicts <- lapply(methods, function(m) {

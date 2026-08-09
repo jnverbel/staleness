@@ -121,6 +121,26 @@ First public release.
   with a coercion warning, so the promise was wider than the code and the
   failure arrived without an explanation.
 
+* `check_currency()` and `simulation()` require the new-evidence object to be
+  internally consistent: `yi` and `vi` of the same length, and `k` equal to
+  that length. `k` decided whether there was anything to assess and `yi`/`vi`
+  were what got fitted, with nothing tying them together, so the object could
+  say one thing and carry another — and it failed silently in both directions.
+  `k = 1` with no studies returned a verdict of `current` from an updated model
+  refitted on the prior evidence alone, walking straight past the guard written
+  to prevent exactly that ("absence of new evidence is not evidence of
+  currency"); `k = 0` with real studies discarded them; `k = 99` with one study
+  left the verdict unchanged but reported `detail$k_new` as 99. Mismatched
+  lengths used to surface as metafor's "Length of 'yi' and 'vi' (or 'sei') are
+  not the same", a message about another package's arguments.
+  [window_between()] has always produced `k` as the size of the same subset it
+  takes `yi` and `vi` from, so the contract is what the canonical source
+  already builds.
+
+* `check_currency()` refuses an empty `methods`, as `backtest()` already did.
+  It used to return a `staleness_check` holding zero verdicts: an object that
+  answers no question.
+
 * `barrowman()` refuses impossible sample sizes. `n_prev = 0` drove the
   required sample size to zero, so the participant ratio was `Inf` and the
   verdict was `out_of_date`; a negative size made the ratio negative, which

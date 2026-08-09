@@ -17,7 +17,11 @@ simulation(
 \item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
 
 \item{new_evidence}{A list with `yi`, `vi` and `k`, as returned by
-[window_between()].}
+[window_between()]. The three must agree: `yi` and `vi` of the same
+length, and `k` equal to that length. `k` decides whether there is any
+new evidence while `yi` and `vi` are what gets used, so a mismatch is
+answered from one and reported from the other; it is refused rather than
+resolved.}
 
 \item{B}{Number of simulation replicates.}
 

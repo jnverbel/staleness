@@ -58,6 +58,43 @@ check_seed <- function(x, arg = "seed") {
   invisible(NULL)
 }
 
+# The new-evidence object carries two things that must agree: `k`, which
+# decides whether there is anything to assess at all, and `yi`/`vi`, which are
+# what actually gets fitted. Nothing tied them together, so the object could
+# say one thing and carry another -- and the failure was silent in both
+# directions. k = 1 with no studies produced a "current" verdict from a model
+# refitted on the prior evidence alone, walking past the guard written to stop
+# exactly that; k = 0 with real studies threw them away.
+#
+# window_between() builds `k` as sum(keep) over the same subset it takes yi
+# and vi from, so this contract is what the canonical source already produces.
+check_new_evidence <- function(new, arg = "new") {
+  if (!is.list(new)) {
+    stop("`", arg, "` must be a list with `yi`, `vi` and `k`, as returned by ",
+         "`window_between()`", call. = FALSE)
+  }
+  if (!is.numeric(new$yi) || !is.numeric(new$vi)) {
+    stop("`", arg, "$yi` and `", arg, "$vi` must both be numeric vectors",
+         call. = FALSE)
+  }
+  if (length(new$yi) != length(new$vi)) {
+    stop("`", arg, "$yi` and `", arg, "$vi` must be the same length; got ",
+         length(new$yi), " and ", length(new$vi), call. = FALSE)
+  }
+  if (!is.numeric(new$k) || length(new$k) != 1L || !is.finite(new$k) ||
+      new$k < 0 || new$k != round(new$k)) {
+    stop("`", arg, "$k` must be a single whole number of 0 or more",
+         call. = FALSE)
+  }
+  if (new$k != length(new$yi)) {
+    stop("`", arg, "$k` says ", new$k, " but `", arg, "$yi` holds ",
+         length(new$yi), ". `k` decides whether there is new evidence and ",
+         "`yi`/`vi` are what gets fitted, so a disagreement between them is ",
+         "answered from one and reported from the other", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 check_positive_number <- function(x, arg) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
     stop("`", arg, "` must be a single positive number", call. = FALSE)

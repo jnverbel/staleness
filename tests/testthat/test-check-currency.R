@@ -76,3 +76,63 @@ test_that("the guard does not reject a legitimate list", {
   expect_s3_class(res, "staleness_check")
   expect_equal(res$updated$k, 6)   # 4 prior + 2 new, each counted once
 })
+
+# --- The `new` contract: k decides, yi/vi are fitted, nothing tied them -----
+#
+# check_currency() reads `new$k` to decide whether any new evidence exists and
+# `new$yi`/`new$vi` to fit the updated model. Nothing required the two to
+# agree, so the object could say one thing and carry another.
+
+test_that("check_currency refuses evidence whose k contradicts its data", {
+  prev <- metafor::rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4),
+                       measure = "RR")
+
+  # The worst case. This one returned a verified-looking "current" from no new
+  # evidence at all: the updated model was refitted on the prior studies
+  # alone, so every ratio was 1. The guard above it exists precisely to stop
+  # that -- "absence of new evidence is not evidence of currency" -- and
+  # setting k = 1 walked straight past it.
+  expect_error(
+    check_currency(prev, list(yi = numeric(), vi = numeric(), k = 1)),
+    "k")
+
+  # Real evidence discarded in silence, because k said there was none.
+  expect_error(
+    check_currency(prev, list(yi = log(0.9), vi = 0.03, k = 0)),
+    "k")
+
+  # Declared 99, carried 1. The verdict was unaffected but detail$k_new
+  # reported 99, so the output stated a study count that was never used.
+  expect_error(
+    check_currency(prev, list(yi = log(0.9), vi = 0.03, k = 99)),
+    "k")
+
+  # Mismatched lengths used to fail inside metafor with "Length of 'yi' and
+  # 'vi' (or 'sei') are not the same" -- a message about metafor's arguments,
+  # not about this package's.
+  expect_error(
+    check_currency(prev, list(yi = c(log(0.9), log(0.8)), vi = 0.03, k = 2)),
+    "same length")
+
+  # What window_between() actually produces still passes untouched.
+  expect_silent(check_currency(prev, list(yi = rep(log(0.9), 3),
+                                          vi = rep(0.03, 3), k = 3),
+                               methods = "rcma"))
+  # And k = 0 with nothing in it is the honest empty case, which keeps its
+  # own class rather than becoming an error.
+  empty <- check_currency(prev, list(yi = numeric(), vi = numeric(), k = 0),
+                          methods = "rcma")
+  expect_s3_class(empty, "staleness_no_evidence")
+})
+
+test_that("check_currency refuses an empty method list, as backtest does", {
+  # backtest() raises "`methods` is empty; name at least one of: ..." while
+  # check_currency() built a staleness_check holding zero verdicts -- an
+  # object that answers no question, from the same package, for the same
+  # mistake.
+  prev <- metafor::rma(yi = rep(log(0.50), 4), vi = rep(0.05, 4),
+                       measure = "RR")
+  new <- list(yi = rep(log(0.9), 3), vi = rep(0.03, 3), k = 3)
+  expect_error(check_currency(prev, new, methods = character()), "empty")
+  expect_error(check_currency(prev, new, methods = NULL), "empty")
+})

@@ -17,7 +17,11 @@ check_currency(
 \arguments{
 \item{prev}{An `rma.uni` object, the meta-analysis as previously published.}
 
-\item{new}{A list with `yi`, `vi` and `k`, as returned by [window_between()].}
+\item{new}{A list with `yi`, `vi` and `k`, as returned by
+[window_between()]. The three must agree: `yi` and `vi` of the same
+length, and `k` equal to that length. `k` decides whether there is new
+evidence at all and `yi`/`vi` are what the updated model is fitted on, so
+a mismatch is refused rather than resolved in favour of either.}
 
 \item{methods}{Character vector of detector names, see [available_methods()].}
 
