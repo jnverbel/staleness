@@ -1,5 +1,5 @@
 ---
-title: 'staleness: Detecting and calibrating out-of-date meta-analyses in R'
+title: 'staleness: applying and calibrating published signals for updating meta-analyses in R'
 tags:
   - R
   - meta-analysis

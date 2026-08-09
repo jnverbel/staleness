@@ -1,4 +1,4 @@
-#' staleness: Detect and Calibrate Out-of-Date Meta-Analyses
+#' staleness: Apply and Calibrate Published Signals for Updating Meta-Analyses
 #'
 #' @description
 #' Applies the five published methods for detecting whether a meta-analysis has
