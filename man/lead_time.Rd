@@ -4,7 +4,7 @@
 \alias{lead_time}
 \title{How early a detector fired before the evidence actually changed}
 \usage{
-lead_time(bt, truth = "shift", within = Inf)
+lead_time(bt, truth = "shift", within = NULL)
 }
 \arguments{
 \item{bt}{A `staleness_backtest`, see [backtest()].}
@@ -13,7 +13,16 @@ lead_time(bt, truth = "shift", within = Inf)
 [available_truths()].}
 
 \item{within}{Maximum age of a firing for it to count as advance warning of
-an event, in the same units as the cuts. `Inf` by default.}
+  an event, in the same units as the cuts. Defaults to the backtest's own
+  `horizon`, which is the window the backtest was built around.
+
+  The old default was `Inf`, and it flattered every detector: one firing in
+  1955 counted as advance warning for an event in 1980, so a detector that
+  fired once and then went quiet scored the same median lead as one that
+  warned before each event in turn. `Inf` is still available and still
+  meaningful — "did this detector ever fire before the event" is a real
+  question — but as something a caller asks for, not something they get
+  without choosing it.}
 }
 \value{
 A data frame, one row per method in `bt$methods`, with columns

@@ -431,8 +431,22 @@ test_that("ISIS-4 removes the effect, and rcma saw it coming", {
   expect_equal(cal$sensitivity[cal$method == "rcma"], 1)
   expect_equal(cal$specificity[cal$method == "rcma"], 1)
   expect_false(cal$contaminated[cal$method == "rcma"])
+  # Early -- but by how much depends on what counts as advance warning, and
+  # that is worth pinning both ways rather than quoting the flattering one.
+  #
+  # The "four years of lead" this case has been reported with came from the
+  # old default of `within = Inf`, under which a firing of any age counts as
+  # warning of any later event. Bounded by the backtest's own horizon, which
+  # is now the default, it is three. Both are true; the second is the one that
+  # answers "did it warn in time", and the first only "did it ever fire first".
+  lead <- function(w) {
+    lt <- lead_time(bt, "shift", within = w)
+    lt$median_lead[lt$method == "rcma"]
+  }
+  expect_equal(lead(Inf), 4)
+  expect_equal(lead(bt$horizon), 3)
   expect_equal(lead_time(bt, "shift")$median_lead[
-    lead_time(bt, "shift")$method == "rcma"], 4)
+    lead_time(bt, "shift")$method == "rcma"], 3)
 })
 
 # --- A third case, for the branch the other two never reach ---------------

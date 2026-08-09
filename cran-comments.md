@@ -22,12 +22,13 @@ rather than sending an API that would have to change immediately.
 
 The note is the usual `New submission` from the incoming-feasibility check.
 
-The PDF manual is built and checked on one CI job rather than on all of them:
-an earlier version passed eight platforms with `--no-manual` everywhere, so no
-job built the manual at all, and a single Greek letter in an `.Rd` file broke
-LaTeX where only CRAN would have seen it.
-`checking examples ... OK`, `checking tests ... OK` and
-`checking PDF version of manual ... OK` on all of the above.
+`checking examples ... OK` and `checking tests ... OK` on all of the above.
+
+The PDF manual is built and checked locally and on one CI job, not on all of
+them: the other seven pass `--no-manual` to keep them light. That split exists
+because of a failure it caused. An earlier version passed eight platforms with
+`--no-manual` everywhere, so no job built the manual at all, and a single Greek
+letter in an `.Rd` file broke LaTeX where only CRAN would have seen it.
 
 The URLs it flags as 404 all point at the package's own repository, which is
 private while this submission is prepared and becomes public on acceptance.

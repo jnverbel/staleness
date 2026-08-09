@@ -297,9 +297,12 @@ test_that("an unknown truth still cannot manufacture an event", {
 })
 
 test_that("an ancient firing counts as warning only when `within` allows it", {
-  # With the default of Inf, a single firing nine years before an event counts
-  # as advance warning of it. That is the documented definition, and it is
-  # generous enough that the documentation says so with this example.
+  # This fixture used to demonstrate the defect and call it a definition: with
+  # `within = Inf`, a single firing nine years before an event counted as
+  # advance warning of it, so a detector that fired once in 2000 and went
+  # quiet scored the SAME median lead as one that warned before every event.
+  # The test recorded that and the default kept it. The default is now the
+  # backtest's own horizon, and `Inf` has to be asked for.
   mk <- function(v, t) structure(list(
     results = data.frame(cut = 2000:2009, method = "rcma", verdict = v,
                          signal = NA_real_, reason = "", truth_shift = t,
@@ -312,9 +315,17 @@ test_that("an ancient firing counts as warning only when `within` allows it", {
   once  <- mk(c("out_of_date", rep("current", 9)), ev)   # fires only in 2000
   always <- mk(rep("out_of_date", 10), ev)
 
-  # Default: the lone 2000 firing scores the same as firing at every cut...
-  expect_equal(lead_time(once)$median_lead, 7)
-  expect_equal(lead_time(always)$median_lead, 7)
+  # Asked for explicitly, the old behaviour is unchanged and still available:
+  # "did this detector ever fire before the event" is a real question.
+  expect_equal(lead_time(once, within = Inf)$median_lead, 7)
+  expect_equal(lead_time(always, within = Inf)$median_lead, 7)
+
+  # By default the two are no longer indistinguishable. The lone firing is too
+  # old to be warning of anything, and drops out; the detector that warns each
+  # time keeps its lead.
+  expect_true(is.na(lead_time(once)$median_lead))
+  expect_equal(lead_time(always)$median_lead, 3)
+  expect_equal(lead_time(once)$n_events, lead_time(always)$n_events)
   # ...while its sensitivity is zero, which is why the two must be read together.
   expect_equal(calibration(once)$sensitivity, 0)
 

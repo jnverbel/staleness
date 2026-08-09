@@ -30,6 +30,36 @@ LOGIT_SCALE_MEASURES <- c("PLO")
 COMPARATIVE_RATIO_MEASURES <- c("RR", "OR", "PETO", "IRR", "HR", "ROM",
                                 "MPRR", "MPOR")
 
+# Narrower still, and for a different reason. The Ottawa effect criterion is
+# `(1 - RR_new) / (1 - RR_prev)`: a ratio of relative risk REDUCTIONS, so
+# `1 - exp(theta)` has to be a risk reduction. That holds for a risk ratio and,
+# by the published application's own usage, for an odds ratio. It does not hold
+# for the rest of the comparative measures:
+#
+#   ROM  is a ratio of MEANS on a continuous outcome. `1 - ROM` is a percentage
+#        change in a mean, not a reduction in anybody's risk.
+#   HR   `1 - HR` is a relative reduction in HAZARD, which is a rate over time,
+#        not a risk.
+#   IRR  same, for an incidence rate.
+#
+# The ten worked reviews in Pattanittum et al. (2012), Appendix S3, against
+# which this criterion is verified, are all risk ratios. Extending the formula
+# past that is arithmetic without an argument, so the effect signal declines on
+# those measures. B1 (the significance change) and the qualitative signals do
+# not depend on the RRR and keep working: ottawa() still answers, it just does
+# not answer on effect.
+OTTAWA_RRR_MEASURES <- c("RR", "OR", "PETO", "MPRR", "MPOR")
+
+#' Is the Ottawa relative-risk-reduction criterion defined for this measure?
+#'
+#' @param measure Character, the `measure` field of an `rma` object.
+#' @return `TRUE` when `1 - exp(theta)` is a risk reduction.
+#' @keywords internal
+is_rrr_measure <- function(measure) {
+  if (is.null(measure) || !nzchar(measure)) return(FALSE)
+  measure %in% OTTAWA_RRR_MEASURES
+}
+
 # Single-group summaries: a proportion, a rate, a mean, a correlation. metafor
 # offers many; naming them explicitly is better than inferring, because a
 # measure this package has never heard of should also be refused.
@@ -180,6 +210,20 @@ rrr_ratio <- function(theta_new, theta_prev, measure, se_prev, min_z = 2) {
     r$rrr_prev <- NA_real_
     r$unstable <- FALSE
     return(r)
+  }
+  # A comparative ratio, but not one whose complement is a risk reduction:
+  # a hazard ratio, an incidence rate ratio, a ratio of means. The criterion
+  # is not defined there, so it declines rather than computing a number the
+  # formula cannot mean.
+  if (!is_rrr_measure(measure)) {
+    return(list(
+      ratio    = NA_real_,
+      reason   = paste0("the Ottawa effect criterion is a ratio of relative ",
+                        "risk reductions, and `1 - exp(theta)` is not a risk ",
+                        "reduction for `", measure, "`"),
+      rrr_prev = NA_real_,
+      unstable = FALSE
+    ))
   }
   # NOT guarded by min_z, deliberately. The difference-measure branch refuses
   # a prior effect within min_z standard errors of zero, and transplanting
