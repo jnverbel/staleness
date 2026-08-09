@@ -1,0 +1,54 @@
+# Citation File Format 1.2.0. GitHub reads this to offer "Cite this
+# repository", and Zenodo reads it when archiving a release.
+#
+# UPDATE `version` AND `date-released` BEFORE TAGGING A RELEASE. They are the
+# two fields that go stale silently, and tests/testthat/test-metadata.R holds
+# `version` to DESCRIPTION so that half cannot drift unnoticed.
+#
+# This file and .zenodo.json are excluded from the package tarball via
+# .Rbuildignore: CRAN flags non-standard top-level files.
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "staleness: Apply and Calibrate Published Signals for Updating Meta-Analyses"
+abstract: >-
+  Applies the five published statistical methods for detecting whether a
+  systematic review or meta-analysis has gone out of date, and provides a
+  backtesting engine to calibrate those methods against historical evidence.
+  Two of the five depart from their sources where the published procedure
+  could not be reproduced as stated; every departure is measured and
+  documented. The package performs no literature searching and no screening.
+authors:
+  - family-names: "Núñez"
+    given-names: "Javier"
+    email: "jnverbel@gmail.com"
+    affiliation: "Independent researcher"
+version: 0.1.0
+date-released: "2026-08-09"
+license: MIT
+repository-code: "https://github.com/jnverbel/staleness"
+url: "https://github.com/jnverbel/staleness"
+keywords:
+  - meta-analysis
+  - systematic-review
+  - evidence-synthesis
+  - research-synthesis
+  - reproducibility
+  - r
+references:
+  - type: article
+    title: "How quickly do systematic reviews go out of date? A survival analysis"
+    authors:
+      - family-names: "Shojania"
+        given-names: "Kaveh G."
+    year: 2007
+    doi: "10.7326/0003-4819-147-4-200708210-00179"
+    notes: "Source of the Ottawa method, and of the survival estimates this package's motivation rests on."
+  - type: article
+    title: "Comparison of statistical methods used to detect the need for updating systematic reviews"
+    authors:
+      - family-names: "Pattanittum"
+        given-names: "Porjai"
+    year: 2012
+    doi: "10.1371/journal.pone.0048894"
+    notes: "The only published comparison running all five detectors side by side; its Appendix S3 is a test fixture here."

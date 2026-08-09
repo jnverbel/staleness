@@ -1,0 +1,40 @@
+{
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "title": "staleness: Apply and Calibrate Published Signals for Updating Meta-Analyses",
+  "version": "0.1.0",
+  "description": "<p>Applies the five published statistical methods for detecting whether a systematic review or meta-analysis has gone out of date, and provides a backtesting engine to calibrate those methods against historical evidence.</p><p>Two of the five detectors depart from their sources where the published procedure could not be reproduced as stated; every departure is measured and documented rather than smoothed over. The package performs no literature searching and no screening.</p><p>Includes reproducible evidence for its own claims: <code>inst/calibration/</code> regenerates every calibration figure from the original seeds, <code>inst/applicability/</code> sweeps the historical reviews in <code>metadat</code> and reports how often each detector can answer at all, and <code>inst/cran-search/</code> holds the dated search behind the claim that no equivalent implementation was found.</p>",
+  "creators": [
+    {
+      "name": "Núñez, Javier",
+      "affiliation": "Independent researcher"
+    }
+  ],
+  "keywords": [
+    "meta-analysis",
+    "systematic review",
+    "evidence synthesis",
+    "research synthesis",
+    "updating",
+    "reproducibility",
+    "R"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/jnverbel/staleness",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "10.7326/0003-4819-147-4-200708210-00179",
+      "relation": "cites",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.1371/journal.pone.0048894",
+      "relation": "cites",
+      "scheme": "doi"
+    }
+  ]
+}
