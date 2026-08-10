@@ -15,14 +15,29 @@ rather than sending an API that would have to change immediately.
 * Ubuntu 24.04, R devel (4.7.0) — GitHub Actions
 * Ubuntu 24.04, R release (4.6.1) — GitHub Actions
 * Ubuntu 24.04, R 4.5.3, 4.4.3, 4.3.3 and 4.2.3 — GitHub Actions
+* Windows, R 4.6.1 — win-builder (R-release), 2026-08-10
 
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
-The note is the usual `New submission` from the incoming-feasibility check,
-and it is the only one: verified on a public repository with a full
-`--as-cran` run including the PDF manual.
+The note is `New submission` from the incoming-feasibility check, and it is
+the only one: verified on a public repository with a full `--as-cran` run
+including the PDF manual, and on win-builder R-release.
+
+That note also lists two words as possibly misspelled in `DESCRIPTION`, and
+both are correct as written:
+
+* **Shojania** is a surname — Kaveh G. Shojania, first author of the survival
+  analysis the package cites and of the AHRQ technical review the Ottawa
+  method comes from.
+* **backtesting** is the standard term for evaluating a rule against the
+  history it would have been applied to, and it is what the package's second
+  half does.
+
+They are in `inst/WORDLIST`, which silences `spelling::spell_check_package()`
+locally but is not read by the incoming-feasibility check, so they surface
+there and nowhere else.
 
 `checking examples ... OK` and `checking tests ... OK` on all of the above.
 
