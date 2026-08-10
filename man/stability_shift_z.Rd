@@ -15,9 +15,10 @@ A non-negative number, or \code{NA_real_} for a series too short to
 split.
 }
 \description{
-The stability statistic actually tested by \code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}}. For every split
-point \code{m} it compares the fixed-effect pooled estimate of the studies
-accumulated up to \code{m} against the pooled estimate of everything after \code{m},
+The stability statistic actually tested by \code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}}. For
+every split point \code{m} it compares the fixed-effect pooled estimate of the
+studies accumulated up to \code{m} against the pooled estimate of everything
+after \code{m},
 standardised by the standard error of that difference:
 }
 \details{
@@ -68,14 +69,15 @@ Measured null quantiles at \code{k = 30} over 60,000 draws:
 The V and Lambda nulls differ with a Kolmogorov-Smirnov \code{D} of 0.25, and the
 flat-schedule 95th percentile delivers 6.1\% under V and 3.4\% under Lambda.
 
-So the justification for the order-permutation null in \code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}} is
-that the dependence is \strong{weak}, not that it is absent — quantiles move by a
-few percent where the old slope statistic moved by orders of magnitude
+So the justification for the order-permutation null in
+\code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}} is that the dependence is \strong{weak}, not that it
+is absent — quantiles move by a few percent where the old slope statistic
+moved by orders of magnitude
 (0\% to 42\% false alarms across the same schedules). Since the null is
 rebuilt from each dataset's own studies rather than read off a reference
 distribution, most of that residual shows up only where the schedule is
-smooth and strongly monotone. See the calibration section of \code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}}
-for what it costs in practice, and where.
+smooth and strongly monotone. See the calibration section of
+\code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}} for what it costs in practice, and where.
 }
 
 \keyword{internal}

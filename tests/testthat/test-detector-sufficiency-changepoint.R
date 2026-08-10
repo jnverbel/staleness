@@ -156,7 +156,9 @@ test_that("detail still carries every documented field", {
                      vi = rep(0.01, 20), measure = "RR")
   d <- sufficiency_changepoint(ma, ma)$detail
   expect_setequal(names(d), c("index", "sufficient", "stable", "slope",
-                              "z_shift", "split", "p_stability", "k", "k_new"))
+                              "z_shift", "split", "p_stability",
+                              "mc_se", "mc_lo", "mc_hi", "near_threshold",
+                              "k", "k_new"))
   expect_true(is.numeric(d$slope) && is.finite(d$slope))
   expect_true(is.numeric(d$z_shift) && is.finite(d$z_shift) && d$z_shift >= 0)
   expect_true(d$split %in% seq_len(ma$k - 1))

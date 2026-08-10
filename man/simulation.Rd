@@ -39,7 +39,9 @@ and restored afterwards, so calling this detector — directly or through
 subsequent \code{runif()}, \code{sample()} or \code{rnorm()} returns.}
 }
 \value{
-A \code{staleness_verdict}.
+A \code{staleness_verdict}. Beyond the fields every verdict carries, its
+\code{detail} reports \code{mc_se}, \code{mc_lo}, \code{mc_hi} and \code{near_threshold}; see the
+Monte Carlo section above.
 }
 \description{
 Simulates new studies with the parameters of the recent literature, adds them
@@ -76,6 +78,30 @@ can differ for very small or very sparse studies, where the participant-level
 distribution is skewed and the effect-level one is not. An implementation
 that wanted the source's exact procedure would need the 2x2 tables, which is
 a different package from this one.
+}
+
+\section{Monte Carlo error, reported and never acted on}{
+
+Simulated power is estimated from a finite simulation, so it moves with
+the seed.
+Three fields report that movement and one interprets it, and none of them
+touches the verdict:
+\itemize{
+\item \code{detail$mc_se} -- the Monte Carlo standard error of the power,
+\code{sqrt(p (1 - p) / n)} over the evaluable replicates.
+\item \code{detail$mc_lo}, \code{detail$mc_hi} -- a 95\% Wilson interval for it. Wilson
+rather than Wald, because the Wald interval has width exactly zero at 0
+and 1, which is where a reader most needs to be told the estimate is not
+certain.
+\item \code{detail$near_threshold} -- \code{TRUE} when \code{power_threshold} falls inside that
+interval, meaning a rerun under a different seed could plausibly have
+returned the other verdict. \code{FALSE} means the simulation is resolved on
+this question; it does not mean the detector is right.
+}
+
+This is Monte Carlo error alone -- the variability of the estimate around
+what infinitely many draws would give. It says nothing about sampling error
+in the underlying studies, which is much larger.
 }
 
 \examples{

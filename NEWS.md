@@ -67,6 +67,28 @@
   Same reasoning as `study_id` itself -- a promise that cannot be checked is
   asked for rather than assumed.
 
+## Monte Carlo error is reported by the two detectors that simulate
+
+* `simulation()` estimates a power from `B` replicates and
+  `sufficiency_changepoint()` a p-value from `n_perm` permutations. Both
+  printed a number to three decimals with nothing saying it would have been a
+  different number under a different seed. Both now report `mc_se`, a 95%
+  Wilson interval as `mc_lo`/`mc_hi`, and `near_threshold`: `TRUE` when the
+  deciding threshold falls inside that interval, so a rerun could plausibly
+  have returned the other verdict.
+
+* Wilson rather than Wald, because the Wald interval has width exactly zero at
+  0 and 1 -- a simulated power of 1.000 from 200 replicates would have been
+  reported as certain. For the permutation p-value the interval is built on
+  the exceedance count and carried through the same `(1 + x) / (n_perm + 1)`
+  map the p-value itself uses, so the bounds sit on the scale of the number
+  they bracket, and the standard error is scaled by `n / (n + 1)` for the same
+  reason.
+
+* **No verdict changes.** The rule is still the published one applied to the
+  point estimate, and a test recomputes that rule from the reported signal at
+  several thresholds rather than comparing against recorded strings.
+
 A methodological review by proxy -- what a metafor author and a synthesis
 methodologist would each object to -- found five problems of validity rather
 than of contract. Two are breaking changes, and the version reflects that.

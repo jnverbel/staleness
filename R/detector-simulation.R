@@ -33,6 +33,27 @@
 #' that wanted the source's exact procedure would need the 2x2 tables, which is
 #' a different package from this one.
 #'
+#' @section Monte Carlo error, reported and never acted on:
+#' Simulated power is estimated from a finite simulation, so it moves with
+#' the seed.
+#' Three fields report that movement and one interprets it, and none of them
+#' touches the verdict:
+#'
+#' * `detail$mc_se` -- the Monte Carlo standard error of the power,
+#'   `sqrt(p (1 - p) / n)` over the evaluable replicates.
+#' * `detail$mc_lo`, `detail$mc_hi` -- a 95% Wilson interval for it. Wilson
+#'   rather than Wald, because the Wald interval has width exactly zero at 0
+#'   and 1, which is where a reader most needs to be told the estimate is not
+#'   certain.
+#' * `detail$near_threshold` -- `TRUE` when `power_threshold` falls inside that
+#'   interval, meaning a rerun under a different seed could plausibly have
+#'   returned the other verdict. `FALSE` means the simulation is resolved on
+#'   this question; it does not mean the detector is right.
+#'
+#' This is Monte Carlo error alone -- the variability of the estimate around
+#' what infinitely many draws would give. It says nothing about sampling error
+#' in the underlying studies, which is much larger.
+#'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_evidence A list with `yi`, `vi` and `k`, as returned by
 #'   [window_between()]. The three must agree: `yi` and `vi` of the same
@@ -51,7 +72,9 @@
 #'   and restored afterwards, so calling this detector — directly or through
 #'   [check_currency()] or [backtest()] — never changes what a caller's
 #'   subsequent `runif()`, `sample()` or `rnorm()` returns.
-#' @return A `staleness_verdict`.
+#' @return A `staleness_verdict`. Beyond the fields every verdict carries, its
+#'   `detail` reports `mc_se`, `mc_lo`, `mc_hi` and `near_threshold`; see the
+#'   Monte Carlo section above.
 #' @examples
 #' library(metafor)
 #' # Like barrowman(), this one applies only to an inconclusive prior review.
@@ -179,6 +202,12 @@ simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
       " simulated replicates; the power estimate would rest on too few")))
   }
   power <- out$hits / evaluable
+  # The power is a proportion over `evaluable` independent replicates, so it
+  # carries Monte Carlo error, and a different seed returns a different number.
+  # Reported, never acted on: the verdict below is the published rule applied
+  # to the point estimate, exactly as before. `near_threshold` says whether
+  # another seed could plausibly have returned the other verdict.
+  ci <- mc_interval(out$hits, evaluable)
   new_verdict("simulation",
               # Strictly above: the source reads "Power >80%".
               if (power > power_threshold) "out_of_date" else "current",
@@ -186,6 +215,10 @@ simulation <- function(prev, new_evidence, B = 10000, alpha = 0.05,
               detail = list(B = B, k_new = k_new, k_simulated = 1L,
                             vi_new = vi_new, df = df,
                             power_threshold = power_threshold, seed = seed,
+                            mc_se = mc_se(out$hits, evaluable),
+                            mc_lo = ci[1], mc_hi = ci[2],
+                            near_threshold =
+                              mc_near_threshold(ci, power_threshold),
                             # What each replicate was tested under, and how
                             # many could not be. A caller comparing two runs
                             # needs to see that these differed.

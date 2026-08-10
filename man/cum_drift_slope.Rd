@@ -33,7 +33,8 @@ number, but cheap.
 This slope is \strong{reported} in \code{detail$slope} for fidelity to the published
 rule, so that anyone who wants to apply \verb{|slope| > 0} literally can read it
 straight off the verdict. It is not what decides stability — see
-\code{\link[=stability_shift_z]{stability_shift_z()}} and the roxygen block of \code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}} for why a
-slope over a cumulative series turned out to be an unusable instrument.
+\code{\link[=stability_shift_z]{stability_shift_z()}} and the roxygen block of
+\code{\link[=sufficiency_changepoint]{sufficiency_changepoint()}} for why a slope over a cumulative series turned
+out to be an unusable instrument.
 }
 \keyword{internal}

@@ -47,8 +47,9 @@ cumulative_effect <- function(yi, vi) {
 #' This slope is **reported** in `detail$slope` for fidelity to the published
 #' rule, so that anyone who wants to apply `|slope| > 0` literally can read it
 #' straight off the verdict. It is not what decides stability — see
-#' [stability_shift_z()] and the roxygen block of [sufficiency_changepoint()] for why a
-#' slope over a cumulative series turned out to be an unusable instrument.
+#' [stability_shift_z()] and the roxygen block of
+#' [sufficiency_changepoint()] for why a slope over a cumulative series turned
+#' out to be an unusable instrument.
 #'
 #' @param cum_theta Numeric vector, as returned by [cumulative_effect()].
 #' @param info Numeric vector of the same length, the accumulated information
@@ -68,9 +69,10 @@ cum_drift_slope <- function(cum_theta, info) {
 
 #' Largest standardised movement still left in a cumulative series
 #'
-#' The stability statistic actually tested by [sufficiency_changepoint()]. For every split
-#' point `m` it compares the fixed-effect pooled estimate of the studies
-#' accumulated up to `m` against the pooled estimate of everything after `m`,
+#' The stability statistic actually tested by [sufficiency_changepoint()]. For
+#' every split point `m` it compares the fixed-effect pooled estimate of the
+#' studies accumulated up to `m` against the pooled estimate of everything
+#' after `m`,
 #' standardised by the standard error of that difference:
 #'
 #' \deqn{Z_m = \frac{\hat\theta_{1:m} - \hat\theta_{(m+1):k}}{\sqrt{1/I_m +
@@ -119,14 +121,15 @@ cum_drift_slope <- function(cum_theta, info) {
 #' The V and Lambda nulls differ with a Kolmogorov-Smirnov `D` of 0.25, and the
 #' flat-schedule 95th percentile delivers 6.1% under V and 3.4% under Lambda.
 #'
-#' So the justification for the order-permutation null in [sufficiency_changepoint()] is
-#' that the dependence is **weak**, not that it is absent — quantiles move by a
-#' few percent where the old slope statistic moved by orders of magnitude
+#' So the justification for the order-permutation null in
+#' [sufficiency_changepoint()] is that the dependence is **weak**, not that it
+#' is absent — quantiles move by a few percent where the old slope statistic
+#' moved by orders of magnitude
 #' (0% to 42% false alarms across the same schedules). Since the null is
 #' rebuilt from each dataset's own studies rather than read off a reference
 #' distribution, most of that residual shows up only where the schedule is
-#' smooth and strongly monotone. See the calibration section of [sufficiency_changepoint()]
-#' for what it costs in practice, and where.
+#' smooth and strongly monotone. See the calibration section of
+#' [sufficiency_changepoint()] for what it costs in practice, and where.
 #'
 #' @param yi,vi Effect sizes and their variances, in the order studies are to
 #'   be accumulated.
@@ -406,6 +409,34 @@ stability_shift_at <- function(yi, vi) {
 #' studies, so calibration holds throughout — it is power, not the false-alarm
 #' rate, that degrades.
 #'
+#' @section Monte Carlo error, reported and never acted on:
+#' The permutation p-value `p_stability` is estimated from a finite
+#' simulation, so it moves with the seed.
+#' Three fields report that movement and one interprets it, and none of them
+#' touches the verdict:
+#'
+#' * `detail$mc_se` -- the Monte Carlo standard error of `p_stability`.
+#' * `detail$mc_lo`, `detail$mc_hi` -- a 95% Wilson interval for it. Wilson
+#'   rather than Wald, because the Wald interval has width exactly zero at 0
+#'   and 1, which is where a reader most needs to be told the estimate is not
+#'   certain.
+#' * `detail$near_threshold` -- `TRUE` when `alpha_stability` falls inside that
+#'   interval, meaning a rerun under a different seed could plausibly have
+#'   returned the other verdict. `FALSE` means the simulation is resolved on
+#'   this question; it does not mean the detector is right.
+#'
+#' This is Monte Carlo error alone -- the variability of the estimate around
+#' what infinitely many draws would give. It says nothing about sampling error
+#' in the underlying studies, which is much larger.
+#'
+#' The interval is built on the exceedance count out of `n_perm` draws and then
+#' carried through the same `(1 + x) / (n_perm + 1)` map the reported p-value
+#' uses, so the bounds sit on exactly the scale of the number they bracket. The
+#' degenerate branches -- a cumulative series constant to rounding, or a series
+#' where no split carries information -- draw no permutations at all, so their
+#' `mc_*` fields are `NA` and `near_threshold` is `FALSE`: those p-values are
+#' determined, not estimated.
+#'
 #' @param prev An `rma.uni` object, the meta-analysis as previously published.
 #' @param new_ma An `rma.uni` object refitted with the new evidence included.
 #' @param min_k Minimum number of studies in `new_ma`. Below this the
@@ -429,7 +460,9 @@ stability_shift_at <- function(yi, vi) {
 #' @return A `staleness_verdict`. Its `detail` carries `index`, `sufficient`,
 #'   `stable`, `slope` (the published slope, reported only), `z_shift` and
 #'   `split` (the statistic actually tested and where it peaked),
-#'   `p_stability`, `k` (of `prev`) and `k_new` (of `new_ma`).
+#'   `p_stability`, its Monte Carlo error as `mc_se`, `mc_lo`, `mc_hi` and
+#'   `near_threshold` (see the section above), `k` (of `prev`) and `k_new` (of
+#'   `new_ma`).
 #' @examples
 #' library(metafor)
 #' # Sufficiency is judged on the PRIOR review, stability on the UPDATED one.
@@ -491,7 +524,8 @@ sufficiency_changepoint <- function(prev, new_ma, min_k = 5,
 
   if (!all(is.finite(cum_theta)) || !all(is.finite(info))) {
     return(verdict_na("sufficiency_changepoint",
-      "the cumulative effect is not finite (a study variance of zero?); stability cannot be assessed"))
+      paste0("the cumulative effect is not finite (a study variance of ",
+             "zero?); stability cannot be assessed")))
   }
 
   # Degenerate short circuit, BEFORE anything is computed. Byte-identical
@@ -514,6 +548,9 @@ sufficiency_changepoint <- function(prev, new_ma, min_k = 5,
     split       <- NA_integer_
     p_stability <- 1
     stable      <- TRUE
+    # No permutation was drawn, so there is no Monte Carlo error to report.
+    # This p is exactly 1 by construction, not estimated.
+    perm_exceed <- NA_integer_
   } else {
     # The published slope, on the source's own x-axis (accumulated
     # information). Reported, not tested -- see the roxygen section above.
@@ -530,6 +567,7 @@ sufficiency_changepoint <- function(prev, new_ma, min_k = 5,
       # constant); this is defence in depth behind it.
       p_stability <- NA_real_
       stable      <- TRUE
+      perm_exceed <- NA_integer_
     } else {
       # Permutation test over study order (see the roxygen section above). The
       # seed is applied through with_preserved_seed() so that the caller's own
@@ -543,8 +581,8 @@ sufficiency_changepoint <- function(prev, new_ma, min_k = 5,
       # stability_shift_z() is already a maximum absolute value, so abs() here
       # is a no-op kept for symmetry with the two-sided reading of the source's
       # "absolute slope".
-      p_stability <- (1 + sum(abs(perm) >= abs(z_shift), na.rm = TRUE)) /
-        (n_perm + 1)
+      perm_exceed <- sum(abs(perm) >= abs(z_shift), na.rm = TRUE)
+      p_stability <- (1 + perm_exceed) / (n_perm + 1)
       # Defensive: a p-value that is not finite must be resolved deliberately,
       # never left to turn `if (sufficient && !stable)` into `if (NA)`. An
       # undeterminable drift is not evidence of drift, so it reads as stable.
@@ -560,10 +598,35 @@ sufficiency_changepoint <- function(prev, new_ma, min_k = 5,
   # evidence (index <= 1) never triggers "out_of_date" by itself, regardless
   # of stability.
   out <- if (sufficient && !stable) "out_of_date" else "current"
+
+  # `p_stability` is estimated from `n_perm` draws, so it moves with the seed.
+  # The interval is built on the exceedance count and then carried through the
+  # same (1 + x) / (n_perm + 1) map the reported p-value uses, so the bounds
+  # live on exactly the scale of the number they bracket. Reported only: the
+  # verdict above is unchanged, and `near_threshold` says whether a rerun
+  # could plausibly have crossed `alpha_stability`.
+  #
+  # The degenerate branches leave `perm_exceed` as NA because they drew no
+  # permutations at all, and both helpers return NA for a non-finite count, so
+  # those verdicts come back with no interval rather than with one invented
+  # around a p-value that was determined instead of estimated. No guard here:
+  # an explicit `if (is.na(perm_exceed))` was written first and turned out to
+  # be inert -- a mutation replacing it with `if (FALSE)` changed nothing --
+  # so the NA propagation is the mechanism, and it is tested as such.
+  shift   <- function(x) (1 + x * n_perm) / (n_perm + 1)
+  # p = (1 + count) / (n + 1) is an affine map of count/n with slope
+  # n / (n + 1), so the standard error of p is the standard error of the raw
+  # proportion scaled by the same factor.
+  p_mc_se <- mc_se(perm_exceed, n_perm) * n_perm / (n_perm + 1)
+  p_ci    <- shift(mc_interval(perm_exceed, n_perm))
   new_verdict("sufficiency_changepoint", out, signal = index,
               detail = list(index = index, sufficient = sufficient,
                             stable = stable, slope = slope,
                             z_shift = z_shift, split = split,
                             p_stability = p_stability,
+                            mc_se = p_mc_se,
+                            mc_lo = p_ci[1], mc_hi = p_ci[2],
+                            near_threshold =
+                              mc_near_threshold(p_ci, alpha_stability),
                             k = k_prev, k_new = k_new))
 }

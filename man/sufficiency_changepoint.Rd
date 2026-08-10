@@ -44,7 +44,9 @@ restored around the draw, so calling this detector never changes it.}
 A \code{staleness_verdict}. Its \code{detail} carries \code{index}, \code{sufficient},
 \code{stable}, \code{slope} (the published slope, reported only), \code{z_shift} and
 \code{split} (the statistic actually tested and where it peaked),
-\code{p_stability}, \code{k} (of \code{prev}) and \code{k_new} (of \code{new_ma}).
+\code{p_stability}, its Monte Carlo error as \code{mc_se}, \code{mc_lo}, \code{mc_hi} and
+\code{near_threshold} (see the section above), \code{k} (of \code{prev}) and \code{k_new} (of
+\code{new_ma}).
 }
 \description{
 The name carries the substitution rather than hiding it. This is the
@@ -276,6 +278,37 @@ prior studies at RR 0.5 and 10 new ones at RR 0.30, power is 200/200 at
 \code{tau = 0.35}. The permutation null is built from the same heterogeneous
 studies, so calibration holds throughout — it is power, not the false-alarm
 rate, that degrades.
+}
+
+\section{Monte Carlo error, reported and never acted on}{
+
+The permutation p-value \code{p_stability} is estimated from a finite
+simulation, so it moves with the seed.
+Three fields report that movement and one interprets it, and none of them
+touches the verdict:
+\itemize{
+\item \code{detail$mc_se} -- the Monte Carlo standard error of \code{p_stability}.
+\item \code{detail$mc_lo}, \code{detail$mc_hi} -- a 95\% Wilson interval for it. Wilson
+rather than Wald, because the Wald interval has width exactly zero at 0
+and 1, which is where a reader most needs to be told the estimate is not
+certain.
+\item \code{detail$near_threshold} -- \code{TRUE} when \code{alpha_stability} falls inside that
+interval, meaning a rerun under a different seed could plausibly have
+returned the other verdict. \code{FALSE} means the simulation is resolved on
+this question; it does not mean the detector is right.
+}
+
+This is Monte Carlo error alone -- the variability of the estimate around
+what infinitely many draws would give. It says nothing about sampling error
+in the underlying studies, which is much larger.
+
+The interval is built on the exceedance count out of \code{n_perm} draws and then
+carried through the same \code{(1 + x) / (n_perm + 1)} map the reported p-value
+uses, so the bounds sit on exactly the scale of the number they bracket. The
+degenerate branches -- a cumulative series constant to rounding, or a series
+where no split carries information -- draw no permutations at all, so their
+\verb{mc_*} fields are \code{NA} and \code{near_threshold} is \code{FALSE}: those p-values are
+determined, not estimated.
 }
 
 \examples{
