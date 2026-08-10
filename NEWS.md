@@ -89,6 +89,24 @@
   point estimate, and a test recomputes that rule from the reported signal at
   several thresholds rather than comparing against recorded strings.
 
+## An eligibility summary, so a saved result can be audited
+
+* New `eligibility()`, on a stream or a backtest. One row, twelve columns:
+  `k` and `n_studies` with `max_per_study`, the date range, the measure, the
+  model with its `test`, `weighted` and fixed `tau2`, whether dependence was
+  allowed, and how many studies have a usable sample size. Each of these has
+  changed an answer at some point in this package's history and none of them
+  was visible in an output a user could save.
+
+* `print()` on a stream and on a backtest now shows the same facts, and the
+  backtest also prints its `truth_target` -- two backtests of the same
+  evidence under different targets answer different questions and used to
+  print identically.
+
+* `ni_available` counts studies with a finite sample size rather than
+  reporting whether the field exists. A `ni` metafor derived on its own can
+  have holes, and `barrowman()` sums it across a snapshot.
+
 A methodological review by proxy -- what a metafor author and a synthesis
 methodologist would each object to -- found five problems of validity rather
 than of contract. Two are breaking changes, and the version reflects that.

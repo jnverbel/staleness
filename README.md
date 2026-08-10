@@ -96,6 +96,11 @@ check_currency(prev, new, methods = c("rcma", "ottawa", "sufficiency_changepoint
 bt <- backtest(stream, cuts = "yearly")
 summary(bt)
 plot(bt)
+
+# What series those rates are rates over: how many estimates from how many
+# studies, over what span, on what measure, under what model, and whether
+# sample sizes are there for barrowman() to use.
+eligibility(bt)
 ```
 
 ## The five detectors

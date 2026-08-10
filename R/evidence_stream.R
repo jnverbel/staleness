@@ -348,10 +348,28 @@ window_between <- function(stream, from, to) {
 
 #' @export
 print.staleness_stream <- function(x, ...) {
+  e <- eligibility(x)
   cat("<staleness_stream>\n")
-  cat("  studies :", x$k, "\n")
-  cat("  measure :", x$measure, "\n")
-  cat("  span    :", format(min(x$date)), "to", format(max(x$date)), "\n")
+  # The eight facts that decide how any rate computed from this stream should
+  # be read; see eligibility(). Printed here because this is where a reader
+  # first meets the series, and because a results table shows none of them.
+  cat("  estimates:", e$k, "from", e$n_studies, "studies",
+      if (e$max_per_study > 1) paste0("(up to ", e$max_per_study, " each)")
+      else "(one each)", "\n")
+  cat("  span     :", format(e$from), "to", format(e$to), "\n")
+  cat("  measure  :", e$measure, "\n")
+  cat("  model    :", e$model,
+      paste0("(test ", e$test,
+             if (!e$weighted) ", unweighted" else "",
+             if (!is.na(e$tau2_fixed)) paste0(", tau2 fixed at ",
+                                              format(e$tau2_fixed, digits = 3))
+             else "", ")"), "\n")
+  # barrowman() is the only consumer, and without sample sizes it answers
+  # not_applicable at every cut -- which in a results table looks exactly like
+  # a detector that never fired.
+  cat("  sizes    :",
+      if (e$ni_available == 0L) "none (barrowman cannot answer)"
+      else paste0(e$ni_available, " of ", e$k, " studies"), "\n")
   # Said out loud, every time. A stream built with allow_dependence = TRUE
   # produces metrics that assume independent studies over evidence that is
   # not, and the only place a reader might notice is here.

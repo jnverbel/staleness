@@ -280,9 +280,23 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
 
 #' @export
 print.staleness_backtest <- function(x, ...) {
+  e <- eligibility(x)
   cat("<staleness_backtest>\n")
   cat("  cuts     :", x$n_cuts, "(", x$n_censored, "censored )\n")
   cat("  methods  :", paste(x$methods, collapse = ", "), "\n")
   cat("  horizon  :", x$horizon, " window:", x$window, "\n")
+  cat("  target   :", x$truth_target, "\n")
+  # What series these rates are rates over. A backtest is usually printed far
+  # from the stream that produced it, and every one of these has changed an
+  # answer at some point: see eligibility().
+  cat("  evidence :", e$k, "estimates from", e$n_studies, "studies,",
+      format(e$from), "to", format(e$to), "\n")
+  cat("             ", e$measure, "under", e$model,
+      paste0("(test ", e$test, ")"), "\n")
+  if (e$dependent) {
+    cat("  NOTE     : dependence allowed; up to", e$max_per_study,
+        "estimates from one study.\n")
+    cat("             Every rate below is optimistic.\n")
+  }
   invisible(x)
 }
