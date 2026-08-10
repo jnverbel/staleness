@@ -16,6 +16,7 @@ rather than sending an API that would have to change immediately.
 * Ubuntu 24.04, R release (4.6.1) — GitHub Actions
 * Ubuntu 24.04, R 4.5.3, 4.4.3, 4.3.3 and 4.2.3 — GitHub Actions
 * Windows, R 4.6.1 — win-builder (R-release), 2026-08-10
+* Windows, R devel (2026-08-09 r90385 ucrt) — win-builder (R-devel), 2026-08-10
 
 ## R CMD check results
 
@@ -23,7 +24,9 @@ rather than sending an API that would have to change immediately.
 
 The note is `New submission` from the incoming-feasibility check, and it is
 the only one: verified on a public repository with a full `--as-cran` run
-including the PDF manual, and on win-builder R-release.
+including the PDF manual, and on win-builder under both R-release and R-devel.
+Those two logs differ only in timing — tests 229s against 328s — with no
+difference in any check result.
 
 That note also lists two words as possibly misspelled in `DESCRIPTION`, and
 both are correct as written:
