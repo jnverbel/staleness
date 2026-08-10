@@ -16,8 +16,9 @@
 #' @section Why these eight and not others:
 #' * `k` against `n_studies` is the dependence question in its raw form. Equal
 #'   means one estimate per study; unequal means some trial is being counted
-#'   more than once, and every rate is optimistic by an amount that
-#'   `max_per_study` bounds.
+#'   more than once, so the effective number of studies is smaller than `k` and
+#'   no rate may be read as coming from independent studies. `max_per_study`
+#'   bounds how far off the count can be.
 #' * `from` and `to` say what "yearly cuts" was actually cutting. A stream
 #'   spanning six years supports a different claim from one spanning forty.
 #' * `measure` decides which detectors can answer at all: [ottawa()]'s effect

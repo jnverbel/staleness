@@ -117,7 +117,12 @@ test_that("print() shows the series, and says when it is dependent", {
   ob <- utils::capture.output(print(bt))
   expect_true(any(grepl("13 estimates from 12 studies", ob)))
   expect_true(any(grepl("dependence allowed", ob)))
-  expect_true(any(grepl("optimistic", ob)))
+  # The claim the note makes is bounded: it says the rates cannot be read as
+  # coming from independent studies, not that they are all biased upwards.
+  # An earlier version said "every rate below is optimistic", which asserted
+  # a direction dependence does not guarantee.
+  expect_true(any(grepl("independent studies", ob)))
+  expect_false(any(grepl("optimistic", ob)))
   # And the target, which decides what the rates below it even mean.
   expect_true(any(grepl("target", ob)))
 })

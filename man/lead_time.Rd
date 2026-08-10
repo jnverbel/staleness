@@ -85,22 +85,24 @@ at all.
 \section{How long a warning stays relevant}{
 
 A firing counts as advance warning for an event if it happened at or before
-that event and no earlier than \code{within} units before it. The default,
-\code{Inf}, keeps the definition above: the earliest firing at or before the
-event, however distant.
+that event and no earlier than \code{within} units before it. The default is the
+backtest's own \code{horizon}, which is the span over which it considers an
+evaluation target evaluable at all.
 
-That default is generous, and worth seeing plainly. With events at 2005,
-2007 and 2009, a detector that fires once in 2000 and stays silent for nine
-years scores a median lead of 7 -- the same as one that fires at every
+The reason there is a bound, rather than counting the earliest firing
+however distant, is worth seeing plainly. With events at 2005, 2007 and
+2009, a detector that fires once in 2000 and then stays silent for nine
+years would score a median lead of 7 -- the same as one that fires at every
 single cut -- while its sensitivity is 0, because it flagged none of those
 events at their own cut. A warning that old is not advance notice of
-anything in particular.
+anything in particular. Under the default that 7 becomes \code{NA}.
 
-Set \code{within} to bound it. \code{within = bt$horizon} restricts a warning to the
-span over which the backtest considers truth evaluable, and turns that
-7 into \code{NA}. Nothing here picks a value for you, because the right one
-depends on how fast the field moves; the default is stated rather than
-hidden, and \code{calibration()}'s sensitivity should always be read alongside
+\code{within = Inf} restores the unbounded reading, and it is a real question --
+"did this detector ever fire before the event at all" -- but it is now
+something a caller asks for rather than something they get without
+choosing. Any other number sets the bound directly; the right one depends
+on how fast the field moves, so nothing here picks it beyond the backtest's
+own horizon. \code{calibration()}'s sensitivity should always be read alongside
 this column.
 }
 

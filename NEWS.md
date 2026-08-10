@@ -107,6 +107,36 @@
   reporting whether the field exists. A `ni` metafor derived on its own can
   have holes, and `barrowman()` sums it across a snapshot.
 
+## Three claims the package could not support, withdrawn
+
+* **`lead_time()`'s help page contradicted itself.** The `within` default
+  moved from `Inf` to the backtest's own `horizon`; the `\arguments` entry
+  was updated and a `\section` three paragraphs above still read "The
+  default, `Inf`, keeps the definition above". Both sentences were in the
+  same page. `test-documentation.R` now reads the actual formals and fails on
+  a page that claims as a current default a **constant** the function does not
+  have -- constants only, because "defaults to `ma$ni`" and "defaults to the
+  backtest's own `horizon`" correctly describe where an effective value comes
+  from when the formal is `NULL`.
+
+* **"Every rate is optimistic" under dependence was too strong.** What follows
+  from an effective study count below `k` is that pooled standard errors are
+  too small and any interval is too narrow -- that direction is known. The
+  direction of a *point* rate is not: dependence moves both the detector's
+  verdicts and the evaluation target, and not the same way, so sensitivity and
+  specificity can be biased either way. Every message, warning, `print()` and
+  help page now says that instead. The one place the direction **is** known is
+  named: `barrowman()` sums participants across a snapshot, so a trial counted
+  several times is pushed towards firing. The interval block stands unchanged;
+  it was the correct part.
+
+* **`vignette("backtesting")` still said "Three independent truths".** Now
+  "Three operational evaluation targets", with what the code and help pages
+  already said: `shift` and `surprise` share the identical numerator and are
+  one distance on two scales, so agreement is expected and disagreement is the
+  informative case; and the `1.96` is a scaling, not a critical value, because
+  the estimates are nested.
+
 A methodological review by proxy -- what a metafor author and a synthesis
 methodologist would each object to -- found five problems of validity rather
 than of contract. Two are breaking changes, and the version reflects that.

@@ -270,8 +270,10 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
          truth_target = truth_target,
          # Lifted out of the stream rather than left to be dug out of it. Every
          # rate below assumes one estimate per study; when that is false the
-         # denominator is inflated and the rates are optimistic, and a caller
-         # who receives only the results table has no way to know.
+         # effective number of studies is smaller than it looks, so standard
+         # errors are too small and any interval is too narrow; the point rates
+         # can be biased either way. A caller who receives only the results
+         # table has no way to know.
          dependent = isTRUE(stream$dependent),
          n_censored = sum(results$censored) / length(methods)),
     class = "staleness_backtest"
@@ -296,7 +298,8 @@ print.staleness_backtest <- function(x, ...) {
   if (e$dependent) {
     cat("  NOTE     : dependence allowed; up to", e$max_per_study,
         "estimates from one study.\n")
-    cat("             Every rate below is optimistic.\n")
+    cat("             No rate below may be read as coming from independent",
+        "studies.\n")
   }
   invisible(x)
 }

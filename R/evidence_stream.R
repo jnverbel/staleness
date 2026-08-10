@@ -184,23 +184,37 @@ evidence_stream <- function(ma, date, study_id, ni = NULL,
          "are dependent: pooling them treats one trial as several, and ",
          "barrowman() would count its participants more than once. Select one ",
          "estimate per study before building the stream, or pass ",
-         "`allow_dependence = TRUE` to proceed knowing the metrics will be ",
-         "optimistic.", call. = FALSE)
+         "`allow_dependence = TRUE` to proceed knowing the metrics cannot be ",
+         "read as coming from independent studies.", call. = FALSE)
   }
   dependent <- any(dup)
   # Opting in is a decision, and a decision that is only visible to whoever
   # reads print(stream) is not one the analyst downstream ever sees. Said out
   # loud at the moment it is taken, and again by print(), summary() and every
-  # metrics table below, because a rate computed over dependent estimates is
-  # optimistic and nothing about the number itself shows that.
+  # metrics table below, because nothing about a rate shows the evidence it
+  # was computed over.
+  #
+  # What dependence does, stated no more strongly than it can be defended: the
+  # effective number of studies is smaller than k, so pooled standard errors
+  # are too small and any interval built on them is too narrow. That direction
+  # is known. The direction of a point rate is NOT: dependence moves both the
+  # detector's verdicts and the evaluation target, and not the same way, so
+  # sensitivity and specificity can be biased either way. An earlier draft of
+  # every message here said "every rate is optimistic", which asserted a
+  # direction that was never established. The one place the direction IS known
+  # is barrowman(), which sums participants across a snapshot: a trial counted
+  # several times inflates its numerator and pushes it towards firing.
   if (dependent) {
     n_dup <- length(unique(study_id[dup]))
     warning(n_dup, " stud", if (n_dup == 1) "y contributes" else "ies contribute",
             " more than one estimate and `allow_dependence = TRUE` was set. ",
             "Every rate computed from this stream assumes independent ",
-            "studies and is therefore optimistic; the stream, its backtests ",
-            "and its calibration tables all carry `dependent = TRUE` so the ",
-            "caveat travels with the numbers.", call. = FALSE)
+            "studies, so none of them may be read that way: the pooled ",
+            "standard errors are too small and any interval is too narrow, ",
+            "and the point rates may be biased in either direction. The ",
+            "stream, its backtests and its calibration tables all carry ",
+            "`dependent = TRUE` so the caveat travels with the numbers.",
+            call. = FALSE)
   }
 
   ni_supplied <- !is.null(ni)
@@ -375,10 +389,13 @@ print.staleness_stream <- function(x, ...) {
   # not, and the only place a reader might notice is here.
   if (isTRUE(x$dependent)) {
     n_studies <- length(unique(x$study_id))
-    cat("  NOTE    :", x$k, "estimates from", n_studies, "studies;",
+    cat("  NOTE     :", x$k, "estimates from", n_studies, "studies;",
         "dependence was allowed.\n")
-    cat("            Rates computed from this stream are optimistic:",
-        "one trial\n            counts as several.\n")
+    cat("             Rates from this stream assume independent studies and",
+        "cannot be\n             read that way: standard errors too small,",
+        "intervals too narrow,\n             point rates biased in either",
+        "direction. barrowman() is pushed\n             towards firing: it",
+        "counts one trial's participants several times.\n")
   }
   invisible(x)
 }

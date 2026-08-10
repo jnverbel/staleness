@@ -53,19 +53,23 @@ real predictive value. Scoring it against that truth would not be measuring
 calibration. It would be measuring whether `ottawa()`'s source code agrees
 with itself, dressed up as an empirical result.
 
-This package resolves that by never collapsing "truth" into a single
-definition, and by tracking which detector-truth pairs share enough logic to
-be circular, in the data itself rather than in a footnote someone can miss:
+This package resolves that by never collapsing the evaluation target into a
+single definition, and by tracking which detector-target pairs share enough
+logic to be circular, in the data itself rather than in a footnote someone
+can miss:
 
 ```{r contaminated-pairs}
 CONTAMINATED_PAIRS
 ```
 
-## 3. Three independent truths
+## 3. Three operational evaluation targets
 
-Every backtest is scored under three separate definitions of "the
-meta-analysis changed", each implemented in `R/truth.R` and listed by
-`available_truths()`:
+Every backtest is scored under three definitions of "the meta-analysis
+changed", each implemented in `R/truth.R` and listed by
+`available_truths()`. They are **operational choices, not ground truth**:
+nothing here observes what a review team did, whether a recommendation
+changed, or whether anyone was harmed by acting on the old estimate. They
+observe the pooled estimate moving.
 
 | Truth | What it measures |
 |---|---|
@@ -73,10 +77,28 @@ meta-analysis changed", each implemented in `R/truth.R` and listed by
 | `surprise` | The same distance, but judged against how precisely the estimate was known *at the time* (`|theta_final - theta_t| / SE_t`) — how surprising the eventual result would have looked to someone standing at `t`. |
 | `conclusion` | Whether the practical conclusion changed: a flip in the sign of the effect, or a flip in statistical significance. |
 
-`shift` and `surprise` never look at significance thresholds or effect-size
-ratios, so no detector's own logic can leak into them. `conclusion` is the
-one exception, and only for `ottawa`, which is exactly why it is the pair
-`CONTAMINATED_PAIRS` names.
+### They are not three independent votes
+
+`shift` and `surprise` use the **identical numerator**,
+`|theta_final - theta_t|`, and differ only in which standard error divides
+it. They are one distance on two scales, not two separate facts about the
+evidence, so agreement between them is the expected case and *disagreement*
+is the informative one — it says something about how precision changed, not
+about the detector. Use them as a sensitivity analysis across scalings, not
+as corroborating evidence. `conclusion` is categorical rather than metric and
+is the only one of the three that asks a different question.
+
+The `1.96` in `shift` is a scaling, not a critical value. `theta_t` is nested
+inside `theta_final` — the cut's studies are part of the final set — so the
+variance of their difference is not the variance of either, and the ratio is
+not a test statistic. It is a threshold expressed in units of final
+precision, chosen because those units are interpretable.
+
+What the three *do* avoid is circularity, which is the trap section 2 is
+about. `shift` and `surprise` never look at significance thresholds or
+effect-size ratios, so no detector's own logic can leak into them.
+`conclusion` is the one exception, and only for `ottawa`, which is exactly
+why it is the pair `CONTAMINATED_PAIRS` names.
 
 ## 4. The contamination declaration
 

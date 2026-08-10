@@ -83,8 +83,11 @@ eligible_rows <- function(bt, truth) {
 #'   `method`, `truth`, `sensitivity`, `specificity`, `false_alarm`, `n` and
 #'   `contaminated` and `dependent`. `dependent` is `TRUE` when the stream
 #'   behind the backtest was built with `allow_dependence = TRUE`, in which
-#'   case one trial contributed several estimates and every rate in the row is
-#'   optimistic. Descriptive of this series; see the section above.
+#'   case one trial contributed several estimates and no rate in the row may be
+#'   read as coming from independent studies: the pooled standard errors behind
+#'   it are too small, and the rate itself may be biased in either direction --
+#'   dependence moves both the detector's verdicts and the evaluation target,
+#'   and not the same way. Descriptive of this series; see the section above.
 #' @examples
 #' library(metafor)
 #' bcg <- data.frame(
@@ -195,22 +198,24 @@ calibration <- function(bt, truth = "shift") {
 #'
 #' @section How long a warning stays relevant:
 #' A firing counts as advance warning for an event if it happened at or before
-#' that event and no earlier than `within` units before it. The default,
-#' `Inf`, keeps the definition above: the earliest firing at or before the
-#' event, however distant.
+#' that event and no earlier than `within` units before it. The default is the
+#' backtest's own `horizon`, which is the span over which it considers an
+#' evaluation target evaluable at all.
 #'
-#' That default is generous, and worth seeing plainly. With events at 2005,
-#' 2007 and 2009, a detector that fires once in 2000 and stays silent for nine
-#' years scores a median lead of 7 -- the same as one that fires at every
+#' The reason there is a bound, rather than counting the earliest firing
+#' however distant, is worth seeing plainly. With events at 2005, 2007 and
+#' 2009, a detector that fires once in 2000 and then stays silent for nine
+#' years would score a median lead of 7 -- the same as one that fires at every
 #' single cut -- while its sensitivity is 0, because it flagged none of those
 #' events at their own cut. A warning that old is not advance notice of
-#' anything in particular.
+#' anything in particular. Under the default that 7 becomes `NA`.
 #'
-#' Set `within` to bound it. `within = bt$horizon` restricts a warning to the
-#' span over which the backtest considers truth evaluable, and turns that
-#' 7 into `NA`. Nothing here picks a value for you, because the right one
-#' depends on how fast the field moves; the default is stated rather than
-#' hidden, and `calibration()`'s sensitivity should always be read alongside
+#' `within = Inf` restores the unbounded reading, and it is a real question --
+#' "did this detector ever fire before the event at all" -- but it is now
+#' something a caller asks for rather than something they get without
+#' choosing. Any other number sets the bound directly; the right one depends
+#' on how fast the field moves, so nothing here picks it beyond the backtest's
+#' own horizon. `calibration()`'s sensitivity should always be read alongside
 #' this column.
 #'
 #' @param bt A `staleness_backtest`, see [backtest()].
@@ -294,9 +299,10 @@ lead_time <- function(bt, truth = "shift", within = NULL) {
     # must never contribute a numeric lead (e.g. 0), or it would be
     # indistinguishable from genuine same-period detection.
     leads <- vapply(events, function(event_cut) {
-      # `within` bounds how long a firing stays relevant. With the default of
-      # Inf a single early firing counts as advance warning for every later
-      # event, however distant -- see the note in the documentation.
+      # `within` bounds how long a firing stays relevant, and defaults to the
+      # backtest's horizon. With `within = Inf` a single early firing counts
+      # as advance warning for every later event, however distant -- see the
+      # note in the documentation.
       on_time <- fired[fired <= event_cut & (event_cut - fired) <= within]
       if (length(on_time)) event_cut - min(on_time) else NA_real_
     }, numeric(1))
@@ -516,7 +522,8 @@ pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
             "returned; the bootstrap bounds are not, because resampling ",
             "reviews cannot repair dependence within one and the interval ",
             "would be too narrow. Pass `accept_dependence = TRUE` to get them ",
-            "anyway, reading them as optimistic.", call. = FALSE)
+            "anyway, reading them as narrower than the evidence supports.",
+            call. = FALSE)
   }
 
   targets <- unique(vapply(bts, function(b) {

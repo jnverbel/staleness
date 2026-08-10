@@ -210,10 +210,17 @@ test_that("allowed dependence is recorded and announced, not forgotten", {
     st <- evidence_stream(ma, date = es$year, study_id = dup,
                           allow_dependence = TRUE),
     "1 study contributes more than one estimate")
+  # What the warning may claim: standard errors too small and intervals too
+  # narrow -- that direction follows from an effective k below the nominal
+  # one. What it may NOT claim is that every point rate moves upwards.
   expect_warning(
     evidence_stream(ma, date = es$year, study_id = dup,
                     allow_dependence = TRUE),
-    "optimistic")
+    "too narrow")
+  expect_warning(
+    evidence_stream(ma, date = es$year, study_id = dup,
+                    allow_dependence = TRUE),
+    "biased in either direction")
   expect_true(st$dependent)
 
   # And an independent stream says nothing at all.
@@ -223,7 +230,12 @@ test_that("allowed dependence is recorded and announced, not forgotten", {
   # print() is the one place a reader might notice, so it says so there.
   out <- utils::capture.output(print(st))
   expect_true(any(grepl("dependence was allowed", out)))
-  expect_true(any(grepl("optimistic", out)))
+  expect_true(any(grepl("intervals too narrow", out)))
+  expect_true(any(grepl("either direction", out)))
+  # barrowman() is the one place the direction IS known, because it sums
+  # participants across a snapshot, so the note is allowed to say so.
+  expect_true(any(grepl("barrowman", out)))
+  expect_false(any(grepl("optimistic", out)))
 
   # And the ids travel in the stream, sorted with everything else, so a caller
   # can check what got pooled with what.

@@ -17,8 +17,11 @@ A data frame, one row per method in \code{bt$methods}, with columns
 \code{method}, \code{truth}, \code{sensitivity}, \code{specificity}, \code{false_alarm}, \code{n} and
 \code{contaminated} and \code{dependent}. \code{dependent} is \code{TRUE} when the stream
 behind the backtest was built with \code{allow_dependence = TRUE}, in which
-case one trial contributed several estimates and every rate in the row is
-optimistic. Descriptive of this series; see the section above.
+case one trial contributed several estimates and no rate in the row may be
+read as coming from independent studies: the pooled standard errors behind
+it are too small, and the rate itself may be biased in either direction --
+dependence moves both the detector's verdicts and the evaluation target,
+and not the same way. Descriptive of this series; see the section above.
 }
 \description{
 Turns a backtest's raw results into sensitivity, specificity and false
