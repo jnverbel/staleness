@@ -191,13 +191,24 @@ deposited alongside this paper rather than described and withheld.
 
 ## 3.4 Arm B is held out for the detectors, and not for the screen
 
-The chronology matters and is verifiable rather than asserted. Detector
-behaviour was frozen at commit `f59bb41` (2026-08-09 19:30 −0500); the Arm B
-corpus was first introduced at commit `c7e9505` (2026-08-10 07:56 −0500). Since
-that second commit, `git diff` reports **zero non-comment lines changed** in
-any detector source file: the only edits are documentation. No parameter, no
-threshold, and no interpretation of an ambiguous published criterion was
-decided while looking at Arm B, because none of them could have been.
+The version-controlled chronology supports this separation and makes the
+relevant implementation history auditable. Detector behaviour was frozen at
+commit `f59bb41` (2026-08-09 19:30 −0500); the Arm B corpus was first
+introduced at commit `c7e9505` (2026-08-10 07:56 −0500). Since that second
+commit, `git diff` reports **zero non-comment lines changed** in any detector
+source file: the only edits are documentation.
+
+That is what the repository demonstrates, and it is worth being exact about its
+limits. Version control shows that no *versioned* detector behaviour changed
+after the corpus existed; it cannot show that no unversioned file or external
+exploration preceded the freeze. So the remaining part is a declaration by the
+authors rather than a property of the history: **no parameter, threshold, or
+interpretation of an ambiguous published criterion was chosen after inspecting
+Arm B, and no detector has been run against it at all.** The second half of
+that is itself checkable — nothing in `corpus/` calls a detector, and the
+harvested records carry no verdict field — but the first half rests on our word,
+and we prefer to say so than to let a commit graph appear to prove more than it
+can.
 
 Arm B is therefore a genuine held-out set **for the detectors**. It is not one
 for the conclusion screen, which was developed and calibrated inside the corpus
@@ -212,10 +223,18 @@ The two are separate claims and we do not merge them:
 
 The consequence is that a confirmatory evaluation of the detectors does not
 require assembling new evidence. It requires specifying the analysis before
-running it: which detectors are evaluable, the estimand for each, the
-exclusions, the handling of `not_applicable`, and what counts as success —
-written down against a frozen commit, executed once. That evaluation is not
-reported here, and anything we run afterwards will be labelled post hoc.
+running it, and that specification now exists: `corpus/PROTOCOL.md` fixes the
+unit and estimand, which detectors are evaluable and why, the three-way
+separation of eligible-and-answered from eligible-but-declined from
+not-evaluable, the outcome and two pre-specified sensitivity analyses for its
+partial validation, the exclusions, review-clustered uncertainty, and — before
+anything is run — what would count as a positive, a negative and an
+inconclusive result.
+
+**That evaluation is not reported here.** The protocol is frozen and
+unexecuted; no detector has been run against Arm B. It is written so that the
+argument of this paper does not depend on which of the three outcomes occurs,
+which is the condition under which held-out evidence is worth spending.
 
 # 4. Reproducibility
 

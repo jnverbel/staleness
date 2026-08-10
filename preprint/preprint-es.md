@@ -208,14 +208,26 @@ corpus junto a este artículo en vez de describirlo y no poder compartirlo.
 
 ## 3.4 El brazo B está retenido para los detectores, y no para el cribado
 
-La cronología importa y es verificable, no una afirmación retrospectiva. El
-comportamiento de los detectores quedó congelado en el commit `f59bb41`
-(2026-08-09 19:30 −0500); el corpus del brazo B se introdujo por primera vez en
-el commit `c7e9505` (2026-08-10 07:56 −0500). Desde ese segundo commit,
-`git diff` reporta **cero líneas de código cambiadas** en cualquier archivo
-fuente de detector: las únicas ediciones son de documentación. Ningún
-parámetro, ningún umbral y ninguna interpretación de un criterio publicado
-ambiguo se decidió mirando el brazo B, porque ninguno pudo haberlo sido.
+La cronología registrada en control de versiones respalda esta separación y
+hace auditable la historia relevante de la implementación. El comportamiento de
+los detectores quedó congelado en el commit `f59bb41` (2026-08-09 19:30 −0500);
+el corpus del brazo B se introdujo por primera vez en el commit `c7e9505`
+(2026-08-10 07:56 −0500). Desde ese segundo commit, `git diff` reporta **cero
+líneas de código cambiadas** en cualquier archivo fuente de detector: las
+únicas ediciones son de documentación.
+
+Eso es lo que el repositorio demuestra, y conviene ser exactos sobre sus
+límites. El control de versiones muestra que ningún comportamiento *versionado*
+de detector cambió una vez que el corpus existía; no puede mostrar que ningún
+archivo sin versionar ni ninguna exploración externa precediera al
+congelamiento. Así que la parte restante es una declaración de los autores y no
+una propiedad de la historia: **ningún parámetro, umbral ni interpretación de
+un criterio publicado ambiguo se eligió tras inspeccionar el brazo B, y ningún
+detector se ha ejecutado siquiera contra él.** La segunda mitad es a su vez
+comprobable —nada en `corpus/` invoca un detector, y los registros cosechados
+no llevan campo de veredicto— pero la primera descansa en nuestra palabra, y
+preferimos decirlo a dejar que un grafo de commits parezca demostrar más de lo
+que puede.
 
 El brazo B es por tanto un conjunto genuinamente retenido **para los
 detectores**. No lo es para el cribado de conclusiones, que se desarrolló y se
@@ -230,11 +242,19 @@ mezclamos:
 | Brazo B, cribado de conclusiones | desarrollo, parcialmente validado |
 
 La consecuencia es que una evaluación confirmatoria de los detectores no exige
-reunir evidencia nueva. Exige especificar el análisis antes de ejecutarlo: qué
-detectores son evaluables, el estimando de cada uno, las exclusiones, el
-tratamiento de `not_applicable`, y qué cuenta como éxito — escrito contra un
-commit congelado y ejecutado una sola vez. Esa evaluación no se reporta aquí, y
-todo lo que corramos después irá etiquetado como post hoc.
+reunir evidencia nueva. Exige especificar el análisis antes de ejecutarlo, y esa
+especificación ya existe: `corpus/PROTOCOL.md` fija la unidad y el estimando,
+qué detectores son evaluables y por qué, la separación en tres de
+elegible-y-respondió, elegible-pero-se-abstuvo y no-evaluable, el desenlace y
+dos análisis de sensibilidad preespecificados para su validación parcial, las
+exclusiones, la incertidumbre agrupada por revisión y —antes de ejecutar nada—
+qué contaría como resultado positivo, negativo e inconcluyente.
+
+**Esa evaluación no se reporta aquí.** El protocolo está congelado y sin
+ejecutar; ningún detector se ha corrido contra el brazo B. Está escrito de modo
+que el argumento de este artículo no dependa de cuál de los tres resultados
+ocurra, que es la condición bajo la cual vale la pena gastar evidencia
+retenida.
 
 # 4. Reproducibilidad
 
