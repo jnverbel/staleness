@@ -20,7 +20,9 @@ rather than sending an API that would have to change immediately.
 
 0 errors | 0 warnings | 1 note
 
-The note is the usual `New submission` from the incoming-feasibility check.
+The note is the usual `New submission` from the incoming-feasibility check,
+and it is the only one: verified on a public repository with a full
+`--as-cran` run including the PDF manual.
 
 `checking examples ... OK` and `checking tests ... OK` on all of the above.
 
@@ -30,8 +32,9 @@ because of a failure it caused. An earlier version passed eight platforms with
 `--no-manual` everywhere, so no job built the manual at all, and a single Greek
 letter in an `.Rd` file broke LaTeX where only CRAN would have seen it.
 
-The URLs it flags as 404 all point at the package's own repository, which is
-private while this submission is prepared and becomes public on acceptance.
+The repository is public, so the URLs in `DESCRIPTION` resolve; an earlier
+draft of this file said they would 404 because the repository was private
+while the submission was prepared, and that is no longer the case.
 
 ## Maintainer
 
