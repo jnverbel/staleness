@@ -8,6 +8,7 @@ tags:
   - research methodology
 authors:
   - name: Javier Núñez
+    orcid: 0009-0003-9770-4986
     affiliation: 1
 affiliations:
   - name: Independent researcher

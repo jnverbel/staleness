@@ -22,11 +22,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Javier Núñez \email{jnverbel@gmail.com}
+\strong{Maintainer}: Javier Núñez \email{jnverbel@gmail.com} (\href{https://orcid.org/0009-0003-9770-4986}{ORCID})
 
 Authors:
 \itemize{
-  \item Javier Núñez \email{jnverbel@gmail.com}
+  \item Javier Núñez \email{jnverbel@gmail.com} (\href{https://orcid.org/0009-0003-9770-4986}{ORCID})
 }
 
 }
