@@ -151,6 +151,54 @@ negative gap cannot exist. The nesting invariant — comparable ⊆ has-effect �
 all pairs — exists so no future edit can quietly report the wider set as the
 usable one, which is exactly the mistake that was made once already.
 
+## The coding, and a rate that does not match the one it was planned around
+
+All 120 sampled pairs were coded blind — no score, no flags, no stratum
+visible — against French's three categories, with major defined as a change
+that alters the substance, meaning or interpretation.
+
+| stratum | n | major | minor | none | % major (95% CI) |
+|---|---:|---:|---:|---:|---|
+| high | 40 | 34 | 6 | 0 | 85% (71–93) |
+| medium | 40 | 26 | 14 | 0 | 65% (50–78) |
+| low | 40 | 3 | 20 | 17 | 8% (3–20) |
+
+**The screen works.** 85% against 8% is an 11.3-fold separation, which is what
+makes it worth using to order the remaining 440 pairs. The reweighted
+population estimate equals the raw sample proportion here only because the
+strata are equal thirds and 40 were drawn from each; the reweighting is in
+`04-analyse-coding.py` so it stays correct if either changes.
+
+**And the rate is 52%, where French measured 9%.** That is a sixfold
+discrepancy and it is not a detail. Four explanations, none yet tested:
+
+1. **Selection.** French's 9% is over *updated reviews*. This 52% is over
+   pairs that carry a comparable quantitative estimate at both ends. A review
+   that reports a poolable effect twice is a review with something that could
+   move; one that says "insufficient evidence" throughout cannot change its
+   conclusion much. This is probably the largest of the four.
+2. **The GRADE transition.** Cochrane restructured how conclusions are written
+   around 2011. Pairs spanning that boundary had their conclusions rewritten
+   wholesale, and telling a template change from a substantive one is exactly
+   the judgement French's "minor change" category exists to make.
+3. **Era.** French compared 1998 against 2002. Modern reviews state findings
+   per outcome with certainty grades, so there is simply more text in which a
+   substantive change can occur.
+4. **One coder, not two.** French used two investigators independently. This
+   was coded once, and the borderline cases went to major more often than not.
+
+**This makes human validation more important, not less.** A 52% rate produced
+by a single automated coder, against a published 9% from two humans, is the
+first thing a reviewer will attack — and correctly, because nothing here
+distinguishes "the corpora genuinely differ" from "the coder is liberal". A
+sub-sample coded by a person, or French's own coding as an external standard,
+is what settles it. Until one of those exists, **52% is a working figure and
+not a finding.**
+
+The practical consequence is the opposite of bad news: ~290 expected events in
+560 pairs rather than ~50, which is a well-powered study. It just cannot be
+claimed yet.
+
 ## Not in here
 
 Per-study forest plot data. Cochrane full text is behind a paywall and

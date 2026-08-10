@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""
+Join the coding back to the sample and estimate the population rate.
+
+The sample is stratified by screen score, so the raw proportion of major
+changes in it is NOT an estimate of anything: the high stratum was
+deliberately over-represented. The population rate has to be rebuilt by
+weighting each stratum by its real size, and that is the only number that
+belongs in a sentence about how often conclusions change.
+
+Also reports what the screen bought. A screen that orders work is worth having
+only if the low stratum really does contain fewer events than the high one;
+if the strata are indistinguishable, the score is noise and the sample should
+have been simple random.
+"""
+
+import json
+import os
+from collections import Counter
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+D = os.path.join(HERE, "data")
+
+
+def wilson(k, n, z=1.96):
+    if n == 0:
+        return (float("nan"), float("nan"))
+    p = k / n
+    d = 1 + z * z / n
+    c = p + z * z / (2 * n)
+    h = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5)
+    return (max(0.0, (c - h) / d), min(1.0, (c + h) / d))
+
+
+def main():
+    codes = {int(k): v for k, v in json.load(open(f"{D}/coding/codes-claude.json")).items()}
+    key = {r["n"]: r for r in json.load(open(f"{D}/coding/key.json"))}
+    screened = [json.loads(l) for l in open(f"{D}/screened.jsonl")]
+    usable = [r for r in screened if r.get("comparable_effects")]
+
+    # Stratum sizes in the population the sample was drawn from.
+    n_us = len(usable)
+    pop = {"alto": n_us // 3, "medio": n_us // 3, "bajo": n_us - 2 * (n_us // 3)}
+
+    print(f"población muestreada (pares con efectos comparables): {n_us}")
+    print(f"muestra codificada: {len(codes)}\n")
+
+    print(f"{'estrato':8s} {'n':>4s} {'mayor':>6s} {'menor':>6s} {'ninguno':>8s} {'% mayor':>9s}")
+    rate = {}
+    for s in ("alto", "medio", "bajo"):
+        ns = [n for n in codes if key[n]["stratum"] == s]
+        c = Counter(codes[n] for n in ns)
+        rate[s] = c["major"] / len(ns)
+        lo, hi = wilson(c["major"], len(ns))
+        print(f"{s:8s} {len(ns):4d} {c['major']:6d} {c['minor']:6d} {c['none']:8d} "
+              f"{100*rate[s]:8.0f}%  [{100*lo:.0f}-{100*hi:.0f}]")
+
+    est = sum(rate[s] * pop[s] / n_us for s in pop)
+    raw = sum(1 for n in codes if codes[n] == "major") / len(codes)
+    print(f"\nproporción CRUDA en la muestra      : {100*raw:.0f}%   <- no estima nada")
+    print(f"estimación REPONDERADA por estrato  : {100*est:.0f}%")
+    print(f"eventos esperados en los {n_us} pares : ~{round(est*n_us)}")
+
+    # What the screen bought. If alto and bajo are indistinguishable, the score
+    # is noise and the stratification was pointless.
+    print(f"\nseparación que consigue el cribado: {100*rate['alto']:.0f}% en el alto "
+          f"contra {100*rate['bajo']:.0f}% en el bajo")
+    if rate["bajo"] > 0:
+        print(f"  razón alto/bajo: {rate['alto']/rate['bajo']:.1f}x")
+
+    # And the honest comparison against the figure this was planned around.
+    print(f"\nFrench et al. (2005) midió 9% sobre 254 revisiones actualizadas.")
+    print(f"Aquí sale {100*est:.0f}%. Las dos no son comparables sin discutir por que;")
+    print(f"ver el README.")
+
+
+if __name__ == "__main__":
+    main()
