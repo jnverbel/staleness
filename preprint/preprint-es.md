@@ -44,13 +44,18 @@ combinada comparable y las conclusiones de los autores en ambos extremos; un
 cribado automático separa los cambios probables de conclusión con una razón de
 11,3 entre estratos.
 
-**Conclusiones.** Dos de los cinco detectores publicados son estructuralmente
-incapaces de responder sobre evidencia histórica corriente, uno es inestable
-por construcción justo en las revisiones a las que apunta, y otro descansa en
-un estadístico sin distribución nula válida. Son hallazgos exploratorios sobre
-17 revisiones sin conjunto retenido, contrastados contra objetivos operativos
-que observan el movimiento de la estimación combinada y no lo que ningún
-equipo de revisión hizo. El programa, los barridos y el corpus son
+**Conclusiones.** Los cinco se reparten en dos clases de problema, y la
+distinción importa. Dos sencillamente no están definidos una vez que el
+metanálisis previo es significativo, que es el caso en el 91 % de los cortes
+aquí: eso es una restricción de dominio y no un defecto, pero significa que
+normalmente ni siquiera pueden interrogarse, y la única comparación publicada
+no pudo verlo porque su cohorte estaba seleccionada por la única condición bajo
+la cual sí pueden. Los otros dos fallos sí son defectos: un criterio es
+inestable por construcción justo en las revisiones a las que su método apunta,
+y un estadístico carece de distribución nula válida. Son hallazgos
+exploratorios sobre 17 revisiones sin conjunto retenido, contrastados contra
+objetivos operativos que observan el movimiento de la estimación combinada y no
+lo que ningún equipo de revisión hizo. El programa, los barridos y el corpus son
 reproducibles a partir de fuentes públicas.
 
 ---
@@ -425,13 +430,20 @@ no pruebas sofisticadas.
 
 # 6. Discusión
 
-Tres de los cinco detectores publicados no sobreviven al contacto con
-evidencia histórica corriente en la forma en que sus fuentes los describen. Dos
-no pueden interrogarse siquiera en el 91 % de los cortes de una muestra de
-conveniencia de revisiones reales; uno es inestable por construcción
-precisamente sobre las revisiones a las que apunta; y otro descansa en un
-estadístico cuya distribución nula no existe. El cuarto y el quinto son
-implementables tal como se describen y se comportan sin sorpresas.
+Los resultados son de dos clases y no deben leerse como una sola. `barrowman` y
+`simulation` **no están definidos** una vez que el metanálisis previo es
+significativo, que es el caso en el 91 % de los cortes de esta muestra. Eso es
+una propiedad de las preguntas que formulan —cuántos participantes harían falta
+para alcanzar significación, y qué potencia tiene el siguiente lote para
+lograrla— y ninguna de las dos es un defecto. Sí significa que, sobre evidencia
+tomada como viene, normalmente no pueden interrogarse.
+
+El criterio de efecto de Ottawa y la pendiente de estabilidad de la suficiencia
+son otra cosa, porque ambos fallan allí donde sí aplican: el primero tiene un
+denominador que tiende a cero precisamente sobre los metanálisis nulos a los
+que su método apunta, y el segundo carece por completo de distribución nula
+válida. `rcma` es implementable tal como se describe y se comporta sin
+sorpresas.
 
 No son métodos nuevos y esto no es una propuesta para reemplazarlos. La
 contribución es que la pregunta ahora puede formularse siquiera, de forma

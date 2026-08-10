@@ -41,12 +41,17 @@ distribution and fired on 209 of 300 samples of unchanging evidence. In Arm B,
 each end; an automated screen separates likely conclusion changes 11.3-fold
 across strata.
 
-**Conclusions.** Two of five published detectors are structurally unable to
-answer on ordinary historical evidence, one is unstable by construction on
-exactly the reviews it targets, and one rests on a statistic with no valid null
-distribution. These are exploratory findings on 17 reviews with no held-out
-set, scored against operational targets that observe the pooled estimate moving
-rather than what any review team did. The software, the sweeps and the corpus
+**Conclusions.** The five divide into two kinds of problem, and the distinction
+matters. Two are simply not defined once the prior meta-analysis is
+significant, which is the case at 91% of cuts here: that is a domain
+restriction rather than a defect, but it means they usually cannot be asked at
+all, and the one published comparison could not see this because its cohort was
+selected for the single condition under which they can. The other two failures
+are defects: one criterion is unstable by construction on exactly the reviews
+its method targets, and one statistic has no valid null distribution. These are
+exploratory findings on 17 reviews with no held-out set, scored against
+operational targets that observe the pooled estimate moving rather than what
+any review team did. The software, the sweeps and the corpus
 are reproducible from public sources.
 
 ---
@@ -386,12 +391,19 @@ mostly range checks rather than sophisticated tests.
 
 # 6. Discussion
 
-Three of the five published detectors do not survive contact with ordinary
-historical evidence in the form their sources describe. Two cannot be asked at
-all on 91% of cuts in a convenience sample of real reviews; one is unstable by
-construction on precisely the reviews it targets; and one rests on a statistic
-whose null distribution does not exist. The fourth and fifth are implementable
-as described and behave unremarkably.
+The results are of two kinds and should not be read as one. `barrowman` and
+`simulation` are **not defined** once the prior meta-analysis is significant,
+which is the case at 91% of cuts in this sample. That is a property of the
+questions they ask — how many participants would be needed to reach
+significance, and what power the next batch has to achieve it — and neither is
+a defect. It does mean that on evidence taken as it comes, they usually cannot
+be asked.
+
+The Ottawa effect criterion and the sufficiency stability slope are a different
+matter, because both fail where they do apply: the first has a denominator that
+approaches zero precisely on the null meta-analyses its method targets, and the
+second has no valid null distribution at all. `rcma` is implementable as
+described and behaves unremarkably.
 
 These are not new methods and this is not a proposal to replace them. The
 contribution is that the question can now be asked at all, repeatedly, by
