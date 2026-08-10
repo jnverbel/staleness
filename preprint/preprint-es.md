@@ -620,7 +620,11 @@ verificada.
 # 8. Disponibilidad
 
 El paquete es público y tiene licencia MIT en
-<https://github.com/jnverbel/staleness>. El brazo A lo regenera
+<https://github.com/jnverbel/staleness>. **Cada cifra de este artículo se
+reproduce con la etiqueta `preprint-v1`**, no con la rama móvil: esa etiqueta es
+el estado exacto aquí descrito, incluido el `corpus/PROTOCOL.md` congelado y sin
+ejecutar. La integración continua está en verde sobre ella en ocho plataformas,
+de R 4.2.3 a R-devel, con 1.176 pruebas del paquete y 35 del corpus. El brazo A lo regenera
 `inst/applicability/applicability.R`, las figuras de calibración
 `inst/calibration/calibration.R`, y el brazo B los tres guiones de `corpus/`.
 La búsqueda fechada en CRAN que respalda la afirmación del §1 está en
