@@ -341,11 +341,45 @@ El tercero es lo que ejecuta el paquete, y el detector se llama
 visible en el punto de llamada y en toda tabla de resultados. La pendiente
 publicada se sigue calculando y devolviendo como diagnóstico; no decide nada.
 
-La calibración no es uniforme. A lo largo de distintos esquemas de varianza la
-tasa de falsas alarmas se mantiene entre 2,4 % y 11,1 %, con el peor caso en
-una rampa de precisión monótona y suave de 650 a 1. Ese límite se declara en
-vez de explicarse, y queda fijado por una prueba para que no pueda empeorar en
-silencio.
+El sustituto tampoco está uniformemente calibrado, y reportamos dónde falla con
+el mismo cuidado con que reportamos dónde falla el original. A lo largo de once
+regímenes de varianza la tasa de falsas alarmas va del 2,4 % (conservadora) al
+11,1 %, aproximadamente el doble de lo nominal, con el peor caso en una rampa
+de precisión monótona y suave de 650 a 1. El patrón no es la dirección de la
+tendencia —crecimiento y decrecimiento son igual de malos— sino su suavidad,
+monotonía y rango: las mismas varianzas de `dat.bcg` reordenadas de forma
+creciente llevan la tasa de 5,0 % a 9,4 %, que es la demostración más limpia
+de que lo que importa es la disposición y no los números.
+
+Un segundo límite importa más para la interpretación. El estadístico es un
+máximo sobre puntos de división, y la división que aísla un único estudio es
+uno de ellos, así que un solo estudio discordante que llegue primero o último
+puede cargarlo:
+
+| k | sin atípico | D = 3 EE | D = 5 EE | D = 10 EE |
+|---|---|---|---|---|
+| 20 | 0,050 | 0,175 | 0,625 | 0,660 |
+| 25 | 0,037 | 0,205 | 0,885 | 0,938 |
+| 30 | 0,045 | 0,210 | 0,927 | 0,990 |
+| 40 | 0,052 | 0,240 | 0,995 | 0,993 |
+
+Un estudio discordante a cinco errores estándar es un suceso corriente en una
+revisión real, de modo que a partir de `k = 25` aproximadamente este detector
+es en buena medida un detector de un solo atípico. Que esa sea la respuesta
+correcta es discutible —un estudio así sí mueve la estimación combinada— pero
+no debe leerse como evidencia de una tendencia, y las dos lecturas son
+separables: entre los disparos de esa tabla, `detail$split` apuntó a la
+división de un solo estudio en el 97–99 % de los casos. Una versión que exija
+que el desplazamiento persista a lo largo de dos o tres estudios posteriores es
+la variante siguiente evidente, y no hemos probado ninguna.
+
+Un borrador anterior de esta afirmación estaba equivocado en la dirección
+favorable: situaba el umbral en veinte errores estándar a partir de `k = 35`,
+medido sobre un caso de prueba sin ruido en el que todos los demás estudios
+eran idénticos byte a byte, lo que hace que el ordenamiento espejo sea un
+empate exacto e infla el recuento de permutaciones. Había caído justo en el
+rincón del espacio de parámetros donde el efecto parece leve. Ambas cifras
+están en la documentación del paquete, incluida la superada.
 
 ## 5.4 Un desenlace editorial es alcanzable, para tres de los cinco detectores
 
@@ -449,6 +483,18 @@ No son métodos nuevos y esto no es una propuesta para reemplazarlos. La
 contribución es que la pregunta ahora puede formularse siquiera, de forma
 repetida, por cualquiera, sobre cualquier cuerpo de evidencia — y que cuando se
 formula, las respuestas son en su mayoría poco halagadoras.
+
+**La cobertura merece ir junto a la sensibilidad y la especificidad, no en una
+nota al pie.** La forma convencional de comparar detectores es una tabla de
+contingencia, y una tabla de contingencia no tiene casilla para «este método no
+tenía derecho a responder». Nuestros resultados sugieren que la primera
+pregunta no es cuál detector acierta más, sino *en qué fracción de situaciones
+un detector está siquiera definido* — y que esas dos preguntas pueden tener
+respuestas opuestas, porque un método que responde rara vez puede lucir
+excelente en las pocas ocasiones en que lo hace. Por eso el paquete devuelve
+una fila con `n = 0` y métricas `NA` para un detector que nunca aplicó, en vez
+de omitirla: así una ausencia es un valor en la tabla y no algo que el lector
+tenga que notar.
 
 El resultado de aplicabilidad merece énfasis porque cambia cómo debe leerse la
 única comparación existente. Pattanittum et al. no hallaron que `barrowman` y

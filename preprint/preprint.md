@@ -312,10 +312,42 @@ The third is what the package runs, and the detector is named
 visible at the call site and in every results table. The published slope is
 still computed and returned as a diagnostic; it decides nothing.
 
-The calibration is not uniform. Across variance schedules the false-alarm rate
-stays between 2.4% and 11.1%, with the worst case a smooth 650:1 monotone
-precision ramp. That limit is disclosed rather than claimed away, and pinned by
-a test so it cannot silently get worse.
+The substitute is not uniformly calibrated either, and we report where it
+fails as carefully as where the original does. Across eleven variance regimes
+the false-alarm rate runs from 2.4% (conservative) to 11.1%, roughly twice
+nominal, with the worst case a smooth 650:1 monotone precision ramp. The
+pattern is not the direction of the trend — growth and decay are equally bad —
+but its smoothness, monotonicity and range: the same `dat.bcg` variances
+rearranged into sorted order move the rate from 5.0% to 9.4%, which is the
+cleanest demonstration that it is the arrangement and not the numbers.
+
+A second limit matters more for interpretation. The statistic is a maximum over
+split points, and the split isolating a single study is one of them, so a lone
+discordant study arriving first or last can carry it:
+
+| k | no outlier | D = 3 SE | D = 5 SE | D = 10 SE |
+|---|---|---|---|---|
+| 20 | 0.050 | 0.175 | 0.625 | 0.660 |
+| 25 | 0.037 | 0.205 | 0.885 | 0.938 |
+| 30 | 0.045 | 0.210 | 0.927 | 0.990 |
+| 40 | 0.052 | 0.240 | 0.995 | 0.993 |
+
+A five-SE discordant study is an ordinary occurrence in a real review, so from
+about `k = 25` this detector is substantially a single-outlier detector.
+Whether that is the right answer is arguable — such a study does move the
+pooled estimate — but it must not be read as evidence of a trend, and the two
+readings are separable: among the firings in that table, `detail$split` pointed
+at the single-study split in 97–99% of cases. A version requiring the shift to
+persist across two or three subsequent studies is the obvious next variant and
+we have not tested one.
+
+An earlier draft of this claim was wrong in the flattering direction — it put
+the threshold at twenty standard errors from about `k = 35`, measured on a
+noise-free fixture in which every other study was byte-identical, which makes
+the mirror-image ordering an exact tie and inflates the permutation count. It
+had landed in the one corner of the parameter space where the effect looks
+mild. Both figures are in the package documentation, the superseded one
+included.
 
 ## 5.4 An editorial outcome is reachable, for three of the five detectors
 
@@ -409,6 +441,17 @@ These are not new methods and this is not a proposal to replace them. The
 contribution is that the question can now be asked at all, repeatedly, by
 anyone, on any body of evidence — and that when it is asked, the answers are
 mostly unflattering.
+
+**Coverage belongs beside sensitivity and specificity, not inside a
+footnote.** The conventional way to compare detectors is a contingency table,
+and a contingency table has no cell for "this method had no right to answer".
+Our results suggest the first question is not which detector is most accurate
+but *in what fraction of situations a detector is defined at all* — and that
+those two questions can have opposite answers, since a method that answers
+rarely can look excellent on the few occasions it does. The package therefore
+returns a row with `n = 0` and `NA` metrics for a detector that never applied,
+rather than omitting it, so that an absence is a value in the table instead of
+something a reader has to notice.
 
 The applicability result deserves emphasis because it changes how the one
 existing comparison should be read. Pattanittum et al. did not find that
