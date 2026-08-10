@@ -47,7 +47,7 @@ def main():
 
     reviews = len(by_review)
     chain_len = Counter()
-    pairs = both_concl = both_effect = protocols = 0
+    pairs = both_concl = both_effect = protocols = same_abs = 0
 
     # An unsuffixed DOI was read as version 1, and that was wrong: Europe PMC
     # carries several index records under the same bare DOI for one review, so
@@ -86,8 +86,17 @@ def main():
                     both_concl += 1
                 if ea and eb:
                     both_effect += 1
+                # Two versions whose ENTIRE abstract is byte-identical are not
+                # an update that left the conclusions standing -- that case is
+                # real and common (662 of them, with Main results visibly
+                # rewritten). These 131 are the same record reaching the index
+                # twice. Flagged rather than dropped here, so the count stays
+                # visible downstream instead of vanishing from a denominator.
+                same_abstract = (a.get("abstract") or "") == (b.get("abstract") or "")
+                same_abs += same_abstract
                 out.write(json.dumps({
                     "review_id": rid,
+                    "same_abstract": same_abstract,
                     "from_version": a["version"], "to_version": b["version"],
                     "from_date": a["date"], "to_date": b["date"],
                     "from_doi": a["doi"], "to_doi": b["doi"],
@@ -104,6 +113,7 @@ def main():
         if n <= 8 or chain_len[n] > 5:
             print(f"  {n:2d} version(es): {chain_len[n]:5d}")
     print(f"\nPARES consecutivos        : {pairs}")
+    print(f"  con el resumen ENTERO identico (excluibles): {same_abs}")
     print(f"  con conclusiones en AMBOS: {both_concl}  ({100*both_concl/pairs:.0f}%)")
     print(f"  con efecto en AMBOS      : {both_effect}  ({100*both_effect/pairs:.0f}%)")
     print(f"\nescrito: {OUT}")
