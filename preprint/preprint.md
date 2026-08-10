@@ -1,10 +1,8 @@
 ---
 title: "Five published signals for updating meta-analyses, applied and evaluated: an exploratory study of when they can be used at all"
-author:
-  - name: Javier Núñez
-    orcid: 0009-0003-9770-4986
-    affiliation: Independent researcher
-    email: jnverbel@gmail.com
+author: |
+  Javier Núñez\
+  \small Independent researcher · ORCID [0009-0003-9770-4986](https://orcid.org/0009-0003-9770-4986) · jnverbel@gmail.com
 date: 2026-08-10
 keywords: [systematic review updating, meta-analysis, evidence synthesis, research methodology, reproducibility]
 ---
