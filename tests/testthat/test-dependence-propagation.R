@@ -3,7 +3,7 @@
 # every estimate were a separate trial, with no column saying otherwise -- and
 # the rates are optimistic, because the denominator counts one trial several
 # times. The flag now travels: stream -> backtest -> calibration/lead_time,
-# and pooled_calibration() withholds its interval rather than printing one
+# and pooled_calibration(, reviews_independent = TRUE) withholds its interval rather than printing one
 # that resampling reviews cannot justify.
 
 dep_stream <- function(n = 14, seed = 11, dependent = TRUE) {
@@ -47,10 +47,10 @@ test_that("an independent stream reports FALSE, so the column discriminates", {
   expect_false(any(lead_time(bt)$dependent))
 })
 
-test_that("pooled_calibration() withholds its interval over dependent reviews", {
+test_that("pooled_calibration(, reviews_independent = TRUE) withholds its interval over dependent reviews", {
   bts <- list(dep_backtest(seed = 11), dep_backtest(seed = 12))
 
-  expect_warning(res <- pooled_calibration(bts, "shift", R = 100, seed = 1),
+  expect_warning(res <- pooled_calibration(bts, "shift", R = 100, seed = 1, reviews_independent = TRUE),
                  "accept_dependence")
   # Descriptive figures are still computed -- the caller asked for them and
   # they describe what happened. It is the interval that is withheld.
@@ -63,7 +63,7 @@ test_that("pooled_calibration() withholds its interval over dependent reviews", 
 
   # Expert use is not blocked: say so in the call and the bounds come back.
   ok <- pooled_calibration(bts, "shift", R = 100, seed = 1,
-                           accept_dependence = TRUE)
+                           accept_dependence = TRUE, reviews_independent = TRUE)
   expect_true(all(ok$dependent))
   expect_true(any(!is.na(ok$sens_lo)))
 })
@@ -71,7 +71,9 @@ test_that("pooled_calibration() withholds its interval over dependent reviews", 
 test_that("independent reviews keep their interval and their FALSE flag", {
   bts <- list(dep_backtest(seed = 11, dependent = FALSE),
               dep_backtest(seed = 12, dependent = FALSE))
-  res <- expect_no_warning(pooled_calibration(bts, "shift", R = 100, seed = 1))
+  res <- expect_no_warning(
+    pooled_calibration(bts, "shift", R = 100, seed = 1,
+                       reviews_independent = TRUE))
   expect_false(any(res$dependent))
   expect_true(any(!is.na(res$sens_lo)))
 })
@@ -80,7 +82,8 @@ test_that("accept_dependence refuses anything that is not one TRUE or FALSE", {
   bts <- list(dep_backtest(seed = 11, dependent = FALSE))
   for (bad in list(NA, "yes", 1, c(TRUE, TRUE), NULL)) {
     expect_error(pooled_calibration(bts, "shift", R = 20, seed = 1,
-                                    accept_dependence = bad),
+                                    accept_dependence = bad,
+                                    reviews_independent = TRUE),
                  "must be TRUE or FALSE")
   }
 })

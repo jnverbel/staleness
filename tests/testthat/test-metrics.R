@@ -358,7 +358,8 @@ test_that("pooled_calibration resamples reviews, not cuts", {
   # far too narrow. Independence lives at the level of reviews: different
   # reviews share no studies, so those are what get resampled.
   bts <- lapply(1:4, mk_bt)
-  p <- pooled_calibration(bts, "shift", R = 200, seed = 1)
+  p <- pooled_calibration(bts, "shift", R = 200, seed = 1,
+                          reviews_independent = TRUE)
 
   expect_true(all(c("n_reviews", "sens_lo", "sens_hi",
                     "spec_lo", "spec_hi") %in% names(p)))
@@ -369,10 +370,14 @@ test_that("pooled_calibration resamples reviews, not cuts", {
   expect_true(all(p$spec_hi[ok] >= p$specificity[ok] - 1e-9))
 
   # Reproducible under a seed, and the caller's stream survives.
-  expect_equal(pooled_calibration(bts, "shift", R = 200, seed = 1),
-               pooled_calibration(bts, "shift", R = 200, seed = 1))
+  expect_equal(pooled_calibration(bts, "shift", R = 200, seed = 1,
+                                  reviews_independent = TRUE),
+               pooled_calibration(bts, "shift", R = 200, seed = 1,
+                                  reviews_independent = TRUE))
   set.seed(5); before <- runif(2)
-  set.seed(5); invisible(pooled_calibration(bts, "shift", R = 100, seed = 2))
+  set.seed(5)
+  invisible(pooled_calibration(bts, "shift", R = 100, seed = 2,
+                               reviews_independent = TRUE))
   expect_equal(runif(2), before)
 })
 
@@ -381,7 +386,8 @@ test_that("one review gets a rate but no interval", {
   # else, so it is withheld rather than printed narrow. The rate itself is
   # still reported, and agrees with calibration() on the same series.
   bts <- lapply(1:4, mk_bt)
-  one <- pooled_calibration(bts[2], "shift", R = 100, seed = 1)
+  one <- pooled_calibration(bts[2], "shift", R = 100, seed = 1,
+                            reviews_independent = TRUE)
   expect_true(all(one$n_reviews == 1))
   expect_true(all(is.na(one$spec_lo)))
   expect_true(all(is.na(one$sens_lo)))
@@ -401,9 +407,12 @@ test_that("backtests answering different questions are not pooled", {
                                  window = 3, min_k = 3, seed = 1,
                                  methods = c("rcma", "ottawa"),
                                  truth_target = "horizon"))
-  expect_error(pooled_calibration(list(a, b), "shift", R = 50, seed = 1),
+  expect_error(pooled_calibration(list(a, b), "shift", R = 50, seed = 1,
+                                  reviews_independent = TRUE),
                "different")
-  expect_error(pooled_calibration(list(), "shift"), "non-empty")
-  expect_error(pooled_calibration(list(a, "not a backtest"), "shift"),
+  expect_error(pooled_calibration(list(), "shift", reviews_independent = TRUE),
+               "non-empty")
+  expect_error(pooled_calibration(list(a, "not a backtest"), "shift",
+                                  reviews_independent = TRUE),
                "staleness_backtest")
 })

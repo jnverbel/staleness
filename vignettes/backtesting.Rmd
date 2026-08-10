@@ -93,7 +93,17 @@ and the one at 1971 differ by a single year of publication — nineteen cuts are
 not nineteen observations. Nothing here estimates how a detector behaves in
 general, which is also why no interval is shown: a binomial one computed on
 that denominator would come out far too narrow. For a rate that generalises,
-`pooled_calibration()` takes several independent reviews and resamples *them*.
+`pooled_calibration()` takes several independent reviews and resamples *them*
+— asking you to declare the independence, because `study_id` labels chosen
+separately per stream cannot be compared across reviews and so it cannot be
+checked. It also asks which of two estimands you want: `weighting = "cut"`
+answers "across all the cuts in this corpus, what share of the out-of-date
+ones were flagged?", where a thirty-cut review counts six times a five-cut
+one, and `weighting = "review"` answers "for a typical review, what share?".
+Both are reported with the choice attached in a `weighting` column, and they
+diverge exactly where detector behaviour depends on series length — which is
+the case for `barrowman` and `simulation`, applicable only while the prior
+review is non-significant and so mostly on short early series.
 
 **They are scored against the final model.** That is `backtest()`'s default,
 `truth_target = "final"`, and it asks whether a review was already superseded

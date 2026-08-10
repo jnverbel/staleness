@@ -10,6 +10,8 @@ pooled_calibration(
   R = 2000,
   seed = NULL,
   conf = 0.95,
+  weighting = c("cut", "review"),
+  reviews_independent,
   accept_dependence = FALSE
 )
 }
@@ -26,6 +28,15 @@ reproducible; the caller's random stream is restored either way.}
 
 \item{conf}{Interval coverage.}
 
+\item{weighting}{\code{"cut"} weights every cut equally, so long reviews count
+more; \code{"review"} weights every review equally. See the section above:
+these estimate different things, and the answer is reported with the
+choice attached.}
+
+\item{reviews_independent}{Must be given as \code{TRUE}. There is no default and
+no check; see the section above for why the declaration is asked for
+rather than inferred.}
+
 \item{accept_dependence}{Set \code{TRUE} to receive bootstrap bounds even when a
 pooled review was built with \code{allow_dependence = TRUE}. Withheld by
 default, with a warning: the bootstrap resamples whole reviews, which is
@@ -36,9 +47,9 @@ argument governs only the interval, which is the one output here that
 reads as an inferential claim.}
 }
 \value{
-A data frame with one row per method: \code{n_reviews}, \code{n_cuts}, the
-pooled \code{sensitivity} and \code{specificity}, percentile bounds for each, and
-\code{contaminated} and \code{dependent} flags.
+A data frame with one row per method: \code{weighting}, \code{n_reviews},
+\code{n_cuts}, the pooled \code{sensitivity} and \code{specificity}, percentile bounds
+for each, and \code{contaminated} and \code{dependent} flags.
 Bounds are \code{NA} when fewer than two reviews contribute a defined rate --
 an interval from one review would describe nothing but that review -- and
 when \code{dependent} is \code{TRUE} and \code{accept_dependence} is \code{FALSE}.
@@ -60,6 +71,46 @@ reviews to get an interval. What varies between bootstrap replicates is
 which reviews were drawn, which is the variability that matters when asking
 whether a result would hold on other evidence.
 }
+\section{Two estimands, and why the choice cannot be made for you}{
+
+"Pooled sensitivity" is not one quantity. Summing the 2x2 counts across
+reviews and dividing once answers \strong{"across all the cuts in this corpus,
+what share of the truly out-of-date ones did the detector flag?"} — a
+review with thirty cuts contributes six times what a review with five
+contributes. Averaging each review's own rate answers \strong{"for a typical
+review, what share?"} — every review counts once, however long its series.
+
+Those are different questions with different answers, and neither is a
+better version of the other. \code{weighting = "cut"} gives the first,
+\code{weighting = "review"} the second, and the returned table carries a
+\code{weighting} column so a reader can never be left guessing which one is in
+front of them.
+
+The gap between them is a finding, not noise: they diverge exactly when
+detector behaviour depends on series length, which is the case for
+\code{\link[=barrowman]{barrowman()}} and \code{\link[=simulation]{simulation()}}, applicable only while the prior review is
+non-significant and therefore mostly on short early series. Reporting both
+is cheap.
+}
+
+\section{Why you have to declare that the reviews are independent}{
+
+The bootstrap draws whole reviews and the pooling adds their counts. Both
+steps assume the reviews share no studies. Nothing here can check that: a
+\code{study_id} is a label chosen by whoever built each stream, and two reviews
+that each numbered their studies \code{1:14} would look identical and be
+unrelated, while two reviews of overlapping literature might use different
+labels for the same trial. An automatic check would be wrong in both
+directions.
+
+So \code{reviews_independent} has no default and must be given as \code{TRUE}. It is
+the same reasoning as \code{study_id} in \code{\link[=evidence_stream]{evidence_stream()}} — a promise that
+cannot be checked is asked for explicitly rather than assumed — with the
+difference that here there is nothing to identify, so a declaration is all
+that is left. Two backtests of the same evidence, or of two outcomes from
+one review, are not two reviews.
+}
+
 \examples{
 # Two independent reviews, pooled. The interval comes from resampling the
 # reviews, so it says what would happen on other bodies of evidence -- not
@@ -76,5 +127,14 @@ bts <- lapply(c(1, 2), function(s) {
                             window = 3, min_k = 3, seed = 1,
                             methods = c("rcma", "ottawa")))
 })
-pooled_calibration(bts, "shift", R = 200, seed = 1)
+# `reviews_independent` has no default: these two streams were simulated
+# separately and share no studies, which only the caller can know.
+pooled_calibration(bts, "shift", R = 200, seed = 1,
+                   reviews_independent = TRUE)
+
+# The same evidence under the other estimand. "cut" above asks what share
+# of all out-of-date cuts were flagged; "review" asks what share a typical
+# review has flagged, counting each review once however long its series.
+pooled_calibration(bts, "shift", R = 200, seed = 1, weighting = "review",
+                   reviews_independent = TRUE)
 }

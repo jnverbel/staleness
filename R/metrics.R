@@ -365,6 +365,42 @@ summary.staleness_backtest <- function(object, ...) {
 #' which reviews were drawn, which is the variability that matters when asking
 #' whether a result would hold on other evidence.
 #'
+#' @section Two estimands, and why the choice cannot be made for you:
+#' "Pooled sensitivity" is not one quantity. Summing the 2x2 counts across
+#' reviews and dividing once answers **"across all the cuts in this corpus,
+#' what share of the truly out-of-date ones did the detector flag?"** — a
+#' review with thirty cuts contributes six times what a review with five
+#' contributes. Averaging each review's own rate answers **"for a typical
+#' review, what share?"** — every review counts once, however long its series.
+#'
+#' Those are different questions with different answers, and neither is a
+#' better version of the other. `weighting = "cut"` gives the first,
+#' `weighting = "review"` the second, and the returned table carries a
+#' `weighting` column so a reader can never be left guessing which one is in
+#' front of them.
+#'
+#' The gap between them is a finding, not noise: they diverge exactly when
+#' detector behaviour depends on series length, which is the case for
+#' [barrowman()] and [simulation()], applicable only while the prior review is
+#' non-significant and therefore mostly on short early series. Reporting both
+#' is cheap.
+#'
+#' @section Why you have to declare that the reviews are independent:
+#' The bootstrap draws whole reviews and the pooling adds their counts. Both
+#' steps assume the reviews share no studies. Nothing here can check that: a
+#' `study_id` is a label chosen by whoever built each stream, and two reviews
+#' that each numbered their studies `1:14` would look identical and be
+#' unrelated, while two reviews of overlapping literature might use different
+#' labels for the same trial. An automatic check would be wrong in both
+#' directions.
+#'
+#' So `reviews_independent` has no default and must be given as `TRUE`. It is
+#' the same reasoning as `study_id` in [evidence_stream()] — a promise that
+#' cannot be checked is asked for explicitly rather than assumed — with the
+#' difference that here there is nothing to identify, so a declaration is all
+#' that is left. Two backtests of the same evidence, or of two outcomes from
+#' one review, are not two reviews.
+#'
 #' @param bts A list of `staleness_backtest` objects, one per independent
 #'   review. Two backtests of the same evidence are not two reviews.
 #' @param truth One of [available_truths()].
@@ -372,6 +408,13 @@ summary.staleness_backtest <- function(object, ...) {
 #' @param seed Integer seed, or `NULL`. Without one the interval is not
 #'   reproducible; the caller's random stream is restored either way.
 #' @param conf Interval coverage.
+#' @param weighting `"cut"` weights every cut equally, so long reviews count
+#'   more; `"review"` weights every review equally. See the section above:
+#'   these estimate different things, and the answer is reported with the
+#'   choice attached.
+#' @param reviews_independent Must be given as `TRUE`. There is no default and
+#'   no check; see the section above for why the declaration is asked for
+#'   rather than inferred.
 #' @param accept_dependence Set `TRUE` to receive bootstrap bounds even when a
 #'   pooled review was built with `allow_dependence = TRUE`. Withheld by
 #'   default, with a warning: the bootstrap resamples whole reviews, which is
@@ -380,9 +423,9 @@ summary.staleness_backtest <- function(object, ...) {
 #'   inside it. Point estimates are descriptive and always returned; this
 #'   argument governs only the interval, which is the one output here that
 #'   reads as an inferential claim.
-#' @return A data frame with one row per method: `n_reviews`, `n_cuts`, the
-#'   pooled `sensitivity` and `specificity`, percentile bounds for each, and
-#'   `contaminated` and `dependent` flags.
+#' @return A data frame with one row per method: `weighting`, `n_reviews`,
+#'   `n_cuts`, the pooled `sensitivity` and `specificity`, percentile bounds
+#'   for each, and `contaminated` and `dependent` flags.
 #'   Bounds are `NA` when fewer than two reviews contribute a defined rate --
 #'   an interval from one review would describe nothing but that review -- and
 #'   when `dependent` is `TRUE` and `accept_dependence` is `FALSE`.
@@ -402,10 +445,21 @@ summary.staleness_backtest <- function(object, ...) {
 #'                             window = 3, min_k = 3, seed = 1,
 #'                             methods = c("rcma", "ottawa")))
 #' })
-#' pooled_calibration(bts, "shift", R = 200, seed = 1)
+#' # `reviews_independent` has no default: these two streams were simulated
+#' # separately and share no studies, which only the caller can know.
+#' pooled_calibration(bts, "shift", R = 200, seed = 1,
+#'                    reviews_independent = TRUE)
+#'
+#' # The same evidence under the other estimand. "cut" above asks what share
+#' # of all out-of-date cuts were flagged; "review" asks what share a typical
+#' # review has flagged, counting each review once however long its series.
+#' pooled_calibration(bts, "shift", R = 200, seed = 1, weighting = "review",
+#'                    reviews_independent = TRUE)
 #' @export
 pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
-                               conf = 0.95, accept_dependence = FALSE) {
+                               conf = 0.95, weighting = c("cut", "review"),
+                               reviews_independent,
+                               accept_dependence = FALSE) {
   if (!is.list(bts) || !length(bts)) {
     stop("`bts` must be a non-empty list of staleness_backtest objects",
          call. = FALSE)
@@ -415,6 +469,28 @@ pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
                 "backtest()")
   }
   truth <- match.arg(truth, available_truths())
+  weighting <- match.arg(weighting)
+  # No default, and TRUE is the only accepted value. Pooling and resampling
+  # both assume the reviews share no studies, and nothing here can check it:
+  # study_id labels are chosen per stream, so two unrelated reviews numbering
+  # their studies 1:14 look identical, and two overlapping ones can use
+  # different labels for the same trial. An automatic check would be wrong in
+  # both directions, so the promise is asked for instead of inferred.
+  if (missing(reviews_independent)) {
+    stop("`reviews_independent` must be supplied. Pooling these backtests and ",
+         "resampling them both assume the reviews share no studies, and that ",
+         "cannot be checked from `study_id` labels chosen separately per ",
+         "stream. Pass `reviews_independent = TRUE` to declare it. Two ",
+         "backtests of the same evidence, or of two outcomes from one review, ",
+         "are not two reviews.", call. = FALSE)
+  }
+  if (!isTRUE(reviews_independent)) {
+    stop("`reviews_independent` must be TRUE. Over reviews that share studies ",
+         "there is no defined estimand here: the counts are added as if every ",
+         "study appeared once, and the bootstrap draws a review as if drawing ",
+         "an independent one. Pool only reviews that share no studies.",
+         call. = FALSE)
+  }
   check_count(R, "R")
   check_probability(conf, "conf")
   check_seed(seed)
@@ -466,14 +542,31 @@ pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
   })
   methods <- unique(unlist(lapply(bts, function(b) b$methods)))
 
+  # "cut": add the 2x2 counts over the drawn reviews and divide once, so a
+  # thirty-cut review contributes six times a five-cut one. "review": take
+  # each review's own rate and average the ones that are defined, so every
+  # review counts once. Different questions; see the estimand section above.
   rate <- function(idx, m, num, den) {
-    tot <- c(tp = 0, fn = 0, tn = 0, fp = 0)
-    for (i in idx) {
-      cm <- counts[[i]][[m]]
-      if (!is.null(cm)) tot <- tot + cm[c("tp", "fn", "tn", "fp")]
+    if (weighting == "cut") {
+      tot <- c(tp = 0, fn = 0, tn = 0, fp = 0)
+      for (i in idx) {
+        cm <- counts[[i]][[m]]
+        if (!is.null(cm)) tot <- tot + cm[c("tp", "fn", "tn", "fp")]
+      }
+      d <- sum(tot[den])
+      return(if (d > 0) sum(tot[num]) / d else NA_real_)
     }
-    d <- sum(tot[den])
-    if (d > 0) sum(tot[num]) / d else NA_real_
+    # A review whose denominator is zero has no rate to average -- not a rate
+    # of zero. Dropping it is what makes this the mean over the reviews that
+    # could answer, rather than a mean pulled towards zero by the ones that
+    # could not.
+    per <- vapply(idx, function(i) {
+      cm <- counts[[i]][[m]]
+      if (is.null(cm)) return(NA_real_)
+      d <- sum(cm[den])
+      if (d > 0) sum(cm[num]) / d else NA_real_
+    }, numeric(1))
+    if (any(!is.na(per))) mean(per, na.rm = TRUE) else NA_real_
   }
 
   probs <- c((1 - conf) / 2, 1 - (1 - conf) / 2)
@@ -502,6 +595,9 @@ pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
     data.frame(
       method      = m,
       truth       = truth,
+      # Named in the table, not only in the call, so a saved data frame still
+      # says which of the two questions it answers.
+      weighting   = weighting,
       n_reviews   = sum(contributing),
       n_cuts      = sum(vapply(all_idx, function(i) {
                       cm <- counts[[i]][[m]]; if (is.null(cm)) 0L else cm[["n"]]

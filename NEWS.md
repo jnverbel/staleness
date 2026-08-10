@@ -47,6 +47,26 @@
   Point estimates are descriptive and still returned. Only the bounds are
   withheld, with a warning saying how to ask for them anyway.
 
+## `pooled_calibration()` says which quantity it estimates
+
+* New `weighting`, `"cut"` (the previous behaviour) or `"review"`. Summing the
+  2x2 counts across reviews answers "across all cuts in this corpus, what
+  share of the out-of-date ones were flagged?", where a thirty-cut review
+  counts six times a five-cut one; averaging each review's own rate answers
+  "for a typical review, what share?". These are different questions with
+  different answers, and the function used to compute one of them without
+  saying which. The choice now travels in a `weighting` column, so a saved
+  data frame still says what it is. A review with no defined rate is dropped
+  from the average rather than entered as zero.
+
+* New `reviews_independent`, with **no default**; `TRUE` is the only accepted
+  value. Pooling the counts and resampling the reviews both assume the reviews
+  share no studies, and that cannot be checked: `study_id` labels are chosen
+  per stream, so two unrelated reviews numbering their studies `1:14` look
+  identical while two overlapping ones can label the same trial differently.
+  Same reasoning as `study_id` itself -- a promise that cannot be checked is
+  asked for rather than assumed.
+
 A methodological review by proxy -- what a metafor author and a synthesis
 methodologist would each object to -- found five problems of validity rather
 than of contract. Two are breaking changes, and the version reflects that.
