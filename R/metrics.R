@@ -81,7 +81,10 @@ eligible_rows <- function(bt, truth) {
 #'   [available_truths()].
 #' @return A data frame, one row per method in `bt$methods`, with columns
 #'   `method`, `truth`, `sensitivity`, `specificity`, `false_alarm`, `n` and
-#'   `contaminated`. Descriptive of this series; see the section above.
+#'   `contaminated` and `dependent`. `dependent` is `TRUE` when the stream
+#'   behind the backtest was built with `allow_dependence = TRUE`, in which
+#'   case one trial contributed several estimates and every rate in the row is
+#'   optimistic. Descriptive of this series; see the section above.
 #' @examples
 #' library(metafor)
 #' bcg <- data.frame(
@@ -129,6 +132,10 @@ calibration <- function(bt, truth = "shift") {
       n            = nrow(d),
       contaminated = any(CONTAMINATED_PAIRS$method == m &
                          CONTAMINATED_PAIRS$truth  == truth),
+      # Travels beside the rate it qualifies, for the same reason
+      # `contaminated` does: a reader who receives this table and not the
+      # stream has no other way to learn that one trial counted as several.
+      dependent    = isTRUE(bt$dependent),
       stringsAsFactors = FALSE
     )
   })
@@ -221,7 +228,8 @@ calibration <- function(bt, truth = "shift") {
 #'   question — but as something a caller asks for, not something they get
 #'   without choosing it.
 #' @return A data frame, one row per method in `bt$methods`, with columns
-#'   `method`, `median_lead` and `n_events`.
+#'   `method`, `median_lead`, `n_events` and `dependent` (see
+#'   [calibration()] for what the last one means).
 #' @examples
 #' library(metafor)
 #' bcg <- data.frame(
@@ -300,6 +308,9 @@ lead_time <- function(bt, truth = "shift", within = NULL) {
     }
 
     data.frame(method = m, median_lead = median_lead, n_events = length(events),
+               # Same reason as in calibration(): the caveat travels with the
+               # number, not with the object the number came from.
+               dependent = isTRUE(bt$dependent),
                stringsAsFactors = FALSE)
   })
   do.call(rbind, out)
@@ -361,10 +372,20 @@ summary.staleness_backtest <- function(object, ...) {
 #' @param seed Integer seed, or `NULL`. Without one the interval is not
 #'   reproducible; the caller's random stream is restored either way.
 #' @param conf Interval coverage.
+#' @param accept_dependence Set `TRUE` to receive bootstrap bounds even when a
+#'   pooled review was built with `allow_dependence = TRUE`. Withheld by
+#'   default, with a warning: the bootstrap resamples whole reviews, which is
+#'   the right unit only when each review is one independent body of studies,
+#'   and drawing a dependent review again cannot undo the double counting
+#'   inside it. Point estimates are descriptive and always returned; this
+#'   argument governs only the interval, which is the one output here that
+#'   reads as an inferential claim.
 #' @return A data frame with one row per method: `n_reviews`, `n_cuts`, the
-#'   pooled `sensitivity` and `specificity`, and percentile bounds for each.
+#'   pooled `sensitivity` and `specificity`, percentile bounds for each, and
+#'   `contaminated` and `dependent` flags.
 #'   Bounds are `NA` when fewer than two reviews contribute a defined rate --
-#'   an interval from one review would describe nothing but that review.
+#'   an interval from one review would describe nothing but that review -- and
+#'   when `dependent` is `TRUE` and `accept_dependence` is `FALSE`.
 #' @examples
 #' # Two independent reviews, pooled. The interval comes from resampling the
 #' # reviews, so it says what would happen on other bodies of evidence -- not
@@ -384,7 +405,7 @@ summary.staleness_backtest <- function(object, ...) {
 #' pooled_calibration(bts, "shift", R = 200, seed = 1)
 #' @export
 pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
-                               conf = 0.95) {
+                               conf = 0.95, accept_dependence = FALSE) {
   if (!is.list(bts) || !length(bts)) {
     stop("`bts` must be a non-empty list of staleness_backtest objects",
          call. = FALSE)
@@ -397,6 +418,30 @@ pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
   check_count(R, "R")
   check_probability(conf, "conf")
   check_seed(seed)
+  if (!is.logical(accept_dependence) || length(accept_dependence) != 1L ||
+      is.na(accept_dependence)) {
+    stop("`accept_dependence` must be TRUE or FALSE", call. = FALSE)
+  }
+
+  # The bootstrap resamples whole reviews, which is exactly the right unit
+  # WHEN each review is one independent body of studies. If a review was built
+  # with allow_dependence = TRUE, its own cuts count one trial several times,
+  # and drawing that review again cannot undo it: the interval comes out
+  # narrower than the evidence supports, in the one output of this package
+  # that looks like an inferential statement. So the point estimates are still
+  # returned -- they are descriptive and the caller asked for them -- and the
+  # bounds are withheld unless the caller says, in the call, that they want
+  # them anyway.
+  dep <- vapply(bts, function(b) isTRUE(b$dependent), logical(1))
+  dependent_any <- any(dep)
+  if (dependent_any && !accept_dependence) {
+    warning(sum(dep), " of ", length(bts), " backtests came from a stream ",
+            "built with `allow_dependence = TRUE`. Pooled point estimates are ",
+            "returned; the bootstrap bounds are not, because resampling ",
+            "reviews cannot repair dependence within one and the interval ",
+            "would be too narrow. Pass `accept_dependence = TRUE` to get them ",
+            "anyway, reading them as optimistic.", call. = FALSE)
+  }
 
   targets <- unique(vapply(bts, function(b) {
     if (is.null(b$truth_target)) "final" else b$truth_target
@@ -452,7 +497,7 @@ pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
     }, logical(1))
     # An interval drawn from one review describes that review, not a class of
     # them, so it is withheld rather than printed narrow.
-    enough <- sum(contributing) >= 2
+    enough <- sum(contributing) >= 2 && (!dependent_any || accept_dependence)
     ci <- boot_ci[[m]]
     data.frame(
       method      = m,
@@ -469,6 +514,10 @@ pooled_calibration <- function(bts, truth = "shift", R = 2000, seed = NULL,
       spec_hi     = if (enough) unname(ci$spec[2]) else NA_real_,
       contaminated = any(CONTAMINATED_PAIRS$method == m &
                          CONTAMINATED_PAIRS$truth  == truth),
+      # TRUE when at least one pooled review allowed dependent estimates. With
+      # accept_dependence = FALSE the bounds beside it are NA; with TRUE they
+      # are present and this column is what says how to read them.
+      dependent    = dependent_any,
       stringsAsFactors = FALSE
     )
   })

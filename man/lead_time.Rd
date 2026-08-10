@@ -26,7 +26,8 @@ without choosing it.}
 }
 \value{
 A data frame, one row per method in \code{bt$methods}, with columns
-\code{method}, \code{median_lead} and \code{n_events}.
+\code{method}, \code{median_lead}, \code{n_events} and \code{dependent} (see
+\code{\link[=calibration]{calibration()}} for what the last one means).
 }
 \description{
 The metric that decides practical usefulness. A detector that only fires

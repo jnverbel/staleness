@@ -27,6 +27,26 @@
     chosen when the longest name was 11 characters. The width now comes from
     `available_methods()`, and a test pins it there.
 
+## Dependence is now visible everywhere the numbers go
+
+* `allow_dependence = TRUE` **warns at construction**. It was recorded on the
+  stream and printed by `print()`, which the analyst who receives a results
+  table never calls.
+
+* `dependent` travels: `backtest()` carries it at the top level, and
+  `calibration()`, `lead_time()`, `summary()` and `pooled_calibration()` each
+  return it as a column beside the rates it qualifies -- the same principle as
+  `contaminated`. A rate computed over dependent estimates is optimistic
+  because one trial counts as several, and nothing about the number shows it.
+
+* `pooled_calibration()` gains `accept_dependence`, default `FALSE`. Its
+  bootstrap resamples whole reviews, which is the right unit only when each
+  review is one independent body of studies; drawing a dependent review again
+  cannot undo the double counting inside it, so the interval comes out too
+  narrow in the one output of the package that reads as an inferential claim.
+  Point estimates are descriptive and still returned. Only the bounds are
+  withheld, with a warning saying how to ask for them anyway.
+
 A methodological review by proxy -- what a metafor author and a synthesis
 methodologist would each object to -- found five problems of validity rather
 than of contract. Two are breaking changes, and the version reflects that.

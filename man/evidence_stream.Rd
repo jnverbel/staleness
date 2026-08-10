@@ -48,8 +48,13 @@ deliberately.}
 
 \item{allow_dependence}{Set \code{TRUE} to build a stream whose \code{study_id} has
 duplicates. Refused by default: dependent estimates make one trial look
-like several. When allowed, the stream records it, and every metric
-computed from it should be read as optimistic.}
+like several. Allowing it does not silence it — the stream \strong{warns at
+construction}, \code{print()} says so, and \code{dependent = TRUE} travels into
+\code{\link[=backtest]{backtest()}}, \code{\link[=calibration]{calibration()}}, \code{\link[=lead_time]{lead_time()}} and \code{\link[=pooled_calibration]{pooled_calibration()}},
+which carry it as a column beside the rates it qualifies. Descriptive
+figures are still computed; what \code{\link[=pooled_calibration]{pooled_calibration()}} withholds is the
+bootstrap interval, since resampling reviews cannot repair dependence
+inside one. Expert use is not blocked, only made visible.}
 }
 \value{
 An object of class \code{staleness_stream}.

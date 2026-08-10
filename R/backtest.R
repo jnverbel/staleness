@@ -268,6 +268,11 @@ backtest <- function(stream, cuts = "yearly", methods = available_methods(),
          # Recorded because the two targets answer different questions, and a
          # table of rates is indistinguishable between them otherwise.
          truth_target = truth_target,
+         # Lifted out of the stream rather than left to be dug out of it. Every
+         # rate below assumes one estimate per study; when that is false the
+         # denominator is inflated and the rates are optimistic, and a caller
+         # who receives only the results table has no way to know.
+         dependent = isTRUE(stream$dependent),
          n_censored = sum(results$censored) / length(methods)),
     class = "staleness_backtest"
   )

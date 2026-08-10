@@ -54,8 +54,13 @@
 #'   deliberately.
 #' @param allow_dependence Set `TRUE` to build a stream whose `study_id` has
 #'   duplicates. Refused by default: dependent estimates make one trial look
-#'   like several. When allowed, the stream records it, and every metric
-#'   computed from it should be read as optimistic.
+#'   like several. Allowing it does not silence it — the stream **warns at
+#'   construction**, `print()` says so, and `dependent = TRUE` travels into
+#'   [backtest()], [calibration()], [lead_time()] and [pooled_calibration()],
+#'   which carry it as a column beside the rates it qualifies. Descriptive
+#'   figures are still computed; what [pooled_calibration()] withholds is the
+#'   bootstrap interval, since resampling reviews cannot repair dependence
+#'   inside one. Expert use is not blocked, only made visible.
 #' @param ni Optional numeric vector of sample sizes per study, needed by
 #'   [barrowman()]. Defaults to `ma$ni` when `metafor` recorded it.
 #' @return An object of class `staleness_stream`.
@@ -183,6 +188,20 @@ evidence_stream <- function(ma, date, study_id, ni = NULL,
          "optimistic.", call. = FALSE)
   }
   dependent <- any(dup)
+  # Opting in is a decision, and a decision that is only visible to whoever
+  # reads print(stream) is not one the analyst downstream ever sees. Said out
+  # loud at the moment it is taken, and again by print(), summary() and every
+  # metrics table below, because a rate computed over dependent estimates is
+  # optimistic and nothing about the number itself shows that.
+  if (dependent) {
+    n_dup <- length(unique(study_id[dup]))
+    warning(n_dup, " stud", if (n_dup == 1) "y contributes" else "ies contribute",
+            " more than one estimate and `allow_dependence = TRUE` was set. ",
+            "Every rate computed from this stream assumes independent ",
+            "studies and is therefore optimistic; the stream, its backtests ",
+            "and its calibration tables all carry `dependent = TRUE` so the ",
+            "caveat travels with the numbers.", call. = FALSE)
+  }
 
   ni_supplied <- !is.null(ni)
   if (is.null(ni)) ni <- ma$ni

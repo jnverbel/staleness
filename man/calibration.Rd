@@ -15,7 +15,10 @@ calibration(bt, truth = "shift")
 \value{
 A data frame, one row per method in \code{bt$methods}, with columns
 \code{method}, \code{truth}, \code{sensitivity}, \code{specificity}, \code{false_alarm}, \code{n} and
-\code{contaminated}. Descriptive of this series; see the section above.
+\code{contaminated} and \code{dependent}. \code{dependent} is \code{TRUE} when the stream
+behind the backtest was built with \code{allow_dependence = TRUE}, in which
+case one trial contributed several estimates and every rate in the row is
+optimistic. Descriptive of this series; see the section above.
 }
 \description{
 Turns a backtest's raw results into sensitivity, specificity and false

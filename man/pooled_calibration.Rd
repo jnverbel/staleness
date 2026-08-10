@@ -4,7 +4,14 @@
 \alias{pooled_calibration}
 \title{Calibration pooled across independent reviews, with intervals}
 \usage{
-pooled_calibration(bts, truth = "shift", R = 2000, seed = NULL, conf = 0.95)
+pooled_calibration(
+  bts,
+  truth = "shift",
+  R = 2000,
+  seed = NULL,
+  conf = 0.95,
+  accept_dependence = FALSE
+)
 }
 \arguments{
 \item{bts}{A list of \code{staleness_backtest} objects, one per independent
@@ -18,12 +25,23 @@ review. Two backtests of the same evidence are not two reviews.}
 reproducible; the caller's random stream is restored either way.}
 
 \item{conf}{Interval coverage.}
+
+\item{accept_dependence}{Set \code{TRUE} to receive bootstrap bounds even when a
+pooled review was built with \code{allow_dependence = TRUE}. Withheld by
+default, with a warning: the bootstrap resamples whole reviews, which is
+the right unit only when each review is one independent body of studies,
+and drawing a dependent review again cannot undo the double counting
+inside it. Point estimates are descriptive and always returned; this
+argument governs only the interval, which is the one output here that
+reads as an inferential claim.}
 }
 \value{
 A data frame with one row per method: \code{n_reviews}, \code{n_cuts}, the
-pooled \code{sensitivity} and \code{specificity}, and percentile bounds for each.
+pooled \code{sensitivity} and \code{specificity}, percentile bounds for each, and
+\code{contaminated} and \code{dependent} flags.
 Bounds are \code{NA} when fewer than two reviews contribute a defined rate --
-an interval from one review would describe nothing but that review.
+an interval from one review would describe nothing but that review -- and
+when \code{dependent} is \code{TRUE} and \code{accept_dependence} is \code{FALSE}.
 }
 \description{
 \code{\link[=calibration]{calibration()}} describes one body of evidence. Its \code{n} counts cuts, and

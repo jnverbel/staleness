@@ -203,9 +203,23 @@ test_that("allowed dependence is recorded and announced, not forgotten", {
   ma <- metafor::rma(yi, vi, data = es, measure = "RR", method = "FE")
   dup <- c("trial A", "trial A", seq_len(nrow(es) - 2))
 
-  st <- evidence_stream(ma, date = es$year, study_id = dup,
-                        allow_dependence = TRUE)
+  # Announced at the moment the decision is taken. Before this, opting in was
+  # silent and the only trace was in print(stream) -- which the analyst who
+  # receives a results table never calls.
+  expect_warning(
+    st <- evidence_stream(ma, date = es$year, study_id = dup,
+                          allow_dependence = TRUE),
+    "1 study contributes more than one estimate")
+  expect_warning(
+    evidence_stream(ma, date = es$year, study_id = dup,
+                    allow_dependence = TRUE),
+    "optimistic")
   expect_true(st$dependent)
+
+  # And an independent stream says nothing at all.
+  expect_no_warning(
+    evidence_stream(ma, date = es$year, study_id = seq_len(nrow(es))))
+
   # print() is the one place a reader might notice, so it says so there.
   out <- utils::capture.output(print(st))
   expect_true(any(grepl("dependence was allowed", out)))
