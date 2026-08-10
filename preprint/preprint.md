@@ -216,13 +216,21 @@ simulates the power of the next batch to achieve it. Neither question is
 defined once the prior is already significant. They can therefore be asked in
 only **4 and 5 of the 17 reviews** respectively.
 
-| Detector | Can answer | Mean sensitivity | Reviews scoring zero |
-|---|---|---|---|
-| `ottawa` | 17 of 17 | 0.320 | 8 |
-| `rcma` | 17 of 17 | 0.309 | 9 |
-| `sufficiency_changepoint` | 17 of 17 | 0.041 | 11 |
-| `simulation` | **5 of 17** | 0.167 | 2 of 3 |
-| `barrowman` | **4 of 17** | 0.167 | 2 of 3 |
+| Detector | Published? | Can answer | Mean sensitivity | Reviews scoring zero |
+|---|---|---|---|---|
+| `ottawa` | as published | 17 of 17 | 0.320 | 8 |
+| `rcma` | as published | 17 of 17 | 0.309 | 9 |
+| `barrowman` | as published | **4 of 17** | 0.167 | 2 of 3 |
+| `simulation` | effect-level | **5 of 17** | 0.167 | 2 of 3 |
+| `sufficiency_changepoint` | **substitute** | 17 of 17 | 0.041 | 11 |
+
+The second column is not decoration. `sufficiency_changepoint` runs a statistic
+its source never described, so **0.041 is a property of our substitute and
+carries no information about the published sufficiency method** — whose own
+stability statistic is shown in §5.3 to have no valid null distribution and
+therefore no meaningful sensitivity to report. `simulation` simulates effects
+rather than participants. Neither row may be read as evidence about the
+procedure its name refers to, and no conclusion below does so.
 
 This is not a finding about those methods being wrong. It is a finding about
 when they can be used, and it was **invisible to the published comparison
@@ -321,33 +329,59 @@ but its smoothness, monotonicity and range: the same `dat.bcg` variances
 rearranged into sorted order move the rate from 5.0% to 9.4%, which is the
 cleanest demonstration that it is the arrangement and not the numbers.
 
-A second limit matters more for interpretation. The statistic is a maximum over
-split points, and the split isolating a single study is one of them, so a lone
-discordant study arriving first or last can carry it:
+A second limit matters more for interpretation, and it is the one place where
+this paper corrects a figure the package itself had published. The statistic is
+a maximum over split points, and the split isolating a single study is among
+them, so a lone discordant study arriving last can carry it. Measured by
+`inst/persistence/persistence.R` over 400 replicates per cell, against a
+baseline with no outlier at all:
 
-| k | no outlier | D = 3 SE | D = 5 SE | D = 10 SE |
+| k | no outlier | one 5-SE study, last | one 5-SE study, mid-series |
+|---|---|---|---|
+| 20 | 0.050 | 0.035 | 0.005 |
+| 30 | 0.052 | 0.207 | 0.003 |
+| 40 | 0.043 | 0.395 | 0.000 |
+
+So the effect is real and grows with `k` — at 40 studies a single discordant
+final study forces `unstable` about eight times more often than chance — but it
+is confined to studies arriving **last**. One in mid-series does essentially
+nothing, because the split isolating it leaves large blocks on both sides.
+
+An earlier version of this claim, in the package documentation, reported far
+higher rates (0.995 at `k` = 40) and stated that such a study forces `unstable`
+"almost always from about `k` = 25". We could not reproduce those figures. An
+independent reimplementation that agrees with the shipped statistic exactly on
+200 random inputs, and that reproduces the no-outlier control row, returns
+0.44–0.48 at `k` = 40 under every reading of "five standard errors" we tried,
+and saturates near 0.55 even at twenty. The documented table had no generating
+script in the repository, which is why it survived; the figures above do, and
+the qualitative claim — that this is substantially a single-outlier detector at
+the tail — survives with it while the magnitude does not.
+
+### A persistence requirement fixes most of it
+
+If a shift has to persist to count, the split isolating one study stops being
+available. Requiring both sides of a split to hold at least `r` studies gives,
+averaged over `k` = 20, 30 and 40:
+
+| r | drift detected | one outlier, last | one outlier, mid | no change |
 |---|---|---|---|---|
-| 20 | 0.050 | 0.175 | 0.625 | 0.660 |
-| 25 | 0.037 | 0.205 | 0.885 | 0.938 |
-| 30 | 0.045 | 0.210 | 0.927 | 0.990 |
-| 40 | 0.052 | 0.240 | 0.995 | 0.993 |
+| 1 (shipped) | 0.802 | 0.212 | 0.003 | 0.048 |
+| 2 | 0.815 | 0.226 | 0.003 | 0.051 |
+| 3 | 0.825 | 0.147 | 0.006 | 0.054 |
+| 5 | 0.845 | **0.083** | 0.013 | 0.052 |
 
-A five-SE discordant study is an ordinary occurrence in a real review, so from
-about `k = 25` this detector is substantially a single-outlier detector.
-Whether that is the right answer is arguable — such a study does move the
-pooled estimate — but it must not be read as evidence of a trend, and the two
-readings are separable: among the firings in that table, `detail$split` pointed
-at the single-study split in 97–99% of cases. A version requiring the shift to
-persist across two or three subsequent studies is the obvious next variant and
-we have not tested one.
+Requiring five is strictly better on this evidence: power against a real late
+shift rises slightly (0.802 to 0.845), the single-outlier false positive falls
+by more than half (0.212 to 0.083), and calibration under no change is
+untouched (0.048 to 0.052). At `k` = 40 the outlier rate falls from 0.395 to
+0.090.
 
-An earlier draft of this claim was wrong in the flattering direction — it put
-the threshold at twenty standard errors from about `k = 35`, measured on a
-noise-free fixture in which every other study was byte-identical, which makes
-the mirror-image ordering an exact tie and inflates the permutation count. It
-had landed in the one corner of the parameter space where the effect looks
-mild. Both figures are in the package documentation, the superseded one
-included.
+We have not adopted it. The measurement is four regimes on simulated evidence
+with one variance schedule, and the package ships the statistic these results
+question rather than the one they favour, because changing it on the strength
+of a single experiment would repeat the error this section documents. It is
+stated as the next test to run, with the script that runs it.
 
 ## 5.4 An editorial outcome is reachable, for three of the five detectors
 

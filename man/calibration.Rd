@@ -73,9 +73,17 @@ would treat overlapping snapshots as independent draws and come out far too
 narrow: the honest answer on a single series is no interval, not a
 confident-looking one.
 
-For a rate that generalises, use \code{\link[=pooled_calibration]{pooled_calibration()}} over several
-independent reviews. Reviews share no studies, so resampling \emph{them} gives an
-interval that means something.
+For an interval that means something, use \code{\link[=pooled_calibration]{pooled_calibration()}} over several
+independent reviews. Reviews share no studies, so resampling \emph{them} is a
+defensible unit where resampling cuts is not.
+
+That buys sampling variability and \strong{not} representativeness, and the two
+are easy to confuse. A bootstrap over reviews answers "how would this move
+if we drew other reviews from the same pool?"; it says nothing about whether
+that pool resembles systematic reviews in general. Where the pool was
+assembled by data availability -- as any collection with per-study dates and
+constructible effects will have been -- the interval quantifies noise around
+a possibly biased centre, and widening it would not fix that.
 
 A second caution, measured rather than theoretical: against
 \code{truth_target = "final"} a review whose effect kept moving has \strong{no true

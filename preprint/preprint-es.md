@@ -235,13 +235,23 @@ lograrla. Ninguna de las dos preguntas está definida una vez que el previo ya
 es significativo. Por eso solo pueden interrogarse en **4 y 5 de las 17
 revisiones**, respectivamente.
 
-| Detector | Puede responder | Sensibilidad media | Revisiones con cero |
-|---|---|---|---|
-| `ottawa` | 17 de 17 | 0,320 | 8 |
-| `rcma` | 17 de 17 | 0,309 | 9 |
-| `sufficiency_changepoint` | 17 de 17 | 0,041 | 11 |
-| `simulation` | **5 de 17** | 0,167 | 2 de 3 |
-| `barrowman` | **4 de 17** | 0,167 | 2 de 3 |
+| Detector | ¿Publicado? | Puede responder | Sensibilidad media | Revisiones con cero |
+|---|---|---|---|---|
+| `ottawa` | tal cual | 17 de 17 | 0,320 | 8 |
+| `rcma` | tal cual | 17 de 17 | 0,309 | 9 |
+| `barrowman` | tal cual | **4 de 17** | 0,167 | 2 de 3 |
+| `simulation` | nivel de efecto | **5 de 17** | 0,167 | 2 de 3 |
+| `sufficiency_changepoint` | **sustituto** | 17 de 17 | 0,041 | 11 |
+
+La segunda columna no es decoración. `sufficiency_changepoint` ejecuta un
+estadístico que su fuente nunca describió, así que **0,041 es una propiedad de
+nuestro sustituto y no aporta ninguna información sobre el método de
+suficiencia publicado** —cuyo propio estadístico de estabilidad se muestra en
+el §5.3 que carece de distribución nula válida y por tanto no tiene
+sensibilidad significativa que reportar—. `simulation` simula efectos y no
+participantes. Ninguna de las dos filas puede leerse como evidencia sobre el
+procedimiento al que su nombre alude, y ninguna conclusión de más abajo lo
+hace.
 
 Esto no es un hallazgo sobre que esos métodos estén equivocados. Es un
 hallazgo sobre cuándo pueden usarse, y era **invisible para la comparación
@@ -351,35 +361,63 @@ monotonía y rango: las mismas varianzas de `dat.bcg` reordenadas de forma
 creciente llevan la tasa de 5,0 % a 9,4 %, que es la demostración más limpia
 de que lo que importa es la disposición y no los números.
 
-Un segundo límite importa más para la interpretación. El estadístico es un
-máximo sobre puntos de división, y la división que aísla un único estudio es
-uno de ellos, así que un solo estudio discordante que llegue primero o último
-puede cargarlo:
+Un segundo límite importa más para la interpretación, y es el único punto en
+que este artículo corrige una cifra que el propio paquete había publicado. El
+estadístico es un máximo sobre puntos de división, y la división que aísla un
+único estudio está entre ellos, así que un solo estudio discordante que llegue
+último puede cargarlo. Medido por `inst/persistence/persistence.R` sobre 400
+réplicas por celda, contra una línea base sin atípico alguno:
 
-| k | sin atípico | D = 3 EE | D = 5 EE | D = 10 EE |
+| k | sin atípico | un estudio a 5 EE, último | un estudio a 5 EE, en medio |
+|---|---|---|---|
+| 20 | 0,050 | 0,035 | 0,005 |
+| 30 | 0,052 | 0,207 | 0,003 |
+| 40 | 0,043 | 0,395 | 0,000 |
+
+El efecto es real y crece con `k` —con 40 estudios, un único estudio final
+discordante fuerza `unstable` unas ocho veces más a menudo que el azar— pero
+está confinado a los estudios que llegan **últimos**. Uno situado en mitad de
+la serie no hace prácticamente nada, porque la división que lo aísla deja
+bloques grandes a ambos lados.
+
+Una versión anterior de esta afirmación, en la documentación del paquete,
+reportaba tasas mucho más altas (0,995 con `k` = 40) y sostenía que un estudio
+así fuerza `unstable` «casi siempre a partir de `k` = 25 aproximadamente». No
+pudimos reproducir esas cifras. Una reimplementación independiente que coincide
+exactamente con el estadístico que envía el paquete en 200 entradas aleatorias,
+y que reproduce la fila de control sin atípico, devuelve entre 0,44 y 0,48 con
+`k` = 40 bajo todas las lecturas de «cinco errores estándar» que probamos, y se
+satura cerca de 0,55 incluso con veinte. La tabla documentada no tenía ningún
+guion generador en el repositorio, que es por lo que sobrevivió; las cifras de
+arriba sí lo tienen, y la afirmación cualitativa —que en la cola esto es en
+buena medida un detector de un solo atípico— sobrevive con ellas, mientras que
+la magnitud no.
+
+### Una regla de persistencia arregla la mayor parte
+
+Si un desplazamiento tiene que persistir para contar, la división que aísla un
+solo estudio deja de estar disponible. Exigir que ambos lados de una división
+tengan al menos `r` estudios da, promediando sobre `k` = 20, 30 y 40:
+
+| r | deriva detectada | un atípico, último | un atípico, en medio | sin cambio |
 |---|---|---|---|---|
-| 20 | 0,050 | 0,175 | 0,625 | 0,660 |
-| 25 | 0,037 | 0,205 | 0,885 | 0,938 |
-| 30 | 0,045 | 0,210 | 0,927 | 0,990 |
-| 40 | 0,052 | 0,240 | 0,995 | 0,993 |
+| 1 (el que se envía) | 0,802 | 0,212 | 0,003 | 0,048 |
+| 2 | 0,815 | 0,226 | 0,003 | 0,051 |
+| 3 | 0,825 | 0,147 | 0,006 | 0,054 |
+| 5 | 0,845 | **0,083** | 0,013 | 0,052 |
 
-Un estudio discordante a cinco errores estándar es un suceso corriente en una
-revisión real, de modo que a partir de `k = 25` aproximadamente este detector
-es en buena medida un detector de un solo atípico. Que esa sea la respuesta
-correcta es discutible —un estudio así sí mueve la estimación combinada— pero
-no debe leerse como evidencia de una tendencia, y las dos lecturas son
-separables: entre los disparos de esa tabla, `detail$split` apuntó a la
-división de un solo estudio en el 97–99 % de los casos. Una versión que exija
-que el desplazamiento persista a lo largo de dos o tres estudios posteriores es
-la variante siguiente evidente, y no hemos probado ninguna.
+Exigir cinco es estrictamente mejor sobre esta evidencia: la potencia frente a
+un desplazamiento tardío real sube un poco (de 0,802 a 0,845), el falso
+positivo por un solo atípico cae a menos de la mitad (de 0,212 a 0,083), y la
+calibración sin cambio queda intacta (de 0,048 a 0,052). Con `k` = 40 la tasa
+del atípico baja de 0,395 a 0,090.
 
-Un borrador anterior de esta afirmación estaba equivocado en la dirección
-favorable: situaba el umbral en veinte errores estándar a partir de `k = 35`,
-medido sobre un caso de prueba sin ruido en el que todos los demás estudios
-eran idénticos byte a byte, lo que hace que el ordenamiento espejo sea un
-empate exacto e infla el recuento de permutaciones. Había caído justo en el
-rincón del espacio de parámetros donde el efecto parece leve. Ambas cifras
-están en la documentación del paquete, incluida la superada.
+No lo hemos adoptado. La medición son cuatro regímenes sobre evidencia simulada
+con un solo esquema de varianza, y el paquete envía el estadístico que estos
+resultados cuestionan en vez del que favorecen, porque cambiarlo con la fuerza
+de un único experimento repetiría el error que esta misma sección documenta.
+Queda enunciado como la siguiente prueba a correr, junto con el guion que la
+corre.
 
 ## 5.4 Un desenlace editorial es alcanzable, para tres de los cinco detectores
 

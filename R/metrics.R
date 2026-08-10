@@ -66,9 +66,17 @@ eligible_rows <- function(bt, truth) {
 #' narrow: the honest answer on a single series is no interval, not a
 #' confident-looking one.
 #'
-#' For a rate that generalises, use [pooled_calibration()] over several
-#' independent reviews. Reviews share no studies, so resampling *them* gives an
-#' interval that means something.
+#' For an interval that means something, use [pooled_calibration()] over several
+#' independent reviews. Reviews share no studies, so resampling *them* is a
+#' defensible unit where resampling cuts is not.
+#'
+#' That buys sampling variability and **not** representativeness, and the two
+#' are easy to confuse. A bootstrap over reviews answers "how would this move
+#' if we drew other reviews from the same pool?"; it says nothing about whether
+#' that pool resembles systematic reviews in general. Where the pool was
+#' assembled by data availability -- as any collection with per-study dates and
+#' constructible effects will have been -- the interval quantifies noise around
+#' a possibly biased centre, and widening it would not fix that.
 #'
 #' A second caution, measured rather than theoretical: against
 #' `truth_target = "final"` a review whose effect kept moving has **no true

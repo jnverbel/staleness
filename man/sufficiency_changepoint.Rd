@@ -237,35 +237,52 @@ the observed extreme, the null is diffuse, and the test under-fires. It
 under-fires rather than over-fires, which is the safe direction, but a
 \code{current} verdict from a short update is weak evidence of stability.
 
-\strong{A single discordant study, arriving first or last, can carry the
-statistic — and the threshold is low.} The statistic is a maximum over
-split points, and the split that isolates one study is one of them. With
-ordinary sampling noise on the other studies, the probability that one study
-\code{D} standard errors from the rest, sitting at either end, forces \code{unstable}:
+\strong{A single discordant study arriving LAST can carry the statistic.} The
+statistic is a maximum over split points, and the split that isolates one
+study is one of them. Measured by \code{inst/persistence/persistence.R} over 400
+replicates per cell, against a baseline with no outlier:
 
 \preformatted{
-   k     no outlier   D = 3 SE   D = 5 SE   D = 10 SE
-  20          0.050      0.175      0.625       0.660
-  25          0.037      0.205      0.885       0.938
-  30          0.045      0.210      0.927       0.990
-  40          0.052      0.240      0.995       0.993
+   k     no outlier   one 5-SE study, last   the same study, mid-series
+  20         0.050            0.035                    0.005
+  30         0.052            0.207                    0.003
+  40         0.043            0.395                    0.000
 }
 
-So the operative statement is that a \strong{five}-SE discordant study at either
-end forces \code{unstable} almost always from about \code{k = 25} — not, as the first
-draft said, twenty SE from about \code{k = 35}. That earlier claim was measured
-on a noise-free fixture in which every other study was byte-identical, which
-makes the mirror-image ordering an exact tie and inflates the permutation
-count; it landed in the one corner of the parameter space where the effect
-looks mild. (The same saturation is visible above: at \code{D} = 20 SE the rate
-\emph{falls} again, to 0.453 at \code{k = 20}.) A five-SE discordant study is an
-ordinary occurrence in a real review, so at moderate \code{k} this detector is
-substantially a single-outlier detector. Whether that is the right answer is
-arguable — such a study does move the pooled estimate, and that ordering
-really is extreme among all orderings — but it must not be mistaken for
-evidence of a trend. \code{detail$split} separates the two readings and does so
-reliably: among firings in the table above it pointed at \code{k - 1}, the
-single-study split, in 97–99\% of cases.
+The effect is real, grows with \code{k}, and is confined to the tail: a study in
+mid-series does essentially nothing, because the split isolating it leaves
+large blocks on both sides. \code{detail$split} tells the two apart, since it
+reports where the maximum was attained.
+
+An earlier version of this block reported far higher rates -- 0.995 at
+\code{k} = 40, and "almost always from about \code{k} = 25" -- and also a superseded
+claim before that. \strong{Neither is reproducible.} An independent
+reimplementation that agrees with \code{stability_shift_z()} exactly on 200
+random inputs, and that reproduces the no-outlier control row above, returns
+0.44-0.48 at \code{k} = 40 under every reading of "five standard errors" tried,
+and saturates near 0.55 even at twenty. The old table had no generating
+script anywhere in the package, which is exactly how it survived two
+revisions: nothing could contradict it. The figures above have one, and it
+is named.
+
+Requiring a shift to PERSIST removes most of the effect. Demanding that both
+sides of a split hold at least \code{r} studies gives, averaged over
+\code{k} = 20, 30, 40:
+
+\preformatted{
+   r        drift   outlier(last)   outlier(mid)   no change
+   1 (this) 0.802       0.212           0.003         0.048
+   2        0.815       0.226           0.003         0.051
+   3        0.825       0.147           0.006         0.054
+   5        0.845       0.083           0.013         0.052
+}
+
+\code{r} = 5 is better on every axis measured: more power against a real late
+shift, less than half the single-outlier rate, and calibration untouched.
+It is \strong{not} what this function runs. Changing the shipped statistic on one
+experiment over four regimes and a single variance schedule would repeat the
+mistake documented two paragraphs above, so it is recorded as the next test
+rather than adopted.
 
 \strong{A smooth, strongly monotone variance schedule runs anti-conservative}, up
 to about 11\% against a nominal 5\%. See the calibration section above for the
