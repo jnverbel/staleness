@@ -49,6 +49,34 @@ are not.
 `sufficiency_changepoint()` is the opposite failure. It answers in all 17 and detects
 almost nothing: a mean sensitivity of 0.041, and zero in 11 of them.
 
+## How the 17 were selected, and why that bounds the finding
+
+93 of `metadat`'s 110 data frames are excluded, and the reasons are not evenly
+spread. As the script reports them:
+
+| Reason | Datasets |
+|---|---|
+| no per-study year | 54 |
+| no mappable effect measure | 29 |
+| precomputed `yi`/`vi` of undetermined scale | 6 |
+| fewer than 8 usable studies | 2 |
+| fewer than 3 uncensored cuts | 1 |
+| several estimates per study | 1 |
+
+**54 of the 93, well over half, fall for one reason: the dataset does not
+record a publication year per study.** That is a property of how the data was
+curated, not of the evidence, and datasets that do record it skew towards the
+well-studied classics. So the 17 are a convenience set, and their selection
+may correlate with what is being measured — whether priors were already
+significant plausibly differs between famous, mature review topics and the
+rest. The direction, if any, is unknown.
+
+**Nothing is held out.** The 91%, the per-detector sensitivities above, and
+the coverage counts are all generated and stated on the same 17. These are
+**exploratory** results: strong enough to show that the published comparison's
+cohort was unrepresentative in a way that mattered, not strong enough to be
+read as a calibration of the five methods in general.
+
 ## Inclusion criteria
 
 Applied in this order, and reported by the script as they bite:

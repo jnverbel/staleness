@@ -18,7 +18,7 @@ cumulative meta-analyses and Rosenthal's fail-safe N, `fsn` and `meta` cover
 pieces of the same ground, and `metagear` screens literature, which is the half
 of the problem this package does not touch — but the assembled detectors are
 not. Which is also why nobody has ever been able to run all five against real
-history and find out which of them actually work.
+history and see how they behave.
 
 That search is reproducible and dated, and it says *we did not find one*
 rather than *none exists*: it reads package metadata, not source code, and
@@ -44,6 +44,53 @@ detector is `sufficiency_changepoint()` and not `sufficiency()`.
 
 The package performs no literature searching, no study screening, and no
 meta-analysis fitting of its own. It is built entirely on `metafor`.
+
+## What this establishes, and what it does not
+
+Read this before the numbers, because it bounds every one of them.
+
+**It is a measuring instrument, not an updating strategy.** Deciding when to
+update a review is not a statistical question alone: the consensus checklist
+(Garner et al., 2016) treats the pooled estimate as one input among several,
+alongside whether the question is still relevant and whether a recommendation
+would change. Four of the six signals in the Ottawa method itself are
+qualitative and no program can infer them from `yi` and `vi`. If you want a
+tool that tells a review team when to update, this is not it and cannot become
+it.
+
+**The evaluation targets are not outcomes.** `calibration()` scores a detector
+against `truth_shift()`, `truth_surprise()` or `truth_conclusion()`, and all
+three observe *the pooled estimate moving*. None of them observes what a
+review team did, whether a recommendation changed, or whether anyone was
+harmed by acting on the old estimate. A sensitivity of 0.32 means "agreed with
+a stated rule about the estimate 32% of the time", not "was right 32% of the
+time". And `truth_shift` and `truth_surprise` share the identical numerator —
+they are one distance on two scales, not two independent checks.
+
+**The historical evidence is 17 reviews, and they are not a sample.** The
+sweep in `inst/applicability/` covers the 17 of `metadat`'s 110 data frames
+that can carry a backtest. 54 of the 93 exclusions are for the single reason
+that the dataset records no per-study publication year. Datasets that do
+record one skew towards the well-curated classics, so the surviving 17 are a
+convenience set whose selection may correlate with what is being measured.
+Which direction, if any, is unknown.
+
+**Nothing is held out.** The 91% figure, `ottawa`'s specificity of 0.14 on a
+null review, the six reviews with no true negatives — all come from those same
+17. The findings are **exploratory**: generated and stated on one body of
+evidence, with no confirmatory set behind them.
+
+**Two of the five are not the published procedure.** `sufficiency_changepoint()`
+substitutes a calibrated statistic for one that could not distinguish change
+from no change, and `simulation()` simulates effects rather than participants
+because the package never sees participant-level data. Both are named and
+measured; neither is a literal reproduction. See below.
+
+What survives all of that is worth having, and it is what the package is for:
+a reproducible platform for studying these signals, plus three findings about
+them that hold up — two of the five are structurally unable to answer on
+ordinary evidence, one is unstable by construction, and one rests on a
+statistic with no valid null distribution.
 
 ## Installation
 
@@ -162,6 +209,11 @@ detector is scored against: three operational targets are implemented and
 described as what they are, contaminated detector-target pairs are marked in
 the data itself, and `lead_time()` measures how far ahead of the evidence a detector
 actually fires, not just whether it eventually fires at all.
+
+What that repeatability buys is agreement with a stated criterion, measured
+over evidence that really accumulated in the order it accumulated. It does not
+buy a verdict on which method is correct, because no target here is an
+outcome — see the scope section above.
 
 See `vignette("backtesting", package = "staleness")` for the full argument
 and a worked backtest.

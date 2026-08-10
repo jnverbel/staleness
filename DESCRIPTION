@@ -16,8 +16,12 @@ Description: Implements the five published statistical methods for detecting whe
     replaces a regression slope that flagged 209 of 300 samples containing no
     change at all. Every departure is measured and documented in the
     corresponding help page and in the 'methods' vignette, so that results are
-    not read as a literal reproduction. The package performs no literature
-    searching and no screening.
+    not read as a literal reproduction. The backtesting targets are operational
+    definitions of the pooled estimate having moved, not recorded decisions by
+    review teams, so a reported sensitivity means agreement with a stated
+    criterion rather than correctness; that bound is documented rather than
+    left to be inferred. The package performs no literature searching and no
+    screening.
 URL: https://github.com/jnverbel/staleness
 BugReports: https://github.com/jnverbel/staleness/issues
 License: MIT + file LICENSE

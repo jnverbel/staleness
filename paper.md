@@ -31,11 +31,13 @@ essentially chance [@pattanittum2012].
 
 `staleness` is an R package that does two things. It applies all five published
 detectors to an existing meta-analysis and the evidence published since,
-returning a verdict and a signal for each. And it backtests those detectors
-against the history of any body of evidence, so that their sensitivity,
-specificity and lead time can be measured rather than assumed. The package
-performs no literature searching and no screening, and fits no models of its
-own: all estimation is delegated to `metafor` [@viechtbauer2010].
+returning a verdict and a signal for each — three of them as their sources
+specify, two with declared substitutions described below. And it backtests
+those detectors against the history of any body of evidence, so that their
+sensitivity, specificity and lead time can be measured rather than assumed.
+The package performs no literature searching and no screening, and fits no
+models of its own: all estimation is delegated to `metafor`
+[@viechtbauer2010].
 
 # Statement of need
 
@@ -66,16 +68,29 @@ opportunity to differ from every other.
 `staleness` closes that gap, and is built around the failure mode such a
 comparison invites. Defining "was this review really out of date?" with the
 same rule a detector uses makes that detector correct by construction, so the
-package implements three independent truth definitions — a shift in the pooled
-estimate, a shift that would have surprised an analyst standing at the time,
-and a change in the practical conclusion — and names the one detector–truth
-pair that remains circular in an exported object, `CONTAMINATED_PAIRS`, whose
-flag travels on every row of the results rather than as a footnote. It reports
-lead time, the interval between a detector firing and the evidence actually
-moving, which no methods paper reports and which decides whether a signal is
-useful or merely eventually correct. And a detector that cannot answer returns
+package implements three evaluation targets — a shift in the pooled estimate,
+a shift that would have surprised an analyst standing at the time, and a
+change in the practical conclusion — and names the one detector–target pair
+that remains circular in an exported object, `CONTAMINATED_PAIRS`, whose flag
+travels on every row of the results rather than as a footnote. It reports lead
+time, the interval between a detector firing and the evidence actually moving,
+which no methods paper reports and which decides whether a signal is useful or
+merely eventually correct. And a detector that cannot answer returns
 `not_applicable` rather than `current`, so that declining to answer is never
 scored as a correct call.
+
+Those three are **operational choices, not ground truth**, and the package
+says so in the function that defines them. All three observe the pooled
+estimate moving; none observes what a review team did, whether a
+recommendation changed, or whether anyone was harmed by acting on the old
+estimate. Two of them, `truth_shift` and `truth_surprise`, share the identical
+numerator and differ only in which standard error divides it, so they are one
+distance on two scales rather than two independent checks — agreement between
+them is expected and disagreement is the informative case. A sensitivity
+reported here therefore means "agreed with a stated criterion about the
+estimate", not "was right". That bound is the price of there being no
+published corpus of reviews with recorded update decisions to score against;
+building one is the obvious next step, and it is not this package.
 
 Backtesting is done by refitting the meta-analysis at every cut point from the
 studies available at that date, so no detector can see evidence that did not
@@ -86,13 +101,31 @@ against a truth that cannot be known.
 # Fidelity, checked against the published application
 
 Implementing a method from prose is where a comparison study silently goes
-wrong, so each detector here is checked against the one published application
-of all five. That check found an error in this package: the Ottawa method's
-"change in effect size of at least 50%" is computed on relative risk
-*reductions*, `(1 - RR_new) / (1 - RR_prev)`, not on the effects themselves
-[@pattanittum2012]. Of the ten reviews with the largest Ottawa indicator in
-that study's appendix, all ten fire under the published definition and none
-fires under the ratio of risk ratios. The tests reproduce those ten.
+wrong, so each detector here is checked against the published applications of
+these methods. That check found an error in this package, and because the
+correction below carries a criticism of the Ottawa method, the evidence for
+the reading comes first.
+
+The original description [@shojania2007] states the criterion as "relative
+changes in effect magnitude of at least 50%" without saying of *what*, and the
+full text is behind a subscription. Two independent applications resolve it
+the same way, on data that can be checked. Pattanittum et al. [-@pattanittum2012],
+Table 1, computes the change on relative risk *reductions*,
+`(1 - RR_new) / (1 - RR_prev)`; of the ten reviews with the largest Ottawa
+indicator in that study's appendix, all ten fire under that reading and none
+fires under the ratio of the risk ratios. Mickenautsch and Yengopal
+[-@mickenautsch2013], applying the same method and tracing it to Shojania's
+priority approach, work two examples — RR 2.10 to 1.51 and RR 2.61 to 1.66,
+both declared in their own text to represent "a change in relative effect size
+of over 50%". Neither meets that on the ratio of the effects (0.719 and
+0.636), nor as a percentage change in the estimate (28% and 36%); both meet it
+on the ratio of risk reductions (0.464 and 0.410, i.e. 54% and 59%). A fourth
+candidate reading, the change expressed over the *new* estimate, gives 39% and
+57% and so fires on one example but not the other. The ratio of risk
+reductions is the only reading under which all four worked examples across the
+two papers behave as their authors say. The tests reproduce all of them. A reader who takes Shojania's sentence to mean
+the ratio of the effects gets a materially different detector, and the
+criticism below applies to the reading above, not to that one.
 
 The correction carries a finding. The denominator goes to zero as the prior
 effect approaches no effect, so the criterion is unstable precisely on the
@@ -158,6 +191,18 @@ in only 4 and 5 of the 17. That is not a finding about those methods being
 wrong. It is a finding about when they can be used at all, and it was
 invisible to the one published comparison because its 80 reviews were selected
 for having a non-significant pooled result.
+
+Three bounds on that figure, stated because they are not small. The 17 are
+what survives from `metadat`'s 110 data frames, and 54 of the 93 exclusions
+are for one reason: the dataset records no per-study publication year. Sets
+that do record one skew towards the well-curated classics, so the 17 are a
+convenience set whose selection may correlate with what is being measured, in
+a direction nobody knows. Nothing is held out — the 91% and every other figure
+here are generated and stated on the same 17. And two of the five detectors
+are the substitutions declared above. These results are therefore
+**exploratory**: they are strong enough to say the published comparison's
+cohort was unrepresentative in a way that mattered, and not strong enough to
+be read as calibration of the five methods in general.
 
 The honest positioning, then, is that this is a reproducible platform for
 studying updating signals, not an engine that decides when to update. The

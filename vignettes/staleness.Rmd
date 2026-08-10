@@ -14,7 +14,16 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 A meta-analysis is a photograph, not a standing fact. Roughly a quarter of
 systematic reviews are out of date within two years of publication, and half
 within five and a half. This package asks, for one meta-analysis and the
-evidence published since: is it still current?
+evidence published since: **what do five published statistical signals say
+about it?**
+
+That is narrower than "is it still current?", deliberately. Whether a review
+needs updating is not a statistical question alone — the consensus checklist
+weighs relevance, new interventions and whether a recommendation would change,
+and four of the six signals in the Ottawa method are qualitative judgements no
+program can infer. What is here is the statistical component those judgements
+sit alongside, applied and measured. See the scope section of the README for
+what the measurements do and do not establish.
 
 ```{r setup}
 library(staleness)

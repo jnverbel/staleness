@@ -26,15 +26,29 @@
 #' of effects would get a materially different detector, and should know the
 #' choice was made deliberately and on evidence.
 #'
-#' A second, independent source settles it the same way. Kuhnisch et al.
-#' (2013), applying the method and citing Shojania for it, state signal B2 as
-#' "a change in relative effect size of at least 50%" and work two examples:
-#' RR 2.10 to 1.51, and RR 2.61 to 1.66, both declared to meet the criterion.
-#' Neither meets it on the ratio of the effects (0.719 and 0.636, inside the
+#' A second, independent source settles it the same way. Mickenautsch and
+#' Yengopal (2013), *J Appl Oral Sci* 21(5):482-489, PMC3881834, apply the
+#' modified Ottawa method — tracing the priority approach to Shojania and
+#' taking the signal table from Chung et al. (2012) — and state signal B2 as
+#' "a change in relative effect size of at least 50%". They work two examples:
+#' RR 2.10 to 1.51, and RR 2.61 to 1.66, both described in their own text as
+#' "a change in relative effect size of over 50%".
+#'
+#' Neither meets that on the ratio of the effects (0.719 and 0.636, inside the
 #' band) nor as a percentage change in the estimate (28% and 36%, under the
-#' 50% bar). Both meet it on the ratio of risk reductions (0.464 and 0.410,
-#' i.e. changes of 54% and 59%). Two papers, four worked examples, one
-#' reading.
+#' 50% bar). A fourth candidate — the change taken over the *new* estimate —
+#' gives 39% and 57%, so it clears the bar on the second example and fails on
+#' the first. Only the ratio of risk reductions clears it on both (0.464 and
+#' 0.410, i.e. changes of 54% and 59%). Two papers, four worked examples, one
+#' reading that fits all of them.
+#'
+#' This citation was wrong in an earlier version of this file, which named
+#' authors who did not write the paper and a title and journal belonging to no
+#' paper at all, while the PMC identifier pointed at the real one. The
+#' arithmetic and the argument were unaffected -- they were checked against the
+#' full text, which is where the error was found -- but a load-bearing citation
+#' that names the wrong people is its own defect, and it survived every green
+#' check because nothing verifies a reference.
 #'
 #' @section The effect criterion is on risk REDUCTIONS, and is unstable:
 #' For ratio measures the comparison is

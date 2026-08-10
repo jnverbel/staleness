@@ -231,7 +231,9 @@ test_that("simulation follows the published procedure, step for step", {
 })
 
 test_that("a second source's worked examples pick the same reading", {
-  # Kuhnisch et al. (2013, PMC3881834) apply the Ottawa method citing Shojania
+  # Mickenautsch and Yengopal (2013), J Appl Oral Sci 21(5):482-489, PMC3881834,
+  # apply the modified Ottawa method (an earlier version of this comment named
+  # the wrong authors; the PMC id was always right and is what caught it)
   # and work two examples, both declared to meet the 50% criterion. Only one
   # reading of "relative effect size" makes both statements true.
   ex <- data.frame(prev = c(2.10, 2.61), new = c(1.51, 1.66))
@@ -696,4 +698,45 @@ test_that("lee2004: rcma fires on a real change of magnitude, and is right", {
   # reason a criterion has to match the detector it judges.
   ot <- r[r$method == "ottawa", ]
   expect_equal(sum(ot$verdict == "out_of_date"), 0)
+})
+
+# The Ottawa reading rests on four worked examples across two papers, and one
+# of those citations named authors who did not write the paper, a title
+# belonging to no paper, and the wrong journal. The PMC identifier was right,
+# which is the only reason it was caught -- by fetching the full text, not by
+# reading the reference.
+#
+# Nothing checks a citation. What CAN be checked is the arithmetic the citation
+# is invoked for, and that is what makes it load-bearing: if these four numbers
+# stop behaving as the sources describe, the reading this package implements is
+# no longer the one the evidence supports, whoever wrote the papers.
+test_that("the risk-reduction reading is the only one all four worked examples fit", {
+  # Mickenautsch and Yengopal (2013), J Appl Oral Sci 21(5):482-489,
+  # PMC3881834, verified against the full text: both changes are described in
+  # their own words as "a change in relative effect size of over 50%".
+  worked <- list(c(new = 1.51, old = 2.10), c(new = 1.66, old = 2.61))
+
+  fires <- function(x) !is.na(x) && (x <= 0.5 || x >= 1.5)
+  for (w in worked) {
+    rrr   <- (1 - w[["new"]]) / (1 - w[["old"]])       # what this package uses
+    ratio <- w[["new"]] / w[["old"]]                   # ratio of the effects
+    pct_old <- (w[["old"]] - w[["new"]]) / w[["old"]]  # change over the old
+    pct_new <- (w[["old"]] - w[["new"]]) / w[["new"]]  # change over the new
+
+    expect_true(fires(rrr))          # the reading implemented here: both fire
+    expect_false(fires(ratio))       # ratio of effects: neither fires
+    expect_lt(pct_old, 0.50)         # percentage change: both under the bar
+    # The fourth candidate is the interesting one: it clears 50% on the second
+    # example and not the first, so it cannot be what the authors meant.
+    expect_equal(pct_new > 0.50, isTRUE(all.equal(w[["old"]], 2.61)))
+  }
+
+  # And the same arithmetic through the package's own function, so the reading
+  # documented above is the reading that ships.
+  for (w in worked) {
+    r <- rrr_ratio(theta_new = log(w[["new"]]), theta_prev = log(w[["old"]]),
+                   measure = "RR", se_prev = 0.2)
+    expect_equal(r$ratio, (1 - w[["new"]]) / (1 - w[["old"]]))
+    expect_true(fires(r$ratio))
+  }
 })

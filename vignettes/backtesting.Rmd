@@ -21,7 +21,10 @@ Implementing five published detectors faithfully, as
 the problem. The hard half is: given a meta-analysis today, which of the five
 should you actually trust? This vignette is the scientific argument for why
 that question cannot be answered by reading the methods papers, and for how
-this package answers it instead — with data.
+far this package gets towards answering it with data — which is some of the
+way, not all of it. Read the scope section of the README first: the targets
+these detectors are scored against observe the pooled estimate moving, not
+what any review team did.
 
 ## 1. The problem
 
@@ -37,7 +40,14 @@ three of the discriminating methods at once.
 That is not a story about one weak method among four strong ones. It is a
 story about nobody knowing, in the thirteen years since, which of the five
 methods to reach for — because no software existed that could run all five
-against real history and check which ones were actually right.
+against real history and see how they behave.
+
+**"How they behave" is deliberately weaker than "which ones are right", and
+the gap matters for everything below.** Being right would mean agreeing with
+what a review team should have done, and nothing in this package observes
+that. What it observes is the pooled estimate moving, scored against a
+criterion stated in advance. Section 3 says exactly what those criteria are
+and why they are not ground truth.
 
 ## 2. The circularity trap
 
