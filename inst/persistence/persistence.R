@@ -1,11 +1,22 @@
 # Does requiring the shift to PERSIST separate drift from a single outlier?
 #
 # The change-point statistic is max_m |Z_m| over split points, and the split
-# isolating one study is among them. Measured in ?sufficiency_changepoint, a
-# five-SE discordant study at either end forces `unstable` in 88.5% of samples
-# at k = 25 and 99.5% at k = 40. So from moderate k the detector is
-# substantially a single-outlier detector, and "the evidence has drifted" and
-# "one study disagrees loudly" are not the same claim.
+# isolating one study is among them, so a lone discordant study can carry it.
+#
+# This header used to quote 88.5% at k = 25 and 99.5% at k = 40 for a five-SE
+# study "at either end". Those figures came from a table in
+# ?sufficiency_changepoint that had no generating script, could not be
+# reproduced, and has been withdrawn -- and the withdrawal is what this file
+# was written to replace. The header outlived the correction by one commit,
+# which is the same failure in miniature: a claim with nothing behind it,
+# surviving because nothing could contradict it.
+#
+# What this script measures, and what therefore stands: the rates below. The
+# effect is real, grows with k, and is confined to studies arriving LAST -- the
+# same study in mid-series does almost nothing, because the split isolating it
+# leaves large blocks on both sides. "The evidence has drifted" and "one study
+# disagrees loudly" remain different claims, but the second is a tail effect
+# rather than a general one.
 #
 # The obvious variant: refuse splits whose smaller side holds fewer than r
 # studies, so a shift has to persist across r studies to count at all. r = 1 is
@@ -14,10 +25,12 @@
 # This asks whether that buys anything, on four regimes where the right answer
 # is known by construction:
 #
-#   null       no change at all           -> should not fire
-#   drift      a real late shift           -> should fire
-#   outlier    one discordant study, last  -> should NOT fire, and does
-#   outlier_mid  the same study in the middle
+#   null         no change at all          -> should stay near alpha, and does
+#   drift        a real late shift         -> should fire, and does
+#   outlier      one discordant study, last-> should ideally stay low; the
+#                                            shipped statistic (r = 1) fires
+#                                            non-trivially, 0.395 at k = 40
+#   outlier_mid  the same study mid-series -> stays near zero at every r
 #
 # Run:  Rscript inst/persistence/persistence.R
 # About two minutes. Deterministic.

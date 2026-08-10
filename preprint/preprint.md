@@ -189,6 +189,34 @@ Nothing in Arm B touches cochranelibrary.com. Every input is served by Europe
 PMC or Crossref under their normal terms, which is what allows the corpus to be
 deposited alongside this paper rather than described and withheld.
 
+## 3.4 Arm B is held out for the detectors, and not for the screen
+
+The chronology matters and is verifiable rather than asserted. Detector
+behaviour was frozen at commit `f59bb41` (2026-08-09 19:30 −0500); the Arm B
+corpus was first introduced at commit `c7e9505` (2026-08-10 07:56 −0500). Since
+that second commit, `git diff` reports **zero non-comment lines changed** in
+any detector source file: the only edits are documentation. No parameter, no
+threshold, and no interpretation of an ambiguous published criterion was
+decided while looking at Arm B, because none of them could have been.
+
+Arm B is therefore a genuine held-out set **for the detectors**. It is not one
+for the conclusion screen, which was developed and calibrated inside the corpus
+and is validated only to the extent that its stratified sample has been coded.
+The two are separate claims and we do not merge them:
+
+| | status |
+|---|---|
+| Arm A | development and exploratory |
+| Arm B, detector evaluation | held out |
+| Arm B, conclusion screen | development, partially validated |
+
+The consequence is that a confirmatory evaluation of the detectors does not
+require assembling new evidence. It requires specifying the analysis before
+running it: which detectors are evaluable, the estimand for each, the
+exclusions, the handling of `not_applicable`, and what counts as success —
+written down against a frozen commit, executed once. That evaluation is not
+reported here, and anything we run afterwards will be labelled post hoc.
+
 # 4. Reproducibility
 
 Three sweeps regenerate every quantitative claim below from public sources:
