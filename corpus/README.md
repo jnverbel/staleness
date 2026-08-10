@@ -25,21 +25,22 @@ the whole history from metadata already in hand.
 | | |
 |---|---|
 | versions harvested | 17,247 |
-| distinct reviews | 9,862 |
+| distinct reviews harvested | 9,862 |
+| of those, with more than one version | 4,132 |
 | consecutive version pairs | 6,686 |
 | pairs with authors' conclusions at **both** ends | 4,661 (70%) |
-| minus pairs whose entire abstract is identical (see below) | 4,519 |
+| minus pairs whose entire abstract is identical (see below) | 4,530 |
 | pairs also with a parseable pooled effect at both ends | 2,236 |
 | **of those, with COMPARABLE effects** | **746 (11%)** |
 | median gap between versions | 4 years |
 
 **There are two denominators and they are far apart.** The outcome — did the
 authors' conclusions change — needs only the conclusions text, so it rests on
-**4,519 pairs**. The detector analysis needs two comparable pooled estimates,
+**4,530 pairs**. The detector analysis needs two comparable pooled estimates,
 and that is a much smaller set.
 
 At the 9% base rate French et al. (2005) measured over 254 updated reviews,
-4,519 pairs carry roughly 400 conclusion-change events and 746 carry about
+4,530 pairs carry roughly 400 conclusion-change events and 746 carry about
 67. Size the study from those, not from the harvest total.
 
 ## The correction that halved the detector denominator
