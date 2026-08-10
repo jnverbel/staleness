@@ -15,6 +15,7 @@ import json
 import os
 import re
 from collections import defaultdict, Counter
+from difflib import SequenceMatcher
 
 HERE = os.path.dirname(__file__)
 IN = os.path.join(HERE, "data", "versions.jsonl")
@@ -31,11 +32,45 @@ N_PART = re.compile(r"([\d,]{3,})\s+(?:participants|women|men|patients|infants|c
 
 
 def effect(abstract):
+    """First reported effect, plus the text that precedes it.
+
+    The context is not decoration. Comparing an estimate across two versions
+    is only meaningful if both quote the SAME outcome, and nothing guaranteed
+    that: 42% of pairs turned out to name clearly different ones and 12% did
+    not even share a measure. Carrying the preceding words is what lets that
+    be checked instead of assumed.
+    """
     m = EFF.search(abstract or "")
     if not m:
         return None
-    return {"measure": m.group(1).upper(), "est": float(m.group(2)),
-            "lo": float(m.group(3)), "hi": float(m.group(4))}
+    est, lo, hi = float(m.group(2)), float(m.group(3)), float(m.group(4))
+    # An interval that does not contain its own estimate is unusable, and the
+    # cause turns out not to be the parser: 14 published Cochrane abstracts
+    # report one, e.g. "MD -2.76, 95% CI 3.57 to 1.96" with the minus signs
+    # dropped, and "RD 0.03, 95% CI -0.01 to -0.07" running backwards. Not
+    # repaired -- guessing which digit is wrong would invent data -- and not
+    # swapped either, since a sign lost on both bounds is not fixed by
+    # reordering them. Refused, and counted.
+    if not (lo <= est <= hi):
+        return None
+    pre = re.sub(r"<[^>]+>", " ", (abstract or "")[max(0, m.start() - 120):m.start()])
+    return {"measure": m.group(1).upper(), "est": est, "lo": lo, "hi": hi,
+            "context": re.sub(r"\s+", " ", pre).strip()[-110:]}
+
+
+# Below this, the two estimates are treated as answering different questions.
+# A threshold, not a fact: it is a proxy for outcome identity, chosen so that
+# the flattering direction needs an argument rather than a default.
+CONTEXT_MATCH = 0.80
+
+
+def comparable(ea, eb):
+    """Whether two parsed effects may be compared at all."""
+    if not ea or not eb:
+        return False
+    if ea["measure"] != eb["measure"]:
+        return False
+    return SequenceMatcher(None, ea["context"], eb["context"]).ratio() >= CONTEXT_MATCH
 
 
 def main():
@@ -48,6 +83,7 @@ def main():
     reviews = len(by_review)
     chain_len = Counter()
     pairs = both_concl = both_effect = protocols = same_abs = 0
+    comparable_n = 0
 
     # An unsuffixed DOI was read as version 1, and that was wrong: Europe PMC
     # carries several index records under the same bare DOI for one review, so
@@ -86,6 +122,8 @@ def main():
                     both_concl += 1
                 if ea and eb:
                     both_effect += 1
+                comp = comparable(ea, eb)
+                comparable_n += comp
                 # Two versions whose ENTIRE abstract is byte-identical are not
                 # an update that left the conclusions standing -- that case is
                 # real and common (662 of them, with Main results visibly
@@ -103,6 +141,7 @@ def main():
                     "title": b["title"],
                     "conclusions_from": ca, "conclusions_to": cb,
                     "effect_from": ea, "effect_to": eb,
+                    "comparable_effects": comp,
                 }, ensure_ascii=False) + "\n")
 
     print(f"versiones cosechadas      : {sum(len(v) for v in by_review.values())}")
@@ -116,6 +155,8 @@ def main():
     print(f"  con el resumen ENTERO identico (excluibles): {same_abs}")
     print(f"  con conclusiones en AMBOS: {both_concl}  ({100*both_concl/pairs:.0f}%)")
     print(f"  con efecto en AMBOS      : {both_effect}  ({100*both_effect/pairs:.0f}%)")
+    print(f"  con efectos COMPARABLES  : {comparable_n}  ({100*comparable_n/pairs:.0f}%)"
+          f"  <- denominador de los detectores")
     print(f"\nescrito: {OUT}")
 
 

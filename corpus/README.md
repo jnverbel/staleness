@@ -29,8 +29,8 @@ the whole history from metadata already in hand.
 | consecutive version pairs | 6,686 |
 | pairs with authors' conclusions at **both** ends | 4,661 (70%) |
 | minus pairs whose entire abstract is identical (see below) | 4,519 |
-| pairs also with a parseable pooled effect at both ends | 1,837 |
-| **of those, plausibly reporting the SAME outcome** | **~570 (31%)** |
+| pairs also with a parseable pooled effect at both ends | 2,236 |
+| **of those, with COMPARABLE effects** | **746 (11%)** |
 | median gap between versions | 4 years |
 
 **There are two denominators and they are far apart.** The outcome — did the
@@ -39,8 +39,8 @@ authors' conclusions change — needs only the conclusions text, so it rests on
 and that is a much smaller set.
 
 At the 9% base rate French et al. (2005) measured over 254 updated reviews,
-4,519 pairs carry roughly 400 conclusion-change events and ~570 carry about
-50. Size the study from those, not from the harvest total.
+4,519 pairs carry roughly 400 conclusion-change events and 746 carry about
+67. Size the study from those, not from the harvest total.
 
 ## The correction that halved the detector denominator
 
@@ -63,8 +63,11 @@ detector would have returned a confident number.
 French et al. avoided this with a pre-specified rule: the primary outcome is
 the one the authors state, else the first listed under Objectives, else
 mortality. Applying that rule needs the outcome to be identifiable, which at
-abstract level it often is not. Until it is applied, ~570 is the honest
-ceiling and it is a proxy, not a verified count.
+abstract level it often is not. Comparability is now decided in the pipeline rather than eyeballed
+afterwards: `comparable_effects` requires the same measure and a context
+similarity of at least 0.80, and 746 pairs clear it. That is a proxy for
+outcome identity, not a verified count, and the threshold is written where it
+can be argued with.
 
 The effect parser is deliberately the same naive one the feasibility spike
 measured, so the figure quoted in the write-up is the figure this produces. A
@@ -113,6 +116,40 @@ and hedging terms only bite on recent pairs, because the vocabulary is recent:
 0.0% of pairs ending by 2010 move a certainty tier, 0.5% for 2011-2016, and
 3.5% from 2017. Their low overall rate is a fact about when Cochrane
 standardised its phrasing, not about how often certainty changes.
+
+A third, which the tests found on their first run rather than a reader: 14
+pairs carried an interval that does not contain its own estimate. The parser
+was right and **the published abstracts are wrong** — `MD -2.76, 95% CI 3.57
+to 1.96` with the minus signs dropped, `RD 0.03, 95% CI -0.01 to -0.07`
+running backwards, `RR 1.07, 95% CI 1.98 to 1.18`. Not repaired, because
+guessing which digit is wrong invents data, and not reordered either, since a
+sign lost on both bounds is not fixed by swapping them. Refused at parse time,
+so the invariant holds by construction.
+
+## Tests
+
+    python3 -m unittest discover -s corpus -p "test_*.py"
+
+35 of them. Unit tests on the parsing run anywhere; invariants over the
+produced files skip when `data/` is absent.
+
+Every defect above has a test that fails without its fix, verified by mutation
+rather than assumed:
+
+| mutation | tests that go red |
+|---|---|
+| `comparable` stops requiring the same measure | 1 |
+| `comparable` stops checking the outcome context | 2 |
+| intervals that exclude their estimate are accepted | 1 |
+| one null value for ratios and differences alike | 2 |
+| `tier()` takes the first match instead of the lowest | 2 |
+| the sample takes the top 120 instead of stratifying | 1 |
+
+The invariants are mostly range checks, because a range check is what caught
+the first defect: a gap between versions came back as −13 years, and a
+negative gap cannot exist. The nesting invariant — comparable ⊆ has-effect ⊆
+all pairs — exists so no future edit can quietly report the wider set as the
+usable one, which is exactly the mistake that was made once already.
 
 ## Not in here
 
