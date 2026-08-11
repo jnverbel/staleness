@@ -44,10 +44,23 @@ test_that("DESCRIPTION, CITATION.cff and .zenodo.json agree", {
   expect_equal(cff_title, desc_title)
   expect_equal(zen_title, desc_title)
 
-  # 3. Licence. DESCRIPTION says "MIT + file LICENSE"; the other two say MIT.
+  # 3. Licence. The same licence, but each file must spell it in the vocabulary
+  #    its own consumer validates against, and the two disagree on case:
+  #
+  #      CITATION.cff -> SPDX identifier, "MIT". The CFF 1.2.0 schema validates
+  #                      `license` against the SPDX list, which holds "MIT" and
+  #                      not "mit".
+  #      .zenodo.json -> Zenodo's own licence vocabulary, "mit". GET
+  #                      /api/vocabularies/licenses/mit returns 200 and /MIT
+  #                      returns 404.
+  #
+  #    Writing "MIT" in both looks consistent and is wrong: Zenodo would not
+  #    resolve the identifier when archiving a release, and it fails the way
+  #    metadata always fails -- silently, leaving the archived record carrying
+  #    some other licence. Do NOT "unify" these two strings.
   expect_match(unname(desc[1, "License"]), "^MIT")
   expect_equal(field(cff, "^license:\\s*(\\S+)\\s*$"), "MIT")
-  expect_equal(field(zen, '^\\s*"license":\\s*"([^"]+)".*$'), "MIT")
+  expect_equal(field(zen, '^\\s*"license":\\s*"([^"]+)".*$'), "mit")
 
   # 4. The release date must be a real date, not a placeholder. It is the
   #    field most likely to be left behind at a tag.
