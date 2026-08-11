@@ -1,7 +1,18 @@
 # Preprint
 
-Draft for medRxiv or OSF Preprints, and the basis for a submission to
+Draft for a preprint server, and the basis for a submission to
 *Research Synthesis Methods* or the *Journal of Clinical Epidemiology*.
+
+**Not medRxiv, and not OSF Preprints.** medRxiv declined this manuscript on
+2026-08-11 without reviewing it, because it requires every author to hold an
+organizational affiliation "that provides oversight of research activities";
+sole authorship as an independent researcher does not qualify, and no rewrite
+changes that. The OSF generalist server has been closed to new submissions
+since 2025. The live candidates are **MetaArXiv** — a community server still
+running on OSF, whose scope names methods for meta-analysis and meta-research
+directly — and **SSRN**, which states that it accepts unaffiliated authors and
+assigns a Crossref DOI on acceptance. arXiv is not a shortcut: since 2026-01-21
+every new author needs a personal endorsement.
 
 `preprint.md` + `preprint.bib`. Render with:
 
