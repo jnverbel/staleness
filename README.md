@@ -3,6 +3,7 @@
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/jnverbel/staleness/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jnverbel/staleness/actions/workflows/R-CMD-check.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22050352.svg)](https://doi.org/10.5281/zenodo.22050352)
 <!-- badges: end -->
 
 A meta-analysis is a photograph, not a standing fact. Roughly a quarter of
@@ -222,7 +223,23 @@ and a worked backtest.
 
 MIT. See `LICENSE`.
 
-## Citing this package
+## Citing this work
+
+The findings are described in a preprint, archived on Zenodo under CC BY 4.0:
+
+> Núñez, J. (2026). *Five published signals for updating meta-analyses, applied
+> and evaluated: an exploratory study of when they can be used at all.* Zenodo.
+> <https://doi.org/10.5281/zenodo.22050352>
+
+**It is a preprint: it has not been peer reviewed.** Every figure in it is
+reproduced by the tag `preprint-v1`, not by the default branch.
+
+`10.5281/zenodo.22050352` is that version. `10.5281/zenodo.22050351` is the
+concept DOI, which always resolves to the newest version — cite the first when
+you mean the text you read, the second when you mean the work.
+
+To cite the software as such — a specific version, or the implementation rather
+than the findings:
 
 ```r
 citation("staleness")

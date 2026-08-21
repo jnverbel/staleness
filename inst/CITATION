@@ -1,4 +1,18 @@
-citHeader("To cite the staleness package in publications, use:")
+citHeader(
+  "To cite the work itself, use the preprint. To cite the software as such --",
+  "a specific version, or the implementation rather than the findings -- use",
+  "the manual entry below it."
+)
+
+bibentry(
+  bibtype = "Misc",
+  title   = paste("Five published signals for updating meta-analyses, applied and",
+                  "evaluated: an exploratory study of when they can be used at all"),
+  author  = person("Javier", "Núñez", email = "jnverbel@gmail.com"),
+  year    = "2026",
+  doi     = "10.5281/zenodo.22050352",
+  note    = "Preprint, Zenodo. Not peer reviewed."
+)
 
 bibentry(
   bibtype = "Manual",

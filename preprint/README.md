@@ -1,18 +1,19 @@
 # Preprint
 
-Draft for a preprint server, and the basis for a submission to
-*Research Synthesis Methods* or the *Journal of Clinical Epidemiology*.
+**Published on Zenodo, 2026-08-21: <https://doi.org/10.5281/zenodo.22050352>.**
+CC BY 4.0, and the basis for a submission to *Research Synthesis Methods* or the
+*Journal of Clinical Epidemiology*. `10.5281/zenodo.22050351` is the concept
+DOI, which always resolves to the newest version.
 
-**Not medRxiv, and not OSF Preprints.** medRxiv declined this manuscript on
-2026-08-11 without reviewing it, because it requires every author to hold an
-organizational affiliation "that provides oversight of research activities";
-sole authorship as an independent researcher does not qualify, and no rewrite
-changes that. The OSF generalist server has been closed to new submissions
-since 2025. The live candidates are **MetaArXiv** — a community server still
-running on OSF, whose scope names methods for meta-analysis and meta-research
-directly — and **SSRN**, which states that it accepts unaffiliated authors and
-assigns a Crossref DOI on acceptance. arXiv is not a shortcut: since 2026-01-21
-every new author needs a personal endorsement.
+The route there is worth recording, because affiliation decided it twice.
+medRxiv declined this manuscript on 2026-08-11 without reviewing it: it requires
+every author to hold an organizational affiliation "that provides oversight of
+research activities", sole authorship as an independent researcher does not
+qualify, and no rewrite changes that. SSRN turns out to require the same thing —
+"a current, verified institutional affiliation" — and will not open its
+submission form without one. arXiv is not a shortcut either: since 2026-01-21
+every new author needs a personal endorsement. Zenodo asks for no affiliation,
+runs no moderation, and issues the DOI on publication.
 
 `preprint.md` + `preprint.bib`. Render with:
 
