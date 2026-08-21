@@ -58,6 +58,30 @@ def effect(abstract):
             "context": re.sub(r"\s+", " ", pre).strip()[-110:]}
 
 
+
+def counts(abstract):
+    """Participant and study counts, for barrowman.
+
+    `barrowman()` sums participants across a snapshot: it needs how many were
+    in the prior meta-analysis and how many the new evidence adds. Nothing
+    parsed them until now -- N_PART and K_STUDIES were written above and never
+    called -- so the detector was unevaluable on this corpus for want of a
+    field the pipeline already knew how to look for.
+
+    Every match is kept, not just the first. An abstract that says "3,500
+    participants" once is unambiguous; one that says it three times with three
+    different numbers is a judgement call, and the caller should see that
+    rather than inherit a silent pick. The first is offered as the headline
+    because Cochrane abstracts open with the total, but `all` is what says
+    whether to trust it.
+    """
+    text = abstract or ""
+    part = [int(m.group(1).replace(",", "")) for m in N_PART.finditer(text)]
+    studies = [int(m.group(1)) for m in K_STUDIES.finditer(text)]
+    return {"n_participants": part[0] if part else None,
+            "n_participants_all": part,
+            "k_studies": studies[0] if studies else None}
+
 # Below this, the two estimates are treated as answering different questions.
 # A threshold, not a fact: it is a proxy for outcome identity, chosen so that
 # the flattering direction needs an argument rather than a default.
@@ -142,6 +166,8 @@ def main():
                     "conclusions_from": ca, "conclusions_to": cb,
                     "effect_from": ea, "effect_to": eb,
                     "comparable_effects": comp,
+                    "counts_from": counts(a.get("abstract")),
+                    "counts_to": counts(b.get("abstract")),
                 }, ensure_ascii=False) + "\n")
 
     print(f"versiones cosechadas      : {sum(len(v) for v in by_review.values())}")
