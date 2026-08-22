@@ -1,0 +1,346 @@
+{
+  "protocol": {
+    "file": "corpus/PROTOCOL.md",
+    "sha256": "c55593ec5ca8eb2777d02a92447f2047fd085c5225d0578247741abadb7abed7",
+    "amendment": "corpus/AMENDMENT-01.md"
+  },
+  "registration": {
+    "commit": "347a281e12456e06028a6a74e0430536cc0e211d",
+    "date": "2026-08-22T07:09:22-0500",
+    "human_coding_available": false,
+    "outcome_rule": "screen.score >= threshold reproducing reweighted prevalence 0.52"
+  },
+  "eligible": {
+    "n": 560,
+    "dropped": {
+      "protocol_or_missing": 0,
+      "same_abstract": 0,
+      "non_positive_interval": 0,
+      "not_comparable": 3970
+    },
+    "threshold": 0.104,
+    "prevalence_realised": 0.519643
+  },
+  "primary": {
+    "n_pairs": 560,
+    "n_reviews": 483,
+    "n_events": 291,
+    "threshold": 0.104,
+    "detectors": {
+      "rcma": {
+        "n_pairs": 560,
+        "n_evaluable": 560,
+        "n_answered": 541,
+        "n_not_appl": 19,
+        "n_not_eval": 0,
+        "n_error": 0,
+        "eligibility": 1,
+        "na_rate": 0.033929,
+        "error_rate": 0,
+        "sensitivity": 0.02518,
+        "specificity": 0.996198,
+        "false_alarm": 0.003802,
+        "n_events": 278,
+        "n_non_events": 263,
+        "ci": {
+          "sensitivity": [0.007605, 0.045936],
+          "specificity": [0.987999, 1],
+          "eligibility": [1, 1]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": false
+      },
+      "ottawa": {
+        "n_pairs": 560,
+        "n_evaluable": 499,
+        "n_answered": 499,
+        "n_not_appl": 0,
+        "n_not_eval": 61,
+        "n_error": 0,
+        "eligibility": 0.891071,
+        "na_rate": 0,
+        "error_rate": 0,
+        "sensitivity": 0.106719,
+        "specificity": 0.98374,
+        "false_alarm": 0.01626,
+        "n_events": 253,
+        "n_non_events": 246,
+        "ci": {
+          "sensitivity": [0.067194, 0.147983],
+          "specificity": [0.966909, 0.996212],
+          "eligibility": [0.861401, 0.91812]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": true
+      },
+      "barrowman": {
+        "n_pairs": 560,
+        "n_evaluable": 185,
+        "n_answered": 62,
+        "n_not_appl": 123,
+        "n_not_eval": 375,
+        "n_error": 0,
+        "eligibility": 0.330357,
+        "na_rate": 0.664865,
+        "error_rate": 0,
+        "sensitivity": 0.044444,
+        "specificity": 0.941176,
+        "false_alarm": 0.058824,
+        "n_events": 45,
+        "n_non_events": 17,
+        "ci": {
+          "sensitivity": [0, 0.111111],
+          "specificity": [0.8, 1],
+          "eligibility": [0.288834, 0.371483]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": false
+      }
+    }
+  },
+  "S1": {
+    "n_pairs": 42,
+    "n_events": 8,
+    "detectors": {
+      "rcma": {
+        "n_pairs": 42,
+        "n_evaluable": 42,
+        "n_answered": 42,
+        "n_not_appl": 0,
+        "n_not_eval": 0,
+        "n_error": 0,
+        "eligibility": 1,
+        "na_rate": 0,
+        "error_rate": 0,
+        "sensitivity": 0,
+        "specificity": 0.941176,
+        "false_alarm": 0.058824,
+        "n_events": 8,
+        "n_non_events": 34,
+        "ci": {
+          "sensitivity": [0, 0],
+          "specificity": [0.849962, 1],
+          "eligibility": [1, 1]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": false
+      },
+      "ottawa": {
+        "n_pairs": 42,
+        "n_evaluable": 37,
+        "n_answered": 37,
+        "n_not_appl": 0,
+        "n_not_eval": 5,
+        "n_error": 0,
+        "eligibility": 0.880952,
+        "na_rate": 0,
+        "error_rate": 0,
+        "sensitivity": 0,
+        "specificity": 0.965517,
+        "false_alarm": 0.034483,
+        "n_events": 8,
+        "n_non_events": 29,
+        "ci": {
+          "sensitivity": [0, 0],
+          "specificity": [0.888889, 1],
+          "eligibility": [0.780488, 0.97619]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": true
+      },
+      "barrowman": {
+        "n_pairs": 42,
+        "n_evaluable": 13,
+        "n_answered": 4,
+        "n_not_appl": 9,
+        "n_not_eval": 29,
+        "n_error": 0,
+        "eligibility": 0.309524,
+        "na_rate": 0.692308,
+        "error_rate": 0,
+        "sensitivity": 0,
+        "specificity": 1,
+        "false_alarm": 0,
+        "n_events": 1,
+        "n_non_events": 3,
+        "ci": {
+          "sensitivity": [0, 0],
+          "specificity": [1, 1],
+          "eligibility": [0.166667, 0.465116]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": false
+      }
+    }
+  },
+  "S2": {
+    "low": {
+      "prevalence": 0.411964,
+      "n_pairs": 560,
+      "n_reviews": 483,
+      "n_events": 230,
+      "threshold": 0.418,
+      "detectors": {
+        "rcma": {
+          "n_pairs": 560,
+          "n_evaluable": 560,
+          "n_answered": 541,
+          "n_not_appl": 19,
+          "n_not_eval": 0,
+          "n_error": 0,
+          "eligibility": 1,
+          "na_rate": 0.033929,
+          "error_rate": 0,
+          "sensitivity": 0.027149,
+          "specificity": 0.99375,
+          "false_alarm": 0.00625,
+          "n_events": 221,
+          "n_non_events": 320,
+          "ci": {
+            "sensitivity": [0.00823, 0.051651],
+            "specificity": [0.984177, 1],
+            "eligibility": [1, 1]
+          },
+          "result": "negative",
+          "failed_on_errors": false,
+          "contaminated": false
+        },
+        "ottawa": {
+          "n_pairs": 560,
+          "n_evaluable": 499,
+          "n_answered": 499,
+          "n_not_appl": 0,
+          "n_not_eval": 61,
+          "n_error": 0,
+          "eligibility": 0.891071,
+          "na_rate": 0,
+          "error_rate": 0,
+          "sensitivity": 0.12,
+          "specificity": 0.976589,
+          "false_alarm": 0.023411,
+          "n_events": 200,
+          "n_non_events": 299,
+          "ci": {
+            "sensitivity": [0.073164, 0.170854],
+            "specificity": [0.958477, 0.992908],
+            "eligibility": [0.861401, 0.91812]
+          },
+          "result": "negative",
+          "failed_on_errors": false,
+          "contaminated": true
+        },
+        "barrowman": {
+          "n_pairs": 560,
+          "n_evaluable": 185,
+          "n_answered": 62,
+          "n_not_appl": 123,
+          "n_not_eval": 375,
+          "n_error": 0,
+          "eligibility": 0.330357,
+          "na_rate": 0.664865,
+          "error_rate": 0,
+          "sensitivity": 0.054054,
+          "specificity": 0.96,
+          "false_alarm": 0.04,
+          "n_events": 37,
+          "n_non_events": 25,
+          "ci": {
+            "sensitivity": [0, 0.133378],
+            "specificity": [0.863636, 1],
+            "eligibility": [0.288834, 0.371483]
+          },
+          "result": "negative",
+          "failed_on_errors": false,
+          "contaminated": false
+        }
+      }
+    },
+    "high": {
+      "prevalence": 0.635107,
+      "n_pairs": 560,
+      "n_reviews": 483,
+      "n_events": 355,
+      "threshold": 0.016,
+      "detectors": {
+        "rcma": {
+          "n_pairs": 560,
+          "n_evaluable": 560,
+          "n_answered": 541,
+          "n_not_appl": 19,
+          "n_not_eval": 0,
+          "n_error": 0,
+          "eligibility": 1,
+          "na_rate": 0.033929,
+          "error_rate": 0,
+          "sensitivity": 0.020528,
+          "specificity": 0.995,
+          "false_alarm": 0.005,
+          "n_events": 341,
+          "n_non_events": 200,
+          "ci": {
+            "sensitivity": [0.006116, 0.037267],
+            "specificity": [0.983957, 1],
+            "eligibility": [1, 1]
+          },
+          "result": "negative",
+          "failed_on_errors": false,
+          "contaminated": false
+        },
+        "ottawa": {
+          "n_pairs": 560,
+          "n_evaluable": 499,
+          "n_answered": 499,
+          "n_not_appl": 0,
+          "n_not_eval": 61,
+          "n_error": 0,
+          "eligibility": 0.891071,
+          "na_rate": 0,
+          "error_rate": 0,
+          "sensitivity": 0.085987,
+          "specificity": 0.978378,
+          "false_alarm": 0.021622,
+          "n_events": 314,
+          "n_non_events": 185,
+          "ci": {
+            "sensitivity": [0.054054, 0.119049],
+            "specificity": [0.955693, 0.995027],
+            "eligibility": [0.861401, 0.91812]
+          },
+          "result": "negative",
+          "failed_on_errors": false,
+          "contaminated": true
+        },
+        "barrowman": {
+          "n_pairs": 560,
+          "n_evaluable": 185,
+          "n_answered": 62,
+          "n_not_appl": 123,
+          "n_not_eval": 375,
+          "n_error": 0,
+          "eligibility": 0.330357,
+          "na_rate": 0.664865,
+          "error_rate": 0,
+          "sensitivity": 0.040816,
+          "specificity": 0.923077,
+          "false_alarm": 0.076923,
+          "n_events": 49,
+          "n_non_events": 13,
+          "ci": {
+            "sensitivity": [0, 0.102041],
+            "specificity": [0.749671, 1],
+            "eligibility": [0.288834, 0.371483]
+          },
+          "result": "negative",
+          "failed_on_errors": false,
+          "contaminated": false
+        }
+      }
+    }
+  }
+}

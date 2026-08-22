@@ -1,1 +1,12 @@
-data/
+data/*
+
+# ...except the two files that cannot be regenerated. PROTOCOL.md §8 allows one
+# run, and 05-confirmatory.R enforces it by refusing to overwrite its output, so
+# these are the only copies that will ever exist. 12 KB against the 78 MB of
+# harvested versions that keep the rest of data/ out of here.
+#
+# `data/*` and not `data/`: git will not re-include a file whose parent
+# DIRECTORY is excluded, and the negations below are silently dead under the
+# second form. `git check-ignore` does not catch it once a file is in the index.
+!data/confirmatory.json
+!data/posthoc-prevalence.json

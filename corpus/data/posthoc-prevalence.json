@@ -1,0 +1,104 @@
+{
+  "label": "POST HOC -- run after the confirmatory results were seen",
+  "supersedes_nothing": "corpus/data/confirmatory.json remains the pre-specified run",
+  "reason": "confirmatory threshold used a prevalence estimated for the 1825-pair sampled population; the analysed set of 560 has a reweighted prevalence of 23%",
+  "prevalence": 0.23,
+  "threshold": 1.346,
+  "result": {
+    "n_pairs": 560,
+    "n_reviews": 483,
+    "n_events": 128,
+    "threshold": 1.346,
+    "detectors": {
+      "rcma": {
+        "n_pairs": 560,
+        "n_evaluable": 560,
+        "n_answered": 541,
+        "n_not_appl": 19,
+        "n_not_eval": 0,
+        "n_error": 0,
+        "eligibility": 1,
+        "na_rate": 0.033929,
+        "error_rate": 0,
+        "sensitivity": 0.031746,
+        "specificity": 0.990361,
+        "false_alarm": 0.009639,
+        "n_events": 126,
+        "n_non_events": 415,
+        "ci": {
+          "sensitivity": [0.007042, 0.066667],
+          "specificity": [0.980392, 0.997696],
+          "eligibility": [1, 1]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": false
+      },
+      "ottawa": {
+        "n_pairs": 560,
+        "n_evaluable": 499,
+        "n_answered": 499,
+        "n_not_appl": 0,
+        "n_not_eval": 61,
+        "n_error": 0,
+        "eligibility": 0.891071,
+        "na_rate": 0,
+        "error_rate": 0,
+        "sensitivity": 0.157895,
+        "specificity": 0.966234,
+        "false_alarm": 0.033766,
+        "n_events": 114,
+        "n_non_events": 385,
+        "ci": {
+          "sensitivity": [0.095228, 0.227284],
+          "specificity": [0.947917, 0.983741],
+          "eligibility": [0.861401, 0.91812]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": true
+      },
+      "barrowman": {
+        "n_pairs": 560,
+        "n_evaluable": 185,
+        "n_answered": 62,
+        "n_not_appl": 123,
+        "n_not_eval": 375,
+        "n_error": 0,
+        "eligibility": 0.330357,
+        "na_rate": 0.664865,
+        "error_rate": 0,
+        "sensitivity": 0.071429,
+        "specificity": 0.970588,
+        "false_alarm": 0.029412,
+        "n_events": 28,
+        "n_non_events": 34,
+        "ci": {
+          "sensitivity": [0, 0.178571],
+          "specificity": [0.9, 1],
+          "eligibility": [0.288834, 0.371483]
+        },
+        "result": "negative",
+        "failed_on_errors": false,
+        "contaminated": false
+      }
+    }
+  },
+  "firing_rate": {
+    "rcma": {
+      "answered": 541,
+      "fired": 8,
+      "rate": 0.014787
+    },
+    "ottawa": {
+      "answered": 499,
+      "fired": 31,
+      "rate": 0.062124
+    },
+    "barrowman": {
+      "answered": 62,
+      "fired": 3,
+      "rate": 0.048387
+    }
+  }
+}
