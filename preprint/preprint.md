@@ -39,7 +39,13 @@ least-squares fit to the cumulative effect series; that slope has no valid null
 distribution and fired on 209 of 300 samples of unchanging evidence. In Arm B,
 560 pairs carry both a comparable pooled estimate and authors' conclusions at
 each end; an automated screen separates likely conclusion changes 11.3-fold
-across strata.
+across strata. Under a protocol frozen before the evidence was opened, the
+three detectors evaluable from pooled estimates alone fire on 1.5%, 6.2% and
+4.8% of the pairs they answer, against an event prevalence of 23% to 52%
+depending on the labelling; none approaches the pre-specified sensitivity of
+0.60 under either. In 45% of the pairs whose conclusions changed, the pooled
+effect did not move at all, which caps any estimate-based detector at a
+sensitivity of 0.40 to 0.55 on this corpus.
 
 **Conclusions.** The five divide into two kinds of problem, and the distinction
 matters. Two are simply not defined once the prior meta-analysis is
@@ -48,11 +54,16 @@ restriction rather than a defect, but it means they usually cannot be asked at
 all, and the one published comparison could not see this because its cohort was
 selected for the single condition under which they can. The other two failures
 are defects: one criterion is unstable by construction on exactly the reviews
-its method targets, and one statistic has no valid null distribution. These are
-exploratory findings on 17 reviews with no held-out set, scored against
-operational targets that observe the pooled estimate moving rather than what
-any review team did. The software, the sweeps and the corpus
-are reproducible from public sources.
+its method targets, and one statistic has no valid null distribution. The Arm A findings are
+exploratory, on 17 reviews with no held-out set, scored against operational
+targets that observe the pooled estimate moving rather than what any review
+team did; the Arm B evaluation is confirmatory and pre-specified, and its
+outcome is an automated label with measured error, not adjudicated truth.
+Beyond the individual failures, the corpus bounds the approach itself: nearly
+half of the editorial changes leave no trace in the pooled estimate, so the
+ceiling for this family of detectors sits below the bar that was set for it
+before any of them was run. The software, the sweeps and the corpus are
+reproducible from public sources.
 
 ---
 
@@ -193,8 +204,8 @@ deposited alongside this paper rather than described and withheld.
 
 The version-controlled chronology supports this separation and makes the
 relevant implementation history auditable. Detector behaviour was frozen at
-commit `f59bb41` (2026-08-09 19:30 −0500); the Arm B corpus was first
-introduced at commit `c7e9505` (2026-08-10 07:56 −0500). Since that second
+commit `f59bb41` (2026-08-09 19:30 -0500); the Arm B corpus was first
+introduced at commit `c7e9505` (2026-08-10 07:56 -0500). Since that second
 commit, `git diff` reports **zero non-comment lines changed** in any detector
 source file: the only edits are documentation.
 
@@ -231,10 +242,11 @@ partial validation, the exclusions, review-clustered uncertainty, and — before
 anything is run — what would count as a positive, a negative and an
 inconclusive result.
 
-**That evaluation is not reported here.** The protocol is frozen and
-unexecuted; no detector has been run against Arm B. It is written so that the
-argument of this paper does not depend on which of the three outcomes occurs,
-which is the condition under which held-out evidence is worth spending.
+It was written so that the argument of this paper does not depend on which of
+the three outcomes occurs, which is the condition under which held-out evidence
+is worth spending. **It has now been executed once, on 2026-08-22, and §5.6
+reports what came back** — together with a defect in its own outcome
+definition, found afterwards and stated there rather than in a footnote.
 
 # 4. Reproducibility
 
@@ -478,7 +490,7 @@ well-formed output that would have entered the analysis unnoticed.
 An unsuffixed DOI was read as version 1; because Europe PMC carries several
 index records under the same bare DOI, 551 reviews had multiple "version 1"
 records and 681 pairs (9%) had the same version at both ends. What surfaced it
-was a **range check**: the gap between versions came back as −13 years, and a
+was a **range check**: the gap between versions came back as -13 years, and a
 negative gap cannot exist.
 
 142 pairs had a byte-identical abstract at both ends. This is not the same as
@@ -501,6 +513,64 @@ since a sign lost on both bounds is not fixed by swapping them.
 We report these because a corpus assembled from bibliographic metadata invites
 exactly this class of error, and because the checks that caught them were
 mostly range checks rather than sophisticated tests.
+
+## 5.6 The confirmatory evaluation: all three fail, and the ceiling is lower than the bar
+
+`corpus/PROTOCOL.md` was frozen on 2026-08-10, its SHA-256 recorded, and
+executed once on 2026-08-22. Two decisions it had left open were settled in a
+dated amendment beforehand, because neither could be settled after: the outcome
+had no per-pair definition, and `barrowman`'s participant counts had never been
+parsed out of the abstracts.
+
+On 560 pairs in 483 reviews:
+
+| detector | eligibility | sensitivity | specificity | fires on |
+|---|---|---|---|---|
+| `rcma` | 1.00 | 0.03 [0.01–0.05] | 1.00 | 1.5% of 541 |
+| `ottawa` † | 0.89 | 0.11 [0.07–0.15] | 0.98 | 6.2% of 499 |
+| `barrowman` | 0.33 | 0.04 [0.00–0.11] | 0.94 | 4.8% of 62 |
+
+† `ottawa` shares logic with a conclusion-change outcome and is flagged
+contaminated throughout, as it is elsewhere in the package. Its is the most
+favourable row and the least informative one.
+
+§7 of the protocol required a sensitivity and specificity of 0.60 with both
+lower bounds above 0.50, on eligibility of 0.50, and fixed in advance that a
+negative result was publishable. The result is negative for all three.
+
+**The outcome definition is defective, and the defect is ours.** The threshold
+was set at the score reproducing a reweighted event prevalence of 52%. That
+figure estimates the prevalence of the population the coded sample was drawn
+from — 1,825 pairs parsing an effect at both ends — and the detectors run on a
+different set: the 560 whose two effects are *comparable*. Comparability
+selects pairs whose abstracts repeat the same outcome, and those score low: 74%
+of the 560 fall in the bottom stratum against 33% of the sampled population.
+Rebuilt from its own composition, the analysed set's prevalence is 23%. About
+291 pairs were labelled events where roughly 131 are expected, and half of the
+surplus sat where 8% of pairs are real events. Every sensitivity above is
+therefore computed against a labelling with a large one-directional
+false-positive load, and none should be quoted as a measurement.
+
+A post-hoc re-analysis at the corrected 23%, labelled post hoc because it was
+written after these results were seen, moves nothing that matters: sensitivities
+of 0.03, 0.16 and 0.07 against a bar of 0.60. The firing rates are identical to
+three significant figures, because they never depended on the labelling at all.
+
+**What the corpus says about the approach, rather than about the five.** Among
+the pairs whose conclusions changed, the pooled effect reported in the abstract
+is byte-identical across the two versions in 45% of cases. A detector that can
+only fire when the estimate moves cannot reach those pairs at all, which caps
+its sensitivity at 0.40 under the pre-specified labelling and 0.55 under the
+corrected one — in both cases below the 0.60 that was asked of it before any
+detector was run. The bar was unreachable by construction, and nothing in the
+protocol could have known that, because the fact only becomes visible once the
+corpus exists.
+
+This does not rescue the detectors. `rcma` fires 8 times where the estimate
+moved in 139 pairs; the ceiling explains why 0.60 was out of reach, not why
+0.03 was the answer. It does say that the interesting question is no longer how
+to calibrate a threshold on the pooled estimate, but whether the signal is
+there to be read.
 
 # 6. Discussion
 
@@ -564,13 +634,27 @@ unexplained and is reported as provisional. The comparability criterion for
 pooled estimates is a text-similarity proxy for outcome identity, not a
 verified match.
 
+The confirmatory run adds three of its own. Its outcome threshold was fixed on
+a prevalence belonging to the sampled population rather than to the analysed
+subset, so its per-detector sensitivities are computed against an inflated
+event count and are not measurements; the label-independent firing rates and
+the post-hoc re-analysis are what the negative result rests on. The
+pre-specified S1 collapsed from 120 pairs to the 42 that survive the
+comparability requirement, too few to carry the comparison against a
+human-comparable code that §4 of the protocol intended it for. And the interval
+width separating an inconclusive result from a negative one was chosen while
+writing the analysis script rather than in the protocol; it was fixed before
+any result was seen, but it was not pre-specified, and it decides the label
+each detector carries in §5.6.
+
 # 8. Availability
 
 The package is public and MIT-licensed at
 <https://github.com/jnverbel/staleness>. **Every figure in this paper is
-reproduced by the tag `preprint-v1`**, not by the moving branch: that tag is
-the exact state described here, including the frozen and unexecuted
-`corpus/PROTOCOL.md`. Continuous integration is green on it across eight
+reproduced by the tag `preprint-v2`**, not by the moving branch: that tag is
+the exact state described here, including `corpus/PROTOCOL.md`, the dated
+`corpus/AMENDMENT-01.md`, the executed result in `corpus/RESULTS.md` and the
+post-hoc re-analysis kept separate from it. Continuous integration is green on it across eight
 platforms from R 4.2.3 to R-devel, with 1,176 package tests and 35 corpus tests
 passing. Arm A is regenerated by
 `inst/applicability/applicability.R`, the calibration figures by

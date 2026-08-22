@@ -21,6 +21,29 @@ of the problem this package does not touch — but the assembled detectors are
 not. Which is also why nobody has ever been able to run all five against real
 history and see how they behave.
 
+**We did, and they failed.** All five are implemented here and were run against
+held-out historical evidence under a protocol frozen before the evidence was
+opened. On 560 consecutive pairs of Cochrane review versions, the three that
+can be evaluated from pooled estimates alone say `out_of_date` on 1.5%, 6.2%
+and 4.8% of the pairs they answer, while between a quarter and a half of those
+pairs carry a changed conclusion. None comes near the 0.60 sensitivity the
+protocol asked for, under either labelling. The result, including a defect in
+its own outcome definition, is in [`corpus/RESULTS.md`](corpus/RESULTS.md).
+
+**And the ceiling turns out to be lower than the bar.** In 45% of the pairs
+whose conclusions changed, the pooled effect reported in the abstract did not
+move at all — not by one decimal. A detector that can only fire when the
+estimate moves therefore tops out at a sensitivity of 0.40 to 0.55 here, below
+the 0.60 asked of it. That is a statement about the idea of reading staleness
+off the pooled estimate, not about these five implementations of it.
+
+So this package will not tell you when to update a review, and there is now
+evidence rather than suspicion behind that sentence. What it is for is
+everything that produced those two paragraphs: running a published detector
+against real history, measuring how often it can be asked at all, and finding
+out where it breaks. The five are worked examples of methods failing in public.
+The machinery is for whatever gets proposed next.
+
 That search is reproducible and dated, and it says *we did not find one*
 rather than *none exists*: it reads package metadata, not source code, and
 `metafor` itself would not turn up under "cumulative meta-analysis" because
